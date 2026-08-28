@@ -1,0 +1,25 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+.next/
+out/
+dist/
+
+# env
+.env
+.env.local
+.env*.local
+
+# prisma (NÃO commitar arquivos de banco local)
+prisma/dev.db
+prisma/dev.db-journal
+
+# misc
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+*.log
+.vercel

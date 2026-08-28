@@ -1,0 +1,1063 @@
+// =====================================================================
+//  AAM Ambiental & Mineral — Schema Prisma (ETAPA 4)
+//  Domínio: gestão ambiental e mineral integrada
+//  Banco: PostgreSQL (Neon) | ORM: Prisma 6
+// =====================================================================
+//  Decisões-chave (validadas FASE 3 / revisão ETAPA 4):
+//   - Empresa, Pessoa e Usuario independentes (sem herança).
+//   - Papéis de Empresa via tabelas de associação.
+//   - Empreendimento x Área, Título x Área, Licença x Área em N:N.
+//   - Processo, TituloMinerario e Licenca distintos. Processo é o hub.
+//   - ProcessoRelacionamento configurável (catálogo TipoRelacaoProcesso).
+//   - Evento, Prazo, Tarefa, Notificacao usam FKs explícitas (não polimórfico).
+//   - Documento + DocumentoVinculo (um arquivo, N vínculos reais por FK).
+//   - Exigencia/Condicionante aceitam N documentos e N tarefas.
+//   - Prazo + PrazoMovimentacao (histórico).
+//   - RegraPrazo com versão e vigência. OCR separado (OcrProcessamento).
+//   - Timeline derivada (sem tabela própria).
+//   - Historico: única exceção a entidadeTipo + entidadeId (auditoria).
+//   - Soft delete (ativo + deletedAt) nas entidades críticas.
+//   - Sem multitenancy SaaS agora; padrão de escopo por Empresa já aplicado.
+// NOTA: criadoPor/atualizadoPor são Int simples (referência de auditoria),
+// mantidos fora de relações Prisma para reduzir acoplamento no MVP.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+//  AGENTES
+// =====================================================================
+
+model Empresa {
+  id                Int     @id @default(autoincrement())
+  razaoSocial       String
+  nomeFantasia      String?
+  cnpj              String? @unique
+  inscricaoEstadual String?
+  email             String?
+  telefone          String?
+  endereco          String?
+  municipio         String?
+  uf                String?
+  cep               String?
+  observacoes       String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empreendimentosPrincipais Empreendimento[]
+  pessoas                   PessoaEmpresa[]
+  empreendimentos           EmpreendimentoEmpresa[]
+  processos                 ProcessoEmpresa[]
+  titulos                   TituloEmpresa[]
+  licencas                  LicencaEmpresa[]
+  areas                     AreaEmpresa[]
+  contratos                 Contrato[]
+  projetos                  Projeto[]
+
+  @@index([razaoSocial])
+  @@index([municipio, uf])
+}
+
+model Pessoa {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  documento   String?
+  tipoPessoa  String  @default("fisica")
+  email       String?
+  telefone    String?
+  endereco    String?
+  cep         String?
+  observacoes String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  usuario            Usuario?
+  empresas           PessoaEmpresa[]
+  processosResp      ProcessoResponsavel[]
+  titulosResp        TituloMinerario[]
+  licencasResp       Licenca[]
+  tarefasResp        Tarefa[]
+  prazosResp         Prazo[]
+  condicionantesResp Condicionante[]
+  exigenciasResp     Exigencia[]
+  documentosResp     Documento[]
+
+  @@index([nome])
+  @@index([documento])
+}
+
+model PessoaEmpresa {
+  id        Int     @id @default(autoincrement())
+  empresaId Int
+  pessoaId  Int
+  papel     String  @default("contato")
+  ativo     Boolean @default(true)
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  pessoa  Pessoa  @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, pessoaId, papel])
+  @@index([pessoaId])
+}
+
+model Usuario {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  senhaHash       String
+  pessoaId        Int?      @unique
+  perfilId        Int
+  ativo           Boolean   @default(true)
+  termosAceitosEm DateTime?
+  ultimoLoginEm   DateTime?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+
+  pessoa         Pessoa?             @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  perfil         Perfil              @relation(fields: [perfilId], references: [id])
+  tarefasCriadas Tarefa[]
+  movimentacoes  PrazoMovimentacao[]
+  requisicoesOcr OcrProcessamento[]
+  historicos     Historico[]
+  notificacoes   Notificacao[]
+
+  @@index([perfilId])
+}
+
+// =====================================================================
+//  ACESSO & PERMISSÕES
+// =====================================================================
+
+model Perfil {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  descricao    String?
+  sistema      Boolean  @default(false) // true = protegido
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarios   Usuario[]
+  permissoes PerfilPermissao[]
+}
+
+model Permissao {
+  id        Int     @id @default(autoincrement())
+  chave     String  @unique // ex.: "processo:ler"
+  modulo    String
+  acao      String
+  descricao String?
+
+  perfis PerfilPermissao[]
+}
+
+model PerfilPermissao {
+  perfilId    Int
+  permissaoId Int
+  perfil      Perfil    @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  permissao   Permissao @relation(fields: [permissaoId], references: [id], onDelete: Cascade)
+
+  @@id([perfilId, permissaoId])
+}
+
+// =====================================================================
+//  CATÁLOGOS CONFIGURÁVEIS (tabelas, não enums rígidos)
+// =====================================================================
+
+model Orgao {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  sigla        String   @unique
+  nivel        String   @default("estadual")
+  ambito       String   @default("ambiental")
+  site         String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  processos  Processo[]
+  titulos    TituloMinerario[]
+  licencas   Licenca[]
+  exigencias Exigencia[]
+  regras     RegraPrazo[]
+
+  @@index([ambito])
+}
+
+model TipoProcesso {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  descricao    String?
+  tronco       String   @default("mineral") // mineral | ambiental
+  sistema      Boolean  @default(false)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  processos Processo[]
+  regras    RegraPrazo[]
+
+  @@index([tronco])
+}
+
+model TipoEvento {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  descricao    String?
+  geraPrazo    Boolean  @default(false)
+  geraTarefa   Boolean  @default(false)
+  sistema      Boolean  @default(false)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  eventos Evento[]
+  regras  RegraPrazo[]
+}
+
+model TipoTitulo {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  descricao    String?
+  sistema      Boolean  @default(false)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  titulos TituloMinerario[]
+  regras  RegraPrazo[]
+}
+
+model TipoLicenca {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  descricao    String?
+  sistema      Boolean  @default(false)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  licencas Licenca[]
+  regras   RegraPrazo[]
+}
+
+model TipoRelacaoProcesso {
+  id        Int     @id @default(autoincrement())
+  nome      String  @unique
+  descricao String?
+  sistema   Boolean @default(false)
+  ativo     Boolean @default(true)
+
+  relacoes ProcessoRelacionamento[]
+}
+
+model TipoEntidade {
+  id        Int     @id @default(autoincrement())
+  nome      String  @unique
+  descricao String?
+  sistema   Boolean @default(false)
+
+  historico Historico[]
+}
+
+// =====================================================================
+//  ESTRUTURA: EMPREENDIMENTO, ÁREA
+// =====================================================================
+
+model Empreendimento {
+  id                 Int     @id @default(autoincrement())
+  nome               String
+  descricao          String?
+  tipo               String  @default("pedreira")
+  municipio          String?
+  uf                 String?
+  endereco           String?
+  status             String  @default("ativo")
+  observacoes        String?
+  empresaPrincipalId Int
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresaPrincipal  Empresa                 @relation(fields: [empresaPrincipalId], references: [id])
+  empresas          EmpreendimentoEmpresa[]
+  areas             EmpreendimentoArea[]
+  processos         Processo[]
+  licencas          Licenca[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([empresaPrincipalId])
+  @@index([tipo, status])
+}
+
+model EmpreendimentoEmpresa {
+  id               Int     @id @default(autoincrement())
+  empreendimentoId Int
+  empresaId        Int
+  papel            String  @default("operador")
+  principal        Boolean @default(false)
+  ativo            Boolean @default(true)
+
+  empreendimento Empreendimento @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
+  empresa        Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empreendimentoId, empresaId, papel])
+  @@index([empresaId])
+}
+
+model Area {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  tipo        String  @default("imovel")
+  matricula   String?
+  areaHa      Float?
+  municipio   String?
+  uf          String?
+  situacao    String  @default("ativa")
+  coordenadas String?
+  poligono    String?
+  observacoes String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresas          AreaEmpresa[]
+  empreendimentos   EmpreendimentoArea[]
+  processos         AreaProcesso[]
+  titulos           AreaTitulo[]
+  licencas          AreaLicenca[]
+  eventoVinculos    Evento[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([municipio, uf])
+}
+
+model EmpreendimentoArea {
+  id               Int     @id @default(autoincrement())
+  empreendimentoId Int
+  areaId           Int
+  papel            String? @default("compoe")
+
+  empreendimento Empreendimento @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
+  area           Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([empreendimentoId, areaId])
+  @@index([areaId])
+}
+
+model AreaEmpresa {
+  id        Int    @id @default(autoincrement())
+  areaId    Int
+  empresaId Int
+  papel     String @default("proprietario")
+
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([areaId, empresaId, papel])
+  @@index([empresaId])
+}
+
+// =====================================================================
+//  PROCESSO (HUB OPERACIONAL)
+// =====================================================================
+
+model Processo {
+  id               Int       @id @default(autoincrement())
+  numero           String
+  orgaoId          Int
+  tipoProcessoId   Int
+  assunto          String?
+  empreendimentoId Int?
+  fase             String?
+  status           String    @default("em_andamento")
+  dataAbertura     DateTime  @default(now())
+  dataEncerramento DateTime?
+  descricao        String?
+  observacoes      String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  orgao          Orgao           @relation(fields: [orgaoId], references: [id])
+  tipoProcesso   TipoProcesso    @relation(fields: [tipoProcessoId], references: [id])
+  empreendimento Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+
+  empresas          ProcessoEmpresa[]
+  areas             AreaProcesso[]
+  responsaveis      ProcessoResponsavel[]
+  relacoesPrincipal ProcessoRelacionamento[] @relation("RelacaoPrincipal")
+  relacoesDerivada  ProcessoRelacionamento[] @relation("RelacaoDerivada")
+  eventos           Evento[]
+  prazos            Prazo[]
+  tarefas           Tarefa[]
+  exigencias        Exigencia[]
+  titulos           TituloProcesso[]
+  licencas          LicencaProcesso[]
+  documentoVinculos DocumentoVinculo[]
+  notificacoes      Notificacao[]
+
+  @@index([orgaoId, status])
+  @@index([tipoProcessoId])
+  @@index([empreendimentoId])
+  @@index([dataAbertura])
+}
+
+model ProcessoEmpresa {
+  id         Int    @id @default(autoincrement())
+  processoId Int
+  empresaId  Int
+  papel      String @default("cliente")
+
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  empresa  Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([processoId, empresaId, papel])
+  @@index([empresaId])
+}
+
+model AreaProcesso {
+  id         Int     @id @default(autoincrement())
+  processoId Int
+  areaId     Int
+  papel      String? @default("relacionada")
+
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  area     Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([processoId, areaId])
+  @@index([areaId])
+}
+
+model ProcessoRelacionamento {
+  id                    Int     @id @default(autoincrement())
+  processoId            Int
+  processoRelacionadoId Int
+  tipoRelacaoId         Int
+  observacao            String?
+
+  processo            Processo            @relation("RelacaoPrincipal", fields: [processoId], references: [id], onDelete: Cascade)
+  processoRelacionado Processo            @relation("RelacaoDerivada", fields: [processoRelacionadoId], references: [id], onDelete: Cascade)
+  tipoRelacao         TipoRelacaoProcesso @relation(fields: [tipoRelacaoId], references: [id])
+
+  @@unique([processoId, processoRelacionadoId, tipoRelacaoId])
+  @@index([processoRelacionadoId])
+  @@index([tipoRelacaoId])
+}
+
+model ProcessoResponsavel {
+  id         Int       @id @default(autoincrement())
+  processoId Int
+  pessoaId   Int
+  papel      String    @default("responsavel")
+  dataInicio DateTime  @default(now())
+  dataFim    DateTime?
+  ativo      Boolean   @default(true)
+
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  pessoa   Pessoa   @relation(fields: [pessoaId], references: [id])
+
+  @@index([pessoaId])
+  @@index([processoId, dataInicio])
+}
+
+// =====================================================================
+//  ATOS: TÍTULO MINERÁRIO E LICENÇA
+// =====================================================================
+
+model TituloMinerario {
+  id                  Int       @id @default(autoincrement())
+  tipoTituloId        Int
+  numero              String
+  orgaoId             Int
+  substancia          String?
+  municipio           String?
+  uf                  String?
+  dataEmissao         DateTime?
+  validade            DateTime?
+  situacao            String    @default("ativo")
+  poligonalJson       String?
+  observacoes         String?
+  responsavelPessoaId Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  tipoTitulo  TipoTitulo @relation(fields: [tipoTituloId], references: [id])
+  orgao       Orgao      @relation(fields: [orgaoId], references: [id])
+  responsavel Pessoa?    @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  empresas          TituloEmpresa[]
+  areas             AreaTitulo[]
+  processos         TituloProcesso[]
+  eventos           Evento[]
+  prazos            Prazo[]
+  tarefas           Tarefa[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([tipoTituloId])
+  @@index([orgaoId])
+  @@index([validade])
+}
+
+model TituloEmpresa {
+  id        Int    @id @default(autoincrement())
+  tituloId  Int
+  empresaId Int
+  papel     String @default("titular")
+
+  titulo  TituloMinerario @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  empresa Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([tituloId, empresaId, papel])
+  @@index([empresaId])
+}
+
+model AreaTitulo {
+  id         Int     @id @default(autoincrement())
+  tituloId   Int
+  areaId     Int
+  observacao String?
+
+  titulo TituloMinerario @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  area   Area            @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([tituloId, areaId])
+  @@index([areaId])
+}
+
+model TituloProcesso {
+  id         Int @id @default(autoincrement())
+  tituloId   Int
+  processoId Int
+
+  titulo   TituloMinerario @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  processo Processo        @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@unique([tituloId, processoId])
+  @@index([processoId])
+}
+
+model Licenca {
+  id                  Int       @id @default(autoincrement())
+  tipoLicencaId       Int
+  numero              String
+  orgaoId             Int
+  empreendimentoId    Int? // OPCIONAL: licença pode existir antes de vínculo definitivo
+  dataEmissao         DateTime?
+  dataValidade        DateTime?
+  situacao            String    @default("ativa")
+  observacoes         String?
+  responsavelPessoaId Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  tipoLicenca    TipoLicenca     @relation(fields: [tipoLicencaId], references: [id])
+  orgao          Orgao           @relation(fields: [orgaoId], references: [id])
+  empreendimento Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  responsavel    Pessoa?         @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  empresas          LicencaEmpresa[]
+  areas             AreaLicenca[]
+  processos         LicencaProcesso[]
+  condicionantes    Condicionante[]
+  eventos           Evento[]
+  prazos            Prazo[]
+  tarefas           Tarefa[]
+  documentoVinculos DocumentoVinculo[]
+  notificacoes      Notificacao[]
+
+  @@index([tipoLicencaId])
+  @@index([orgaoId])
+  @@index([dataValidade])
+}
+
+model LicencaEmpresa {
+  id        Int    @id @default(autoincrement())
+  licencaId Int
+  empresaId Int
+  papel     String @default("titular")
+
+  licenca Licenca @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([licencaId, empresaId, papel])
+  @@index([empresaId])
+}
+
+model AreaLicenca {
+  id        Int     @id @default(autoincrement())
+  licencaId Int
+  areaId    Int
+  papel     String? @default("abrangida")
+
+  licenca Licenca @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([licencaId, areaId])
+  @@index([areaId])
+}
+
+model LicencaProcesso {
+  id         Int @id @default(autoincrement())
+  licencaId  Int
+  processoId Int
+
+  licenca  Licenca  @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@unique([licencaId, processoId])
+  @@index([processoId])
+}
+
+// =====================================================================
+//  CONDICIONANTE / EXIGÊNCIA
+// =====================================================================
+
+model Condicionante {
+  id                  Int       @id @default(autoincrement())
+  licencaId           Int
+  codigo              String?
+  descricao           String
+  periodicidade       String?
+  dataInicial         DateTime?
+  proximoVencimento   DateTime?
+  status              String    @default("pendente")
+  observacoes         String?
+  responsavelPessoaId Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  licenca           Licenca            @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  responsavel       Pessoa?            @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+  prazos            Prazo[]
+  tarefas           Tarefa[]
+  eventos           Evento[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([licencaId])
+  @@index([status, proximoVencimento])
+}
+
+model Exigencia {
+  id                  Int       @id @default(autoincrement())
+  processoId          Int
+  orgaoId             Int
+  dataRecebimento     DateTime  @default(now())
+  descricao           String
+  prazoResposta       DateTime?
+  status              String    @default("pendente")
+  resposta            String?
+  observacoes         String?
+  responsavelPessoaId Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  processo    Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  orgao       Orgao    @relation(fields: [orgaoId], references: [id])
+  responsavel Pessoa?  @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  tarefas           Tarefa[]
+  eventos           Evento[]
+  prazos            Prazo[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([processoId])
+  @@index([orgaoId, status])
+}
+
+// =====================================================================
+//  TRANSVERSAIS: EVENTO, PRAZO, TAREFA, NOTIFICAÇÃO
+// =====================================================================
+
+model Evento {
+  id           Int      @id @default(autoincrement())
+  tipoEventoId Int
+  processoId   Int
+  descricao    String
+  data         DateTime @default(now())
+
+  tituloId        Int?
+  licencaId       Int?
+  condicionanteId Int?
+  exigenciaId     Int?
+  areaId          Int?
+
+  criadoPor Int?
+
+  tipoEvento    TipoEvento       @relation(fields: [tipoEventoId], references: [id])
+  processo      Processo         @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  titulo        TituloMinerario? @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  licenca       Licenca?         @relation(fields: [licencaId], references: [id], onDelete: SetNull)
+  condicionante Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: SetNull)
+  exigencia     Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: SetNull)
+  area          Area?            @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  prazosGerados Prazo[]
+
+  @@index([tipoEventoId])
+  @@index([processoId, data])
+  @@index([tituloId])
+  @@index([licencaId])
+  @@index([exigenciaId])
+}
+
+model Prazo {
+  id              Int     @id @default(autoincrement())
+  processoId      Int
+  regraId         Int?
+  eventoGeradorId Int?
+  tipo            String?
+  descricao       String
+
+  unidade               String    @default("corridos")
+  quantidade            Int?
+  dataInicial           DateTime  @default(now())
+  dataCalculadaOriginal DateTime?
+  dataCalculadaAtual    DateTime?
+  dataEfetiva           DateTime?
+  status                String    @default("futuro")
+  prioridade            String    @default("media")
+  observacoes           String?
+  tarefaId              Int?
+
+  condicionanteId     Int?
+  licencaId           Int?
+  tituloId            Int?
+  exigenciaId         Int?
+  responsavelPessoaId Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  processo      Processo         @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  regra         RegraPrazo?      @relation(fields: [regraId], references: [id], onDelete: SetNull)
+  eventoGerador Evento?          @relation(fields: [eventoGeradorId], references: [id], onDelete: SetNull)
+  condicionante Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: SetNull)
+  licenca       Licenca?         @relation(fields: [licencaId], references: [id], onDelete: SetNull)
+  titulo        TituloMinerario? @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  exigencia     Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: SetNull)
+  responsavel   Pessoa?          @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  movimentacoes PrazoMovimentacao[]
+  tarefas       Tarefa[]
+  notificacoes  Notificacao[]
+
+  @@index([processoId, status])
+  @@index([status, dataCalculadaAtual])
+  @@index([condicionanteId])
+  @@index([exigenciaId])
+}
+
+model PrazoMovimentacao {
+  id                Int       @id @default(autoincrement())
+  prazoId           Int
+  tipo              String // criado | alterado_manual | suspenso | retomado | prorrogado | concluido | cancelado
+  data              DateTime  @default(now())
+  novaDataCalculada DateTime?
+  motivo            String?
+  usuarioId         Int?
+  criadoEm          DateTime  @default(now())
+
+  prazo   Prazo    @relation(fields: [prazoId], references: [id], onDelete: Cascade)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([prazoId, data])
+}
+
+model RegraPrazo {
+  id             Int     @id @default(autoincrement())
+  orgaoId        Int
+  tipoProcessoId Int?
+  tipoEventoId   Int?
+  tipoTituloId   Int?
+  tipoLicencaId  Int?
+  fase           String?
+  condicao       String?
+
+  quantidade              Int
+  unidade                 String    @default("corridos")
+  dataFixa                DateTime?
+  acaoGerada              String?
+  tarefaGerada            String?
+  antecedenciaNotificacao Int?
+
+  versao         Int       @default(1)
+  vigenciaInicio DateTime  @default(now())
+  vigenciaFim    DateTime?
+  ativo          Boolean   @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  orgao        Orgao         @relation(fields: [orgaoId], references: [id])
+  tipoProcesso TipoProcesso? @relation(fields: [tipoProcessoId], references: [id], onDelete: SetNull)
+  tipoEvento   TipoEvento?   @relation(fields: [tipoEventoId], references: [id], onDelete: SetNull)
+  tipoTitulo   TipoTitulo?   @relation(fields: [tipoTituloId], references: [id], onDelete: SetNull)
+  tipoLicenca  TipoLicenca?  @relation(fields: [tipoLicencaId], references: [id], onDelete: SetNull)
+
+  prazosAplicados Prazo[]
+
+  @@index([orgaoId, ativo])
+}
+
+model Tarefa {
+  id            Int       @id @default(autoincrement())
+  titulo        String
+  descricao     String?
+  prioridade    String    @default("media")
+  status        String    @default("pendente")
+  prazoData     DateTime?
+  dataCriacao   DateTime  @default(now())
+  dataConclusao DateTime?
+  observacoes   String?
+
+  responsavelPessoaId Int
+  criadorUsuarioId    Int?
+
+  processoId        Int?
+  prazoId           Int?
+  condicionanteId   Int?
+  licencaId         Int?
+  tituloMinerarioId Int?
+  exigenciaId       Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  responsavel     Pessoa           @relation(fields: [responsavelPessoaId], references: [id])
+  criador         Usuario?         @relation(fields: [criadorUsuarioId], references: [id], onDelete: SetNull)
+  processo        Processo?        @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  prazoAssociado  Prazo?           @relation(fields: [prazoId], references: [id], onDelete: SetNull)
+  condicionante   Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: SetNull)
+  licenca         Licenca?         @relation(fields: [licencaId], references: [id], onDelete: SetNull)
+  tituloMinerario TituloMinerario? @relation(fields: [tituloMinerarioId], references: [id], onDelete: SetNull)
+  exigencia       Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: SetNull)
+
+  notificacoes      Notificacao[]
+  documentoVinculos DocumentoVinculo[]
+
+  @@index([responsavelPessoaId, status])
+  @@index([processoId])
+  @@index([prazoData, status])
+}
+
+model Notificacao {
+  id                    Int      @id @default(autoincrement())
+  tipo                  String
+  mensagem              String
+  canal                 String   @default("in_app")
+  destinatarioPessoaId  Int?
+  destinatarioUsuarioId Int?
+  lida                  Boolean  @default(false)
+  dataEnvio             DateTime @default(now())
+  criadoEm              DateTime @default(now())
+
+  processoId Int?
+  prazoId    Int?
+  tarefaId   Int?
+  licencaId  Int?
+
+  processo            Processo? @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  prazo               Prazo?    @relation(fields: [prazoId], references: [id], onDelete: Cascade)
+  tarefa              Tarefa?   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  licenca             Licenca?  @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  destinatarioUsuario Usuario?  @relation(fields: [destinatarioUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([destinatarioUsuarioId, lida])
+  @@index([tipo, dataEnvio])
+  @@index([prazoId])
+}
+
+// =====================================================================
+//  DOCUMENTOS (Object Storage) + VÍNCULOS + OCR
+// =====================================================================
+
+model Documento {
+  id                  Int      @id @default(autoincrement())
+  nome                String
+  tipo                String   @default("outro")
+  categoria           String   @default("documento")
+  storageKey          String   @unique
+  mime                String?
+  tamanho             Int?
+  hash                String?
+  versao              Int      @default(1)
+  data                DateTime @default(now())
+  origem              String   @default("upload")
+  classificacao       String?
+  status              String   @default("ativo")
+  observacoes         String?
+  responsavelPessoaId Int?
+  criadoPor           Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  responsavel       Pessoa?            @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+  vinculos          DocumentoVinculo[]
+  ocrProcessamentos OcrProcessamento[]
+
+  @@index([storageKey])
+  @@index([tipo, status])
+}
+
+model DocumentoVinculo {
+  id          Int    @id @default(autoincrement())
+  documentoId Int
+  papel       String @default("anexo")
+
+  processoId       Int?
+  tituloId         Int?
+  licencaId        Int?
+  condicionanteId  Int?
+  exigenciaId      Int?
+  tarefaId         Int?
+  areaId           Int?
+  empreendimentoId Int?
+
+  criadoEm DateTime @default(now())
+
+  documento      Documento        @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  processo       Processo?        @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  titulo         TituloMinerario? @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  licenca        Licenca?         @relation(fields: [licencaId], references: [id], onDelete: Cascade)
+  condicionante  Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: Cascade)
+  exigencia      Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: Cascade)
+  tarefa         Tarefa?          @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  area           Area?            @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  empreendimento Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
+
+  // CHECK (no migration/raw): ao menos um alvo preenchido.
+  @@unique([documentoId, processoId, tituloId, licencaId, condicionanteId, exigenciaId, tarefaId, areaId, empreendimentoId, papel])
+  @@index([documentoId])
+  @@index([processoId])
+  @@index([tituloId])
+  @@index([licencaId])
+  @@index([condicionanteId])
+  @@index([exigenciaId])
+  @@index([tarefaId])
+  @@index([areaId])
+  @@index([empreendimentoId])
+}
+
+model OcrProcessamento {
+  id                  Int       @id @default(autoincrement())
+  documentoId         Int
+  status              String    @default("pendente")
+  provedor            String?
+  tentativas          Int       @default(0)
+  textoExtraido       String?
+  camposJson          String?
+  confianca           Float?
+  erro                String?
+  revistoPorUsuarioId Int?
+  revistoEm           DateTime?
+  criadoEm            DateTime  @default(now())
+  atualizadoEm        DateTime  @updatedAt
+
+  documento  Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  revistoPor Usuario?  @relation(fields: [revistoPorUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([documentoId, status])
+}
+
+// =====================================================================
+//  FINANCEIRO / CONTRATOS / PROJETOS (estrutura mínima para evolução)
+// =====================================================================
+
+model Contrato {
+  id             Int       @id @default(autoincrement())
+  empresaId      Int
+  descricao      String?
+  dataAssinatura DateTime?
+  dataValidade   DateTime?
+  numero         String?
+  observacoes    String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+}
+
+model Projeto {
+  id         Int       @id @default(autoincrement())
+  nome       String
+  descricao  String?
+  status     String    @default("ativo")
+  empresaId  Int
+  dataInicio DateTime?
+  dataFim    DateTime?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+}
+
+// =====================================================================
+//  AUDITORIA (única exceção a entidadeTipo + entidadeId)
+// =====================================================================
+
+model Historico {
+  id             Int      @id @default(autoincrement())
+  tipoEntidadeId Int
+  entidadeId     BigInt
+  acao           String
+  campo          String?
+  valorAnterior  String?
+  valorNovo      String?
+  usuarioId      Int?
+  criadoEm       DateTime @default(now())
+
+  tipoEntidade TipoEntidade @relation(fields: [tipoEntidadeId], references: [id])
+  usuario      Usuario?     @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([tipoEntidadeId, entidadeId])
+  @@index([usuarioId])
+  @@index([criadoEm])
+}
