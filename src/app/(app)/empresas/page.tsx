@@ -1,0 +1,64 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { Button, Card, Badge } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
+import { formatCNPJ } from "@/lib/format";
+
+export default async function EmpresasPage() {
+  const empresas = await prisma.empresa.findMany({
+    where: { ativo: true, deletedAt: null },
+    orderBy: { razaoSocial: "asc" },
+    include: {
+      _count: { select: { processos: true, empreendimentosPrincipais: true } },
+    },
+  });
+
+  return (
+    <div>
+      <PageHeader
+        title="Empresas"
+        subtitle="Cadastro de empresas clientes"
+        actions={
+          <Link href="/empresas/nova">
+            <Button>Nova empresa</Button>
+          </Link>
+        }
+      />
+
+      <Card>
+        <ul className="divide-y divide-slate-200">
+          {empresas.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/empresas/${e.id}`}
+                className="flex items-center justify-between px-5 py-4 transition hover:bg-slate-50"
+              >
+                <div>
+                  <p className="font-medium text-navy-900">{e.razaoSocial}</p>
+                  <p className="text-sm text-muted">
+                    {e.cnpj ? formatCNPJ(e.cnpj) : "sem CNPJ"}
+                    {e.municipio && e.uf ? ` · ${e.municipio}/${e.uf}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right text-sm text-muted">
+                    <p>{e._count.processos} processos</p>
+                    <p>{e._count.empreendimentosPrincipais} empreend.</p>
+                  </div>
+                  <Badge tone={e.ativo ? "green" : "gray"}>
+                    {e.ativo ? "ativo" : "inativo"}
+                  </Badge>
+                </div>
+              </Link>
+            </li>
+          ))}
+          {empresas.length === 0 && (
+            <li className="px-5 py-12 text-center text-sm text-muted">
+              Nenhuma empresa cadastrada ainda.
+            </li>
+          )}
+        </ul>
+      </Card>
+    </div>
+  );
+}

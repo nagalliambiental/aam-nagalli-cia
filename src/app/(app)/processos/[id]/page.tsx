@@ -1,0 +1,165 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { requirePermissao } from "@/lib/perfil";
+import { notFound } from "next/navigation";
+import { Card, CardHeader, PageHeader, Button } from "@/components/ui";
+import { Tabs } from "@/components/ui/Tabs";
+import { StatusBadge } from "@/components/processos/StatusBadge";
+import { formatDate } from "@/lib/format";
+import { EventosPanel } from "@/components/processos/EventosPanel";
+import { TarefasPanel } from "@/components/processos/TarefasPanel";
+import { PrazosPanel } from "@/components/processos/PrazosPanel";
+import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
+import { RelacionamentosPanel } from "@/components/processos/RelacionamentosPanel";
+
+export default async function ProcessoDetalhePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const processoId = Number(id);
+  await requirePermissao("processo:ler");
+
+  const processo = await prisma.processo.findFirst({
+    where: { id: processoId, ativo: true, deletedAt: null },
+    include: {
+      orgao: true,
+      tipoProcesso: true,
+      empreendimento: true,
+    },
+  });
+
+  if (!processo) notFound();
+
+  const [eventos, tarefas, prazos, exigencias, relacionamentos, tiposEvento, pessoas] =
+    await Promise.all([
+      prisma.evento.findMany({
+        where: { processoId },
+        orderBy: { data: "desc" },
+        include: { tipoEvento: true },
+      }),
+      prisma.tarefa.findMany({
+        where: { processoId, ativo: true, deletedAt: null },
+        orderBy: { dataCriacao: "desc" },
+        include: { responsavel: true },
+      }),
+      prisma.prazo.findMany({
+        where: { processoId, ativo: true, deletedAt: null },
+        orderBy: { dataCalculadaAtual: "asc" },
+      }),
+      prisma.exigencia.findMany({
+        where: { processoId, ativo: true, deletedAt: null },
+        orderBy: { dataRecebimento: "desc" },
+        include: { orgao: true },
+      }),
+      prisma.processoRelacionamento.findMany({
+        where: { processoId },
+        include: {
+          processoRelacionado: {
+            include: { orgao: true, tipoProcesso: true },
+          },
+          tipoRelacao: true,
+        },
+      }),
+      prisma.tipoEvento.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
+      prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
+    ]);
+
+  const tabs = [
+    {
+      id: "resumo",
+      label: "Resumo",
+      content: (
+        <Card>
+          <CardHeader title="Informações do processo" />
+          <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
+            {[
+              ["Número", `#${processo.numero}`],
+              ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
+              ["Tipo", processo.tipoProcesso.nome],
+              ["Empreendimento", processo.empreendimento?.nome ?? "—"],
+              ["Assunto", processo.assunto ?? "—"],
+              ["Fase", processo.fase ?? "—"],
+              ["Status", <StatusBadge key="s" status={processo.status} />],
+              ["Abertura", formatDate(processo.dataAbertura)],
+            ].map(([k, v]) => (
+              <div key={k as string}>
+                <dt className="text-muted">{k}</dt>
+                <dd className="mt-0.5 font-medium">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {processo.descricao && (
+            <div className="border-t border-slate-200 px-5 py-4 text-sm">
+              <dt className="font-medium text-muted">Descrição</dt>
+              <dd className="mt-1 whitespace-pre-wrap">{processo.descricao}</dd>
+            </div>
+          )}
+          {processo.observacoes && (
+            <div className="border-t border-slate-200 px-5 py-4 text-sm">
+              <dt className="font-medium text-muted">Observações</dt>
+              <dd className="mt-1 whitespace-pre-wrap">{processo.observacoes}</dd>
+            </div>
+          )}
+        </Card>
+      ),
+    },
+    {
+      id: "eventos",
+      label: "Eventos",
+      count: eventos.length,
+      content: <EventosPanel processoId={processo.id} eventos={eventos} tiposEvento={tiposEvento} />,
+    },
+    {
+      id: "tarefas",
+      label: "Tarefas",
+      count: tarefas.length,
+      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} pessoas={pessoas} />,
+    },
+    {
+      id: "prazos",
+      label: "Prazos",
+      count: prazos.length,
+      content: <PrazosPanel prazos={prazos} />,
+    },
+    {
+      id: "exigencias",
+      label: "Exigências",
+      count: exigencias.length,
+      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} />,
+    },
+    {
+      id: "relacionamentos",
+      label: "Relacionamentos",
+      count: relacionamentos.length,
+      content: (
+        <RelacionamentosPanel
+          processoId={processo.id}
+          relacionamentos={relacionamentos}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        title={`Processo #${processo.numero}`}
+        subtitle={`${processo.orgao.sigla} · ${processo.tipoProcesso.nome}`}
+        actions={
+          <Link href="/processos">
+            <Button variant="ghost">Voltar</Button>
+          </Link>
+        }
+      />
+
+      <Tabs
+        defaultId="resumo"
+        tabs={tabs.map(({ id, label, count }) => ({ id, label, count }))}
+      >
+        {tabs.map((t) => t.content)}
+      </Tabs>
+    </div>
+  );
+}

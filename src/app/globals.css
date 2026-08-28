@@ -1,10 +1,17 @@
-:root {
-  --aam-navy: #021e4c;
-  --aam-gold: #ffcc00;
-}
+@import "tailwindcss";
 
-* {
-  box-sizing: border-box;
+@theme {
+  --color-navy-950: #011129;
+  --color-navy-900: #021e4c;
+  --color-navy-800: #02296b;
+  --color-navy-700: #0a3880;
+  --color-navy-600: #124a9e;
+  --color-gold-400: #ffd633;
+  --color-gold-500: #ffcc00;
+  --color-gold-600: #e6b800;
+  --color-bg: #f4f5f7;
+  --color-ink: #11202e;
+  --color-muted: #5b6b7b;
 }
 
 html,
@@ -12,6 +19,11 @@ body {
   margin: 0;
   padding: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f4f5f7;
-  color: #11202e;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }

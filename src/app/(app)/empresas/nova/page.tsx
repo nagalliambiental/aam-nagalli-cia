@@ -1,0 +1,19 @@
+import { requirePermissao } from "@/lib/perfil";
+import { Card, PageHeader, CardHeader } from "@/components/ui";
+import { EmpresaForm } from "@/components/forms/EmpresaForm";
+
+export default async function NovaEmpresaPage() {
+  await requirePermissao("cadastro:criar");
+
+  return (
+    <div>
+      <PageHeader title="Nova empresa" subtitle="Preencha os dados do cadastro" />
+      <Card>
+        <CardHeader title="Dados da empresa" />
+        <div className="p-5">
+          <EmpresaForm />
+        </div>
+      </Card>
+    </div>
+  );
+}
