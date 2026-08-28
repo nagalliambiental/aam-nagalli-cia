@@ -9,12 +9,14 @@ export default async function AppLayout({
   const user = await requireAuth();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar
         user={{ nome: user.email ?? "Usuário", perfilNome: user.perfilNome ?? "" }}
       />
-      <main className="flex-1 overflow-x-hidden">
-        <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-7xl px-4 py-6 pt-16 sm:px-6 md:py-6 lg:px-8">
+          {children}
+        </div>
       </main>
     </div>
   );
