@@ -100,7 +100,7 @@ async function main() {
   const tiposEntidade = [
     "processo", "titulo", "licenca", "condicionante", "exigencia", "prazo",
     "tarefa", "documento", "empreendimento", "area", "empresa", "pessoa", "orgao",
-    "comunicacao", "custo",
+    "comunicacao", "custo", "regra_prazo", "contrato", "integracao",
   ];
   for (const nome of tiposEntidade) {
     await prisma.tipoEntidade.upsert({ where: { nome }, update: {}, create: { nome, sistema: true } });
@@ -110,7 +110,7 @@ async function main() {
   // PERMISSÕES
   // ------------------------------------------------------------------
   const modulos = ["dashboard", "cadastro", "processo", "titulo", "licenca", "condicionante",
-    "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "orgao", "relatorio", "usuario", "config"];
+    "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "orgao", "relatorio", "usuario", "config", "automacao"];
   const acoes = ["ler", "criar", "editar", "excluir"];
   for (const m of modulos) {
     for (const a of acoes) {
