@@ -172,8 +172,8 @@ export default async function DashboardPage() {
           </h1>
           <p className="mt-1 text-white/70">
             {totalAtencao > 0
-              ? `${totalAtencao} ${totalAtencao === 1 ? "item exige" : "itens exigem"} ação nos próximos 7 dias.`
-              : "Nada urgente no momento. Acompanhe seus processos e prazos abaixo."}
+              ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} em aberto nos próximos 7 dias.`
+              : `Tudo em dia: ${processosAtivos} ${processosAtivos === 1 ? "processo ativo" : "processos ativos"} acompanhando.`}
           </p>
         </div>
       </div>
