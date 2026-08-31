@@ -45,16 +45,6 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
-    label: "Acompanhamento",
-    icon: Radar,
-    items: [
-      { href: "/alertas", label: "Alertas", icon: BellRing },
-      { href: "/calendario", label: "Calendário", icon: CalendarDays },
-      { href: "/prazos", label: "Prazos", icon: CalendarClock },
-      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
-    ],
-  },
-  {
     label: "Financeiro",
     icon: HandCoins,
     items: [
