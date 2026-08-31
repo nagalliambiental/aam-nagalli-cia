@@ -3,12 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { PageHeader, Card, Button, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
+import { Search } from "lucide-react";
 
-export default async function DocumentosPage() {
+type SearchParams = Promise<{ q?: string | string[] }>;
+
+export default async function DocumentosPage({ searchParams }: { searchParams: SearchParams }) {
   await requirePermissao("documento:ler");
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
   const documentos = await prisma.documento.findMany({
-    where: { ativo: true, deletedAt: null },
+    where: {
+      ativo: true,
+      deletedAt: null,
+      ...(q
+        ? {
+            OR: [
+              { nome: { contains: q, mode: "insensitive" as const } },
+              { tipo: { contains: q, mode: "insensitive" as const } },
+              { categoria: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { criadoEm: "desc" },
     include: {
       responsavel: true,
@@ -28,6 +45,18 @@ export default async function DocumentosPage() {
       />
 
       <Card>
+        <form method="get" className="flex items-center gap-2 border-b border-slate-200 p-4">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Buscar por nome, tipo ou categoria..."
+              className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
+            />
+          </div>
+          <Button type="submit" variant="secondary">Buscar</Button>
+        </form>
         <ul className="divide-y divide-slate-200">
           {documentos.map((d) => (
             <li key={d.id}>

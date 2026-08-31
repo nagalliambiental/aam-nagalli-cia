@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
-import { PageHeader, Card, CardHeader, Badge, EmptyState } from "@/components/ui";
+import { PageHeader, Card, CardHeader, Badge, EmptyState, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
+import { Search } from "lucide-react";
 
 type AlertItem = {
   titulo: string;
@@ -107,8 +108,12 @@ function Section({
   );
 }
 
-export default async function AlertasPage() {
+type SearchParams = Promise<{ q?: string | string[] }>;
+
+export default async function AlertasPage({ searchParams }: { searchParams: SearchParams }) {
   await requirePermissao("processo:ler");
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q.trim().toLowerCase() : "";
 
   const now = new Date();
   const todaySaoPaulo = toSaoPauloDate(now);
@@ -187,7 +192,10 @@ export default async function AlertasPage() {
     tipo: "Exigência",
   }));
 
-  const all: AlertItem[] = [...prazoAlerts, ...tarefaAlerts, ...condicionanteAlerts, ...exigenciaAlerts];
+  const allRaw: AlertItem[] = [...prazoAlerts, ...tarefaAlerts, ...condicionanteAlerts, ...exigenciaAlerts];
+  const all = q
+    ? allRaw.filter((a) => a.titulo.toLowerCase().includes(q) || a.referencia.toLowerCase().includes(q) || a.tipo.toLowerCase().includes(q))
+    : allRaw;
 
   const vencidos = SortAlerts(all.filter((a) => isBefore(a.data, todaySaoPaulo)));
   const vencendoHoje = SortAlerts(all.filter((a) => sameDay(a.data, todaySaoPaulo)));
@@ -204,6 +212,19 @@ export default async function AlertasPage() {
         title="Central de Alertas"
         subtitle="Prazos, tarefas, exigências e condicionantes com prazo"
       />
+
+      <form method="get" className="mb-4 flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar por título, referência ou tipo..."
+            className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
+          />
+        </div>
+        <Button type="submit" variant="secondary">Buscar</Button>
+      </form>
 
       <div className="space-y-6">
         <Section title="Vencidos" color="red" items={vencidos} />

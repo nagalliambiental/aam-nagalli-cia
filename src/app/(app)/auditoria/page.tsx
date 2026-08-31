@@ -16,11 +16,22 @@ export default async function AuditoriaPage({
   const tipoEntidade = typeof sp.tipo === "string" ? Number(sp.tipo) : undefined;
   const usuarioId = typeof sp.usuario === "string" ? Number(sp.usuario) : undefined;
   const acao = typeof sp.acao === "string" ? sp.acao : undefined;
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
   const where = {
     ...(tipoEntidade ? { tipoEntidadeId: tipoEntidade } : {}),
     ...(usuarioId ? { usuarioId } : {}),
     ...(acao ? { acao } : {}),
+    ...(q
+      ? {
+          OR: [
+            { acao: { contains: q, mode: "insensitive" as const } },
+            { campo: { contains: q, mode: "insensitive" as const } },
+            { valorNovo: { contains: q, mode: "insensitive" as const } },
+            { valorAnterior: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
   };
 
   const [tipos, usuarios, historico] = await Promise.all([
@@ -44,6 +55,15 @@ export default async function AuditoriaPage({
       <PageHeader title="Auditoria" subtitle="Histórico imutável de alterações" />
 
       <Card>
+        <form method="get" className="flex items-center gap-2 border-b border-slate-200 p-4">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar por ação, campo ou valor..."
+            className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
+          />
+          <button type="submit" className="rounded-md bg-navy-900 px-4 py-2 text-sm font-medium text-white hover:bg-navy-800">Buscar</button>
+        </form>
         <form method="get" className="grid grid-cols-1 gap-3 p-5 md:grid-cols-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-navy-900">Entidade</label>
