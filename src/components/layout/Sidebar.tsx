@@ -140,13 +140,16 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
 
   const content = (
     <>
-      <div className="flex items-center gap-2 border-b border-white/10 px-5 py-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gold-500 font-bold text-navy-900">
-          AAM
-        </div>
+      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.jpg"
+          alt="AAM Ambiental & Mineral"
+          className="h-10 w-10 shrink-0 rounded-md object-contain bg-white"
+        />
         <div className="leading-tight">
-          <p className="text-sm font-semibold whitespace-nowrap">Ambiental &amp; Mineral</p>
-          <p className="text-xs text-white/60 whitespace-nowrap">Nagalli &amp; Cia LTDA</p>
+          <p className="text-sm font-semibold text-white">AAM ambiental</p>
+          <p className="text-[11px] text-white/60">Nagalli &amp; Cia LTDA</p>
         </div>
       </div>
 
@@ -155,7 +158,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
       <div className="border-t border-white/10 px-5 py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-medium">{user.nome}</p>
+            <p className="truncate text-sm font-medium text-white">{user.nome}</p>
             <p className="truncate text-xs text-white/60">{user.perfilNome}</p>
           </div>
           <button
@@ -188,9 +191,8 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
       {/* Tablet compacto */}
       <aside className="hidden h-screen w-16 shrink-0 flex-col items-center bg-navy-900 text-white md:flex lg:hidden">
         <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-500 font-bold text-navy-900">
-            AAM
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.jpg" alt="AAM" className="h-8 w-8 rounded object-contain bg-white" />
         </div>
         <nav className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto py-4">
           {FLAT_LINKS.map((item) => {

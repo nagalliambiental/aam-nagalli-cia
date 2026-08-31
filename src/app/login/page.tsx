@@ -17,8 +17,13 @@ export default async function LoginPage() {
     >
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gold-500 text-xl font-bold text-navy-900">
-            AAM
+          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.jpg"
+              alt="AAM Ambiental & Mineral"
+              className="h-full w-full object-contain p-1"
+            />
           </div>
           <h1 className="text-xl font-bold text-white">
             Ambiental <span className="text-gold-500">&amp;</span> Mineral
