@@ -55,19 +55,27 @@ export function ProcessoForm({
   const [loading, setLoading] = useState(false);
   const [cmLoading, setCmLoading] = useState(false);
   const [cmMsg, setCmMsg] = useState<string | null>(null);
+  const [cmCaptcha, setCmCaptcha] = useState<string | null>(null);
+  const [cmCodigo, setCmCodigo] = useState("");
 
-  async function buscarCadastroMineiro() {
+  async function buscarCadastroMineiro(codigoOverride?: string) {
     if (!form.numero.trim()) { setCmMsg("Informe o número do processo primeiro."); return; }
     setCmLoading(true);
     setCmMsg(null);
+    setCmCaptcha(null);
     try {
       const res = await fetch("/api/processos/cadastro-mineiro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numero: form.numero }),
+        body: JSON.stringify({ numero: form.numero, codigo: codigoOverride ?? undefined }),
       });
       const d = await res.json();
       if (!res.ok) {
+        if (d.modo === "captcha_manual" && d.captchaBase64) {
+          setCmCaptcha(d.captchaBase64);
+          setCmMsg(d.mensagem ?? "Digite o código da imagem.");
+          return;
+        }
         setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
         return;
       }
@@ -89,6 +97,8 @@ export function ProcessoForm({
       if (d.substancias) extras.push(d.substancias);
       if (d.fase) extras.push(`Fase ${d.fase}`);
       setCmMsg(`Preenchido: ${extras.join(" · ")}`);
+      setCmCaptcha(null);
+      setCmCodigo("");
     } catch {
       setCmMsg("Erro ao consultar Cadastro Mineiro.");
     } finally {
@@ -145,11 +155,21 @@ export function ProcessoForm({
               required
               className="flex-1"
             />
-            <Button type="button" variant="secondary" onClick={buscarCadastroMineiro} disabled={cmLoading}>
+            <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro()} disabled={cmLoading}>
               {cmLoading ? "Buscando..." : "Buscar CM"}
             </Button>
           </div>
           {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
+          {cmCaptcha && (
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cmCaptcha} alt="captcha" className="h-10 rounded border border-slate-300 bg-white" />
+              <Input value={cmCodigo} onChange={(e) => setCmCodigo(e.target.value)} placeholder="Código" className="w-24" maxLength={4} />
+              <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro(cmCodigo)} disabled={cmLoading || !cmCodigo}>
+                Confirmar
+              </Button>
+            </div>
+          )}
         </div>
         <div>
           <Label htmlFor="nup">NUP (SEI)</Label>

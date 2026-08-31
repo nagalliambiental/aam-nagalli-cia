@@ -23,3 +23,7 @@ next-env.d.ts
 .DS_Store
 *.log
 .vercel
+
+captcha*.jpg
+*.traineddata
+C:\Users\Tecnico3\AppData\Local\Temp\opencode\captcha.jpg

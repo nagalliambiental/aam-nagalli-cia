@@ -11,7 +11,7 @@ async function solveCaptchaWithTesseract(buf: Buffer): Promise<string> {
     await worker.setParameters({ tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" });
     const { data } = await worker.recognize(processed);
     await worker.terminate();
-    return data.text.trim().replace(/\s/g, "").slice(0, 6);
+    return data.text.trim().replace(/\s/g, "").slice(0, 4);
   } catch {
     return "";
   }
@@ -34,18 +34,64 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const numeroRaw = (body.numero as string ?? "").trim();
+  const codigoManual = (body.codigo as string ?? "").trim();
   if (!numeroRaw) return NextResponse.json({ error: "Número do processo obrigatório (ex: 866.123/2024)" }, { status: 400 });
 
-  // normaliza numero: 860123/2024 ou 860.123/2024 -> 860123 e 2024
-  const m = numeroRaw.replace(/\s/g, "").match(/(\d{3})\.?(\d{3})\/(\d{4})|\b(\d{6})\/(\d{4})\b/);
-  let num = "";
-  let ano = "";
-  if (m) {
-    if (m[1] && m[2] && m[3]) { num = m[1] + m[2]; ano = m[3]; }
-    else if (m[4] && m[5]) { num = m[4]; ano = m[5]; }
-  }
-  if (!num || !ano) {
+  // normaliza numero: mantém formato com ponto para o Cadastro Mineiro (ex: 815.310/2008)
+  const m = numeroRaw.replace(/\s/g, "").match(/(\d{3})\.?(\d{3})\/(\d{4})/);
+  if (!m) {
     return NextResponse.json({ error: "Formato inválido. Use 000.000/0000" }, { status: 400 });
+  }
+  const numCompleto = `${m[1]}.${m[2]}/${m[3]}`; // formato com ponto para o input txtNumeroProcesso
+  const num = m[1] + m[2];
+  const ano = m[3];
+
+  // Se veio código manual do usuário, faz tentativa única com esse código
+  if (codigoManual) {
+    try {
+      const base = "https://sistemas.anm.gov.br";
+      const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
+      const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      const cookies = getRes.headers.get("set-cookie") ?? "";
+      const html = await getRes.text();
+      const viewState = extractInput(html, "__VIEWSTATE");
+      const viewStateGen = extractInput(html, "__VIEWSTATEGENERATOR");
+      const eventValidation = extractInput(html, "__EVENTVALIDATION");
+      const form = new URLSearchParams({
+        __VIEWSTATE: viewState,
+        __VIEWSTATEGENERATOR: viewStateGen,
+        __EVENTVALIDATION: eventValidation,
+        "ctl00$conteudo$txtNumeroProcesso": numCompleto,
+        "ctl00$conteudo$CaptchaControl1": codigoManual,
+        "ctl00$conteudo$btnConsultarProcesso": "Consultar",
+      });
+      const postRes = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookies, "User-Agent": "Mozilla/5.0" },
+        body: form.toString(),
+      });
+      const postHtml = await postRes.text();
+      if (postHtml.includes("CaptchaImage.aspx") && postHtml.includes("Informe o código")) {
+        return NextResponse.json({ ok: false, error: "Código incorreto. Tente novamente." }, { status: 422 });
+      }
+      const extrair = (label: string) => {
+        const re = new RegExp(label + `[^<]*<[^>]*>([^<]+)`, "i");
+        const mm = postHtml.match(re);
+        return mm ? mm[1].trim() : "";
+      };
+      const nup = extrair("NUP:") || extrair("NUP");
+      const areaHa = extrair("Área \\(ha\\):") || extrair("Área");
+      const fase = extrair("Fase atual:");
+      const substancias = extrair("Substâncias:");
+      const municipios = extrair("Municípios:");
+      const tipoReq = extrair("Tipo de requerimento:");
+      if (nup || areaHa || fase) {
+        return NextResponse.json({ ok: true, nup: nup || null, areaHa: areaHa ? parseFloat(areaHa.replace(",", ".")) : null, substancias: substancias || null, municipios: municipios || null, fase: fase || null, tipoRequerimento: tipoReq || null });
+      }
+      return NextResponse.json({ ok: false, error: "Processo não encontrado ou sem dados." }, { status: 404 });
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro" }, { status: 500 });
+    }
   }
 
   const base = "https://sistemas.anm.gov.br";
@@ -71,15 +117,14 @@ export async function POST(req: Request) {
       const codigo = await solveCaptchaWithTesseract(capBuf);
       if (!codigo || codigo.length < 3) continue;
 
-      // 3) POST consulta
+      // 3) POST consulta - campos reais do dadosProcesso.aspx
       const form = new URLSearchParams({
         __VIEWSTATE: viewState,
         __VIEWSTATEGENERATOR: viewStateGen,
         __EVENTVALIDATION: eventValidation,
-        "ctl00$conteudo$txtNumero": num,
-        "ctl00$conteudo$txtAno": ano,
-        "ctl00$conteudo$txtCodigo": codigo,
-        "ctl00$conteudo$btnConsultar": "Consultar",
+        "ctl00$conteudo$txtNumeroProcesso": numCompleto,
+        "ctl00$conteudo$CaptchaControl1": codigo,
+        "ctl00$conteudo$btnConsultarProcesso": "Consultar",
       });
 
       const postRes = await fetch(url, {
@@ -132,12 +177,32 @@ export async function POST(req: Request) {
     }
   }
 
-  // fallback: retorna htmlPreview para preenchimento manual
+  // fallback: retorna captcha em base64 para digitação manual
+  try {
+    const base = "https://sistemas.anm.gov.br";
+    const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
+    const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const cookies = getRes.headers.get("set-cookie") ?? "";
+    const html = await getRes.text();
+    const guid = extractCaptchaGuid(html);
+    if (guid) {
+      const captchaUrl = `${base}/SCM/extra/CaptchaImage.aspx?guid=${guid}`;
+      const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" } });
+      const buf = Buffer.from(await capRes.arrayBuffer());
+      const base64 = `data:image/jpeg;base64,${buf.toString("base64")}`;
+      return NextResponse.json({
+        ok: false,
+        modo: "captcha_manual",
+        mensagem: "Captcha não resolvido automaticamente. Digite o código da imagem.",
+        numero: numCompleto,
+        captchaBase64: base64,
+      }, { status: 422 });
+    }
+  } catch {}
   return NextResponse.json({
     ok: false,
     modo: "captcha_falhou",
-    mensagem: "Não foi possível resolver o captcha automaticamente após 3 tentativas. Copie o NUP manualmente do Cadastro Mineiro ou tente novamente.",
-    numero: `${num}/${ano}`,
-    sugestaoNup: `48${num.slice(0, 3)}.${num.slice(3)}000/${ano}-00 (verifique no Cadastro Mineiro)`,
+    mensagem: "Não foi possível resolver o captcha automaticamente após 3 tentativas.",
+    numero: numCompleto,
   }, { status: 422 });
 }
