@@ -34,6 +34,8 @@ export async function POST(req: Request) {
         assunto: body.assunto ?? null,
         fase: body.fase ?? null,
         status: body.status ?? "em_andamento",
+        areaValor: body.areaValor != null ? Number(body.areaValor) : null,
+        areaUnidade: body.areaUnidade ?? "ha",
         dataAbertura: body.dataAbertura ? new Date(body.dataAbertura) : new Date(),
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,

@@ -290,8 +290,6 @@ model Empreendimento {
   endereco           String?
   status             String  @default("ativo")
   observacoes        String?
-  areaValor          Float?
-  areaUnidade        String  @default("ha")
   empresaPrincipalId Int
 
   ativo        Boolean   @default(true)
@@ -396,6 +394,8 @@ model Processo {
   status           String    @default("em_andamento")
   dataAbertura     DateTime  @default(now())
   dataEncerramento DateTime?
+  areaValor        Float?
+  areaUnidade      String   @default("ha")
   descricao        String?
   observacoes      String?
 

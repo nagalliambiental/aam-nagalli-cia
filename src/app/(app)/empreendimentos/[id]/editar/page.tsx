@@ -43,8 +43,6 @@ export default async function EditarEmpreendimentoPage({
               status: empreendimento.status ?? undefined,
               descricao: empreendimento.descricao ?? undefined,
               observacoes: empreendimento.observacoes ?? undefined,
-              areaValor: empreendimento.areaValor,
-              areaUnidade: empreendimento.areaUnidade,
               empresaPrincipalId: empreendimento.empresaPrincipalId,
             }}
           />

@@ -52,7 +52,6 @@ export default async function EmpreendimentoDetalhePage({
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],
             ["Endereço", empreendimento.endereco ?? "—"],
             ["Status", <Badge key="s" tone={empreendimento.status === "ativo" ? "green" : "amber"}>{empreendimento.status}</Badge>],
-            ["Área", empreendimento.areaValor != null ? `${empreendimento.areaValor} ${empreendimento.areaUnidade}` : "—"],
             ["Processos", empreendimento._count.processos],
             ["Licenças", empreendimento._count.licencas],
           ].map(([k, v]) => (

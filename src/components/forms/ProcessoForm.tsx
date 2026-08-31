@@ -27,6 +27,8 @@ export function ProcessoForm({
     assunto?: string;
     fase?: string;
     status?: string;
+    areaValor?: number | null;
+    areaUnidade?: string;
     dataAbertura?: string;
     descricao?: string;
     observacoes?: string;
@@ -43,6 +45,8 @@ export function ProcessoForm({
     assunto: initial?.assunto ?? "",
     fase: initial?.fase ?? "",
     status: initial?.status ?? "em_andamento",
+    areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
+    areaUnidade: initial?.areaUnidade ?? "ha",
     dataAbertura: initial?.dataAbertura ?? new Date().toISOString().slice(0, 10),
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
@@ -70,6 +74,10 @@ export function ProcessoForm({
       const updates: Partial<typeof form> = {};
       if (d.nup) updates.nup = d.nup;
       if (d.fase) updates.fase = d.fase;
+      if (d.areaHa != null) {
+        updates.areaValor = String(d.areaHa);
+        updates.areaUnidade = "ha";
+      }
       if (Object.keys(updates).length === 0) {
         setCmMsg("Consulta OK, mas sem dados novos para preencher.");
         return;
@@ -98,6 +106,7 @@ export function ProcessoForm({
       orgaoId: form.orgaoId ? Number(form.orgaoId) : null,
       tipoProcessoId: form.tipoProcessoId ? Number(form.tipoProcessoId) : null,
       empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
+      areaValor: form.areaValor !== "" ? Number(String(form.areaValor).replace(",", ".")) : null,
       dataAbertura: form.dataAbertura ? new Date(form.dataAbertura) : null,
     };
 
@@ -227,6 +236,29 @@ export function ProcessoForm({
             <option value="arquivado">Arquivado</option>
             <option value="cancelado">Cancelado</option>
             <option value="encerrado">Encerrado</option>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="areaValor">Área</Label>
+          <Input
+            id="areaValor"
+            type="number"
+            step="any"
+            min="0"
+            value={form.areaValor}
+            onChange={(e) => setForm((f) => ({ ...f, areaValor: e.target.value }))}
+            placeholder="0,00"
+          />
+        </div>
+        <div>
+          <Label htmlFor="areaUnidade">Unidade</Label>
+          <Select
+            id="areaUnidade"
+            value={form.areaUnidade}
+            onChange={(e) => setForm((f) => ({ ...f, areaUnidade: e.target.value }))}
+          >
+            <option value="ha">Hectare (ha)</option>
+            <option value="m²">Metro quadrado (m²)</option>
           </Select>
         </div>
         <div>

@@ -38,6 +38,8 @@ export default async function EditarProcessoPage({ params }: { params: Promise<{
               assunto: processo.assunto ?? undefined,
               fase: processo.fase ?? undefined,
               status: processo.status,
+              areaValor: processo.areaValor,
+              areaUnidade: processo.areaUnidade,
               dataAbertura: processo.dataAbertura ? processo.dataAbertura.toISOString().slice(0, 10) : undefined,
               descricao: processo.descricao ?? undefined,
               observacoes: processo.observacoes ?? undefined,

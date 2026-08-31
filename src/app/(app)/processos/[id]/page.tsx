@@ -87,17 +87,18 @@ export default async function ProcessoDetalhePage({
           <Card>
             <CardHeader title="Informações do processo" />
             <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
-              {[
-                ["Número", `#${processo.numero}`],
-                ["NUP (SEI)", processo.nup ?? "—"],
-                ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
-                ["Tipo", processo.tipoProcesso.nome],
-                ["Empreendimento", processo.empreendimento?.nome ?? "—"],
-                ["Assunto", processo.assunto ?? "—"],
-                ["Fase", processo.fase ?? "—"],
-                ["Status", <StatusBadge key="s" status={processo.status} />],
-                ["Abertura", formatDate(processo.dataAbertura)],
-              ].map(([k, v]) => (
+            {[
+              ["Número", `#${processo.numero}`],
+              ["NUP (SEI)", processo.nup ?? "—"],
+              ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
+              ["Tipo", processo.tipoProcesso.nome],
+              ["Empreendimento", processo.empreendimento?.nome ?? "—"],
+              ["Assunto", processo.assunto ?? "—"],
+              ["Fase", processo.fase ?? "—"],
+              ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
+              ["Status", <StatusBadge key="s" status={processo.status} />],
+              ["Abertura", formatDate(processo.dataAbertura)],
+            ].map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-muted">{k}</dt>
                 <dd className="mt-0.5 font-medium">{v}</dd>
