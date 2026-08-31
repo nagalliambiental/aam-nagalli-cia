@@ -36,7 +36,6 @@ const SECTIONS: NavGroup[] = [
       { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
       { href: "/orgaos", label: "Órgãos", icon: Landmark },
       { href: "/areas", label: "Áreas", icon: Map },
-      { href: "/pessoas", label: "Pessoas", icon: Users },
     ],
   },
   {
@@ -78,6 +77,7 @@ const SECTIONS: NavGroup[] = [
       { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
       { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
       { href: "/usuarios", label: "Usuários", icon: Users },
+      { href: "/perfis", label: "Perfis", icon: ShieldCheck },
       { href: "/config", label: "Configurações", icon: ClipboardList },
     ],
   },

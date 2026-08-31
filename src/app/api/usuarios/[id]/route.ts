@@ -27,6 +27,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   if ("perfilId" in body) data.perfilId = Number(body.perfilId);
   if ("pessoaId" in body) data.pessoaId = body.pessoaId ? Number(body.pessoaId) : null;
+  if (body.pessoaNome) {
+    const nome = String(body.pessoaNome).trim();
+    const existente = await prisma.pessoa.findFirst({ where: { nome: { equals: nome, mode: "insensitive" }, ativo: true, deletedAt: null } });
+    data.pessoaId = existente ? existente.id : (await prisma.pessoa.create({ data: { nome } })).id;
+  }
   if ("ativo" in body) data.ativo = !!body.ativo;
   if (body.senha) {
     if (String(body.senha).length < 6) {

@@ -21,11 +21,13 @@ export function UsuarioForm({
   usuarioId?: number;
 }) {
   const router = useRouter();
+  const pessoaInicial = pessoas.find((p) => p.id === initial?.pessoaId);
   const [form, setForm] = useState({
     email: initial?.email ?? "",
     senha: "",
     perfilId: String(initial?.perfilId ?? perfis[0]?.id ?? ""),
     pessoaId: String(initial?.pessoaId ?? ""),
+    pessoaNome: pessoaInicial?.nome ?? "",
     ativo: initial?.ativo ?? true,
   });
   const [error, setError] = useState<string | null>(null);
@@ -50,9 +52,14 @@ export function UsuarioForm({
     const payload: Record<string, unknown> = {
       email: form.email.trim(),
       perfilId: Number(form.perfilId),
-      pessoaId: form.pessoaId ? Number(form.pessoaId) : null,
       ativo: form.ativo,
     };
+
+    if (form.pessoaId) {
+      payload.pessoaId = Number(form.pessoaId);
+    } else if (form.pessoaNome.trim()) {
+      payload.pessoaNome = form.pessoaNome.trim();
+    }
     if (form.senha) payload.senha = form.senha;
 
     const res = await fetch(usuarioId ? `/api/usuarios/${usuarioId}` : "/api/usuarios", {
@@ -115,18 +122,36 @@ export function UsuarioForm({
           </select>
         </div>
         <div>
-          <Label htmlFor="pessoaId">Vincular a pessoa</Label>
-          <select
-            id="pessoaId"
-            value={form.pessoaId}
-            onChange={(e) => setForm((f) => ({ ...f, pessoaId: e.target.value }))}
+          <Label htmlFor="pessoaNome">Responsável (nome)</Label>
+          <input
+            id="pessoaNome"
+            list="pessoas-list"
+            value={form.pessoaNome}
+            onChange={(e) => {
+              const v = e.target.value;
+              // se o nome digitado corresponder a uma pessoa cadastrada, vincula por id
+              const match = pessoas.find((p) => p.nome.toLowerCase() === v.trim().toLowerCase());
+              setForm((f) => ({
+                ...f,
+                pessoaNome: v,
+                pessoaId: match ? String(match.id) : "",
+              }));
+            }}
+            placeholder="Digite o nome (ex.: Ana, Lucas) — nova se não existir"
             className={selectCls}
-          >
-            <option value="">(nenhuma)</option>
+          />
+          <datalist id="pessoas-list">
             {pessoas.map((p) => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
+              <option key={p.id} value={p.nome}>{p.nome}</option>
             ))}
-          </select>
+          </datalist>
+          <p className="mt-1 text-xs text-muted">
+            {form.pessoaId
+              ? "Vinculada a uma pessoa existente."
+              : form.pessoaNome.trim()
+              ? "Nova pessoa será criada com este nome."
+              : "Opcional — pode digitar o nome do responsável."}
+          </p>
         </div>
         <div className="md:col-span-2">
           <label className="flex items-center gap-2 text-sm text-navy-900">

@@ -36,12 +36,24 @@ export async function POST(req: Request) {
   const senhaHash = await bcrypt.hash(senha, 10);
 
   try {
+    let pessoaId: number | null = body.pessoaId ? Number(body.pessoaId) : null;
+    if (!pessoaId && body.pessoaNome) {
+      const nome = String(body.pessoaNome).trim();
+      const existente = await prisma.pessoa.findFirst({ where: { nome: { equals: nome, mode: "insensitive" }, ativo: true, deletedAt: null } });
+      if (existente) {
+        pessoaId = existente.id;
+      } else {
+        const criada = await prisma.pessoa.create({ data: { nome } });
+        pessoaId = criada.id;
+      }
+    }
+
     const usuario = await prisma.usuario.create({
       data: {
         email,
         senhaHash,
         perfilId,
-        pessoaId: body.pessoaId ? Number(body.pessoaId) : null,
+        pessoaId,
         ativo: body.ativo !== false,
       },
     });
