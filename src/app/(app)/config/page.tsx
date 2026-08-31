@@ -2,14 +2,16 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { PageHeader, Card } from "@/components/ui";
-import { Users, ShieldCheck, UserCog, ArrowRight } from "lucide-react";
+import { Users, ShieldCheck, UserCog, ArrowRight, Workflow, History } from "lucide-react";
 
 export default async function ConfigPage() {
   await requirePermissao("config:ler");
 
-  const [usuarios, perfis] = await Promise.all([
+  const [usuarios, perfis, auditoria, regras] = await Promise.all([
     prisma.usuario.count({ where: { ativo: true } }),
     prisma.perfil.count({ where: { ativo: true } }),
+    prisma.historico.count(),
+    prisma.regraPrazo.count({ where: { ativo: true } }),
   ]);
 
   const cards = [
@@ -29,13 +31,29 @@ export default async function ConfigPage() {
       badge: `${perfis} perfis`,
       iconBg: "bg-emerald-50 text-emerald-600",
     },
+    {
+      href: "/regras-prazo",
+      icon: Workflow,
+      title: "Regras de prazo",
+      desc: "Configure fórmulas e calculadoras de prazos por tipo de ato",
+      badge: `${regras} regras`,
+      iconBg: "bg-amber-50 text-amber-600",
+    },
+    {
+      href: "/auditoria",
+      icon: History,
+      title: "Auditoria",
+      desc: "Histórico de ações realizadas no sistema",
+      badge: `${auditoria.toLocaleString("pt-BR")} registros`,
+      iconBg: "bg-violet-50 text-violet-600",
+    },
   ];
 
   return (
     <div>
       <PageHeader
         title="Configurações"
-        subtitle="Gestão de acesso, usuários e permissões"
+        subtitle="Usuários, permissões, regras de prazo e auditoria do sistema"
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

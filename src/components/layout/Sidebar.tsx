@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
-  LogOut, ClipboardList, Menu, X, Users, Mountain, Map, FileBadge, FileCheck,
-  BellRing, CalendarDays, BarChart3, FileBarChart, FileText, Workflow, Wallet,
-  ShieldCheck, ChevronDown, CheckSquare, FileSignature, Radar, Library,
-  Scale, HandCoins, ChartPie, Settings2,
+  LogOut, Menu, X, Mountain, Map, FileBadge, FileCheck,
+  BellRing, CalendarDays, BarChart3, FileBarChart, FileText,
+  ChevronDown, CheckSquare, FileSignature, Radar, Library,
+  Scale, HandCoins, ChartPie, Settings2, Wallet,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -70,20 +70,11 @@ const SECTIONS: NavGroup[] = [
       { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
     ],
   },
-  {
-    label: "Sistema",
-    icon: Settings2,
-    items: [
-      { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
-      { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
-      { href: "/usuarios", label: "Usuários", icon: Users },
-      { href: "/perfis", label: "Perfis", icon: ShieldCheck },
-      { href: "/config", label: "Configurações", icon: ClipboardList },
-    ],
-  },
 ];
 
-const FLAT_LINKS = [DASHBOARD, ...SECTIONS.flatMap((s) => s.items)];
+const CONFIG: NavItem = { href: "/config", label: "Configurações", icon: Settings2 };
+
+const FLAT_LINKS = [DASHBOARD, CONFIG, ...SECTIONS.flatMap((s) => s.items)];
 
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
@@ -120,6 +111,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const nav = (
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
       {renderLink(DASHBOARD)}
+      {renderLink(CONFIG)}
       {SECTIONS.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
