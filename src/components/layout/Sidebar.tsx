@@ -8,108 +8,117 @@ import {
   LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
   LogOut, ClipboardList, Menu, X, Users, Mountain, Map, FileBadge, FileCheck,
   BellRing, CalendarDays, BarChart3, FileBarChart, FileText, Workflow, Wallet,
-  ShieldCheck, ChevronDown, CheckSquare, Boxes,
+  ShieldCheck, ChevronDown, CheckSquare, HandCoins, FileSignature,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
-type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
+type NavGroup = { label: string; items: NavItem[] };
 
-const SECTIONS: { label?: string; group?: NavGroup }[] = [
+const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
+
+const SECTIONS: NavGroup[] = [
   {
-    group: {
-      label: "Visão geral",
-      icon: LayoutDashboard,
-      items: [
-        { href: "/", label: "Painel", icon: LayoutDashboard },
-        { href: "/alertas", label: "Alertas", icon: BellRing },
-        { href: "/calendario", label: "Calendário", icon: CalendarDays },
-      ],
-    },
+    label: "Acompanhamento",
+    items: [
+      { href: "/alertas", label: "Alertas", icon: BellRing },
+      { href: "/calendario", label: "Calendário", icon: CalendarDays },
+      { href: "/prazos", label: "Prazos", icon: CalendarClock },
+      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
+    ],
   },
   {
-    group: {
-      label: "Cadastros",
-      icon: Boxes,
-      items: [
-        { href: "/empresas", label: "Empresas", icon: Building2 },
-        { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
-        { href: "/areas", label: "Áreas", icon: Map },
-        { href: "/pessoas", label: "Pessoas", icon: Users },
-        { href: "/orgaos", label: "Órgãos", icon: Landmark },
-      ],
-    },
+    label: "Cadastros",
+    items: [
+      { href: "/empresas", label: "Empresas", icon: Building2 },
+      { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
+      { href: "/orgaos", label: "Órgãos", icon: Landmark },
+      { href: "/areas", label: "Áreas", icon: Map },
+      { href: "/pessoas", label: "Pessoas", icon: Users },
+    ],
   },
   {
-    group: {
-      label: "Operações",
-      icon: FolderOpen,
-      items: [
-        { href: "/processos", label: "Processos", icon: FolderOpen },
-        { href: "/prazos", label: "Prazos", icon: CalendarClock },
-        { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
-        { href: "/documentos", label: "Documentos", icon: FileText },
-      ],
-    },
+    label: "Processos",
+    items: [
+      { href: "/processos", label: "Processos", icon: FolderOpen },
+      { href: "/documentos", label: "Documentos", icon: FileText },
+    ],
   },
   {
-    group: {
-      label: "Atos",
-      icon: FileBadge,
-      items: [
-        { href: "/titulos", label: "Títulos", icon: FileBadge },
-        { href: "/licencas", label: "Licenças", icon: FileCheck },
-      ],
-    },
+    label: "Atos",
+    items: [
+      { href: "/titulos", label: "Títulos", icon: FileBadge },
+      { href: "/licencas", label: "Licenças", icon: FileCheck },
+    ],
   },
   {
-    group: {
-      label: "Análises",
-      icon: BarChart3,
-      items: [
-        { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
-        { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
-        { href: "/financeiro", label: "Financeiro", icon: Wallet },
-      ],
-    },
+    label: "Financeiro",
+    items: [
+      { href: "/financeiro", label: "Financeiro", icon: Wallet },
+      { href: "/contratos", label: "Contratos", icon: FileSignature },
+    ],
   },
   {
-    group: {
-      label: "Sistema",
-      icon: ClipboardList,
-      items: [
-        { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
-        { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
-        { href: "/config", label: "Configurações", icon: ClipboardList },
-      ],
-    },
+    label: "Análises",
+    items: [
+      { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
+      { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
+      { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
+      { href: "/config", label: "Configurações", icon: ClipboardList },
+    ],
   },
 ];
 
-const FLAT_LINKS = SECTIONS.flatMap((s) => s.group?.items ?? []);
+const FLAT_LINKS = [DASHBOARD, ...SECTIONS.flatMap((s) => s.items)];
 
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  function isGroupActive(items: NavItem[]) {
-    return items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
-  }
   function isItemActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
   }
+  function isGroupActive(items: NavItem[]) {
+    return items.some((i) => isItemActive(i.href));
+  }
+
+  const renderLink = (item: NavItem) => {
+    const Icon = item.icon;
+    const itemActive = isItemActive(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setOpen(false)}
+        className={`flex items-center gap-3 rounded-md py-1.5 pl-3 pr-2 text-sm transition ${
+          itemActive
+            ? "bg-white/15 font-medium"
+            : "text-white/75 hover:bg-white/10 hover:text-white"
+        }`}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="whitespace-nowrap">{item.label}</span>
+      </Link>
+    );
+  };
 
   const nav = (
-    <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-      {SECTIONS.map(({ group }) => {
-        if (!group) return null;
+    <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
+      {renderLink(DASHBOARD)}
+      {SECTIONS.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
         return (
           <div key={group.label}>
             <button
               onClick={() => setCollapsed((c) => ({ ...c, [group.label]: !isOpen }))}
-              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+              className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                 active ? "text-gold-300" : "text-white/50 hover:text-white/80"
               }`}
             >
@@ -120,25 +129,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
             </button>
             {isOpen && (
               <div className="mt-0.5 space-y-0.5 pb-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const itemActive = isItemActive(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={`flex items-center gap-3 rounded-md py-1.5 pl-3 pr-2 text-sm transition ${
-                        itemActive
-                          ? "bg-white/15 font-medium"
-                          : "text-white/75 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    </Link>
-                  );
-                })}
+                {group.items.map(renderLink)}
               </div>
             )}
           </div>
@@ -189,12 +180,12 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Desktop: sidebar fixa ocupando 100vh */}
+      {/* Desktop */}
       <aside className="hidden h-screen w-60 shrink-0 flex-col bg-navy-900 text-white lg:flex xl:w-64">
         {content}
       </aside>
 
-      {/* Tablet: sidebar compacta (ícones) */}
+      {/* Tablet compacto */}
       <aside className="hidden h-screen w-16 shrink-0 flex-col items-center bg-navy-900 text-white md:flex lg:hidden">
         <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-500 font-bold text-navy-900">
@@ -230,7 +221,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
         </div>
       </aside>
 
-      {/* Mobile: sidebar em overlay deslizante */}
+      {/* Mobile overlay */}
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />

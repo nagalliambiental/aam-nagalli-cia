@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao } from "@/lib/perfil";
+import { requireAuth } from "@/lib/perfil";
 import { Card, Badge } from "@/components/ui";
 import { formatDate, formatMoney, formatRelative } from "@/lib/format";
 import {
-  FolderOpen, CalendarClock, CheckSquare, BellRing, Wallet, UserPlus,
-  FilePlus2, ArrowRight, TrendingUp,
+  FolderOpen, CalendarClock, CheckSquare, BellRing, Wallet,
+  FilePlus2, ArrowRight, TrendingUp, FileSignature,
 } from "lucide-react";
 
 const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | "gray" | "red" }> = {
@@ -23,7 +23,7 @@ const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "a
 };
 
 export default async function DashboardPage() {
-  await requirePermissao("dashboard:ver");
+  await requireAuth();
 
   const [
     processosAtivos,
@@ -69,24 +69,28 @@ export default async function DashboardPage() {
       value: processosAtivos,
       icon: FolderOpen,
       href: "/processos",
+      iconBg: "bg-blue-50 text-blue-600",
     },
     {
       label: "Prazos abertos",
       value: prazosAbertos,
       icon: CalendarClock,
       href: "/prazos",
+      iconBg: "bg-amber-50 text-amber-600",
     },
     {
       label: "Tarefas abertas",
       value: tarefasPendentes,
       icon: CheckSquare,
       href: "/tarefas",
+      iconBg: "bg-violet-50 text-violet-600",
     },
     {
       label: "Alertas urgentes",
       value: alertasUrgentes,
       icon: BellRing,
       href: "/alertas",
+      iconBg: "bg-red-50 text-red-600",
     },
     {
       label: "Custos pendentes",
@@ -94,12 +98,14 @@ export default async function DashboardPage() {
       icon: Wallet,
       href: "/financeiro",
       money: true,
+      iconBg: "bg-emerald-50 text-emerald-600",
     },
     {
       label: "Contratos",
       value: contratosVigentes,
-      icon: UserPlus,
+      icon: FileSignature,
       href: "/contratos",
+      iconBg: "bg-navy-50 text-navy-700",
     },
   ];
 
@@ -114,11 +120,21 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-slate-200 pb-4">
-        <h1 className="text-2xl font-bold text-navy-900">Painel de gestão</h1>
-        <p className="mt-1 text-sm text-muted">
-          Ambiental &amp; Mineral · visão geral do sistema
-        </p>
+      <div className="relative overflow-hidden rounded-2xl bg-navy-900 p-6 text-white shadow-sm md:p-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-gold-500/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-24 h-48 w-48 rounded-full bg-navy-500/30 blur-2xl" />
+        <div className="relative">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gold-400">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-navy-900">
+              <TrendingUp className="h-4 w-4" />
+            </span>
+            Painel de gestão
+          </div>
+          <h1 className="mt-3 text-2xl font-bold md:text-3xl">
+            Ambiental &amp; Mineral
+          </h1>
+          <p className="mt-1 text-white/70">Visão geral das operações da gestora</p>
+        </div>
       </div>
 
       {/* Cards de métricas */}
@@ -127,18 +143,21 @@ export default async function DashboardPage() {
           const Icon = c.icon;
           return (
             <Link key={c.label} href={c.href}>
-              <Card className="group p-4 transition hover:shadow-md">
-                <div className="flex items-center gap-2 text-muted">
-                  <Icon className="h-4 w-4" />
-                  <span className="text-xs font-medium uppercase tracking-wide">{c.label}</span>
+              <Card className="group h-full p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${c.iconBg}`}>
+                    <Icon className="h-4.5 w-4.5" />
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-navy-600" />
                 </div>
                 <p
                   className={`mt-3 truncate font-bold text-navy-900 ${
-                    c.money ? "text-lg" : "text-3xl"
+                    c.money ? "text-xl" : "text-2xl"
                   }`}
                 >
                   {c.value}
                 </p>
+                <p className="mt-0.5 text-xs font-medium text-muted">{c.label}</p>
               </Card>
             </Link>
           );
@@ -149,7 +168,12 @@ export default async function DashboardPage() {
         {/* Próximos prazos */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-navy-900">Próximos prazos</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-50 text-amber-600">
+                <CalendarClock className="h-4 w-4" />
+              </span>
+              Próximos prazos
+            </h2>
             <Link href="/prazos" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todos <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -183,7 +207,12 @@ export default async function DashboardPage() {
         {/* Tarefas */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-navy-900">Tarefas abertas</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-violet-50 text-violet-600">
+                <CheckSquare className="h-4 w-4" />
+              </span>
+              Tarefas abertas
+            </h2>
             <Link href="/tarefas" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todas <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -220,7 +249,10 @@ export default async function DashboardPage() {
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
-              <TrendingUp className="h-4 w-4" /> Atividade recente
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              Atividade recente
             </h2>
             <Link href="/auditoria" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Auditoria <ArrowRight className="h-3.5 w-3.5" />
@@ -253,7 +285,10 @@ export default async function DashboardPage() {
       <Card>
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
-            <FilePlus2 className="h-4 w-4" /> Processos por status
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+              <FilePlus2 className="h-4 w-4" />
+            </span>
+            Processos por status
           </h2>
           <Link href="/indicadores" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
             Indicadores <ArrowRight className="h-3.5 w-3.5" />
