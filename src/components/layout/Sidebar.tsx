@@ -120,7 +120,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
               />
             </button>
             {isOpen && (
-              <div className="mt-0.5 space-y-0.5 pb-1">
+              <div className="ml-3 mt-0.5 space-y-0.5 border-l border-white/15 pl-3 pb-1">
                 {group.items.map(renderLink)}
               </div>
             )}
