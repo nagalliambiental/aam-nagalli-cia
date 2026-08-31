@@ -77,6 +77,7 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
       { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
+      { href: "/usuarios", label: "Usuários", icon: Users },
       { href: "/config", label: "Configurações", icon: ClipboardList },
     ],
   },

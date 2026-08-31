@@ -100,7 +100,7 @@ async function main() {
   const tiposEntidade = [
     "processo", "titulo", "licenca", "condicionante", "exigencia", "prazo",
     "tarefa", "documento", "empreendimento", "area", "empresa", "pessoa", "orgao",
-    "comunicacao", "custo", "regra_prazo", "contrato", "integracao",
+    "comunicacao", "custo", "regra_prazo", "contrato", "integracao", "usuario",
   ];
   for (const nome of tiposEntidade) {
     await prisma.tipoEntidade.upsert({ where: { nome }, update: {}, create: { nome, sistema: true } });
