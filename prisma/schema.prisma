@@ -94,6 +94,7 @@ model Pessoa {
   condicionantesResp Condicionante[]
   exigenciasResp     Exigencia[]
   documentosResp     Documento[]
+  custos             Custo[]
 
   @@index([nome])
   @@index([documento])
@@ -414,6 +415,8 @@ model Processo {
   licencas          LicencaProcesso[]
   documentoVinculos DocumentoVinculo[]
   notificacoes      Notificacao[]
+  comunicacoes      Comunicacao[]
+  custos            Custo[]
 
   @@index([orgaoId, status])
   @@index([tipoProcessoId])
@@ -1037,6 +1040,65 @@ model Projeto {
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 
   @@index([empresaId])
+}
+
+// =====================================================================
+//  COMUNICAÇÕES
+// =====================================================================
+
+model Comunicacao {
+  id           Int       @id @default(autoincrement())
+  tipo         String    @default("email")
+  data         DateTime  @default(now())
+  remetente    String?
+  destinatario String?
+  processoId   Int
+  assunto      String?
+  descricao    String?
+  respostaEm   DateTime?
+  resposta     String?
+  status       String    @default("enviada")
+  criadoPor    Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@index([processoId, data])
+  @@index([tipo, status])
+  @@index([data])
+}
+
+// =====================================================================
+//  CUSTOS / FINANCEIRO
+// =====================================================================
+
+model Custo {
+  id                  Int      @id @default(autoincrement())
+  processoId          Int
+  tipo                String   @default("outro")
+  descricao           String
+  valor               Decimal  @db.Decimal(12, 2)
+  data                DateTime @default(now())
+  fornecedor          String?
+  responsavelPessoaId Int?
+  status              String   @default("pendente")
+  observacoes         String?
+  criadoPor           Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  processo    Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  responsavel Pessoa?  @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  @@index([processoId, data])
+  @@index([tipo, status])
 }
 
 // =====================================================================

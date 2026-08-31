@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
   LogOut, ClipboardList, Menu, X, Users, Mountain, Map, FileBadge, FileCheck,
+  BellRing, CalendarDays, BarChart3, FileBarChart, FileText,
 } from "lucide-react";
 
 const NAV = [
@@ -19,6 +20,11 @@ const NAV = [
   { href: "/areas", label: "Áreas", icon: Map },
   { href: "/titulos", label: "Títulos", icon: FileBadge },
   { href: "/licencas", label: "Licenças", icon: FileCheck },
+  { href: "/documentos", label: "Documentos", icon: FileText },
+  { href: "/alertas", label: "Alertas", icon: BellRing },
+  { href: "/calendario", label: "Calendário", icon: CalendarDays },
+  { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
+  { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
   { href: "/orgaos", label: "Órgãos", icon: Landmark },
   { href: "/config", label: "Configurações", icon: ClipboardList },
 ];

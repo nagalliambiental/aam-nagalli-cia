@@ -100,6 +100,7 @@ async function main() {
   const tiposEntidade = [
     "processo", "titulo", "licenca", "condicionante", "exigencia", "prazo",
     "tarefa", "documento", "empreendimento", "area", "empresa", "pessoa", "orgao",
+    "comunicacao", "custo",
   ];
   for (const nome of tiposEntidade) {
     await prisma.tipoEntidade.upsert({ where: { nome }, update: {}, create: { nome, sistema: true } });
@@ -109,7 +110,7 @@ async function main() {
   // PERMISSÕES
   // ------------------------------------------------------------------
   const modulos = ["dashboard", "cadastro", "processo", "titulo", "licenca", "condicionante",
-    "exigencia", "prazo", "tarefa", "documento", "orgao", "relatorio", "usuario", "config"];
+    "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "orgao", "relatorio", "usuario", "config"];
   const acoes = ["ler", "criar", "editar", "excluir"];
   for (const m of modulos) {
     for (const a of acoes) {
@@ -144,7 +145,7 @@ async function main() {
     update: {},
     create: { nome: "Técnico", descricao: "Operacional (executa tarefas e atualiza processos)" },
   });
-  const moduloTecnico = ["processo", "titulo", "licenca", "condicionante", "exigencia", "prazo", "tarefa", "documento", "cadastro"];
+  const moduloTecnico = ["processo", "titulo", "licenca", "condicionante", "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "cadastro"];
   const permissoesTecnico = await prisma.permissao.findMany({
     where: { modulo: { in: moduloTecnico }, acao: { in: ["ler", "criar", "editar"] } },
   });

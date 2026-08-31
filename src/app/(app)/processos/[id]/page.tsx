@@ -11,6 +11,8 @@ import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { PrazosPanel } from "@/components/processos/PrazosPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { RelacionamentosPanel } from "@/components/processos/RelacionamentosPanel";
+import { ComunicacoesPanel } from "@/components/processos/ComunicacoesPanel";
+import { CustosPanel } from "@/components/processos/CustosPanel";
 
 export default async function ProcessoDetalhePage({
   params,
@@ -32,7 +34,7 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound();
 
-  const [eventos, tarefas, prazos, exigencias, relacionamentos, tiposEvento, pessoas] =
+  const [eventos, tarefas, prazos, exigencias, relacionamentos, tiposEvento, pessoas, comunicacoes, custos] =
     await Promise.all([
       prisma.evento.findMany({
         where: { processoId },
@@ -64,6 +66,15 @@ export default async function ProcessoDetalhePage({
       }),
       prisma.tipoEvento.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
+      prisma.comunicacao.findMany({
+        where: { processoId, ativo: true, deletedAt: null },
+        orderBy: { data: "desc" },
+      }),
+      prisma.custo.findMany({
+        where: { processoId, ativo: true, deletedAt: null },
+        orderBy: { data: "desc" },
+        include: { responsavel: true },
+      }),
     ]);
 
   const tabs = [
@@ -139,6 +150,20 @@ export default async function ProcessoDetalhePage({
           relacionamentos={relacionamentos}
         />
       ),
+    },
+    {
+      id: "comunicacoes",
+      label: "Comunicações",
+      count: comunicacoes.length,
+      content: (
+        <ComunicacoesPanel processoId={processo.id} comunicacoes={comunicacoes} />
+      ),
+    },
+    {
+      id: "custos",
+      label: "Custos",
+      count: custos.length,
+      content: <CustosPanel processoId={processo.id} custos={custos} />,
     },
   ];
 
