@@ -27,6 +27,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("status" in body) data.status = body.status ?? "ativo";
   if ("descricao" in body) data.descricao = body.descricao ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
+  if ("areaValor" in body) data.areaValor = body.areaValor != null ? Number(body.areaValor) : null;
+  if ("areaUnidade" in body) data.areaUnidade = body.areaUnidade ?? "ha";
   if ("empresaPrincipalId" in body) data.empresaPrincipalId = Number(body.empresaPrincipalId);
 
   try {

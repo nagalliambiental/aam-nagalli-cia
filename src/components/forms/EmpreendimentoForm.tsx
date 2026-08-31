@@ -19,6 +19,8 @@ export function EmpreendimentoForm({
     status?: string;
     descricao?: string;
     observacoes?: string;
+    areaValor?: number | null;
+    areaUnidade?: string;
     empresaPrincipalId?: number;
   };
   empreendimentoId?: number;
@@ -33,6 +35,8 @@ export function EmpreendimentoForm({
     status: initial?.status ?? "ativo",
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
+    areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
+    areaUnidade: initial?.areaUnidade ?? "ha",
     empresaPrincipalId: String(initial?.empresaPrincipalId ?? empresas[0]?.id ?? ""),
   });
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +49,7 @@ export function EmpreendimentoForm({
 
     const payload = {
       ...form,
+      areaValor: form.areaValor !== "" ? Number(form.areaValor.replace(",", ".")) : null,
       empresaPrincipalId: form.empresaPrincipalId ? Number(form.empresaPrincipalId) : null,
     };
 
@@ -119,6 +124,32 @@ export function EmpreendimentoForm({
             <option value="paralisado">Paralisado</option>
             <option value="fechado">Fechado</option>
           </Select>
+        </div>
+        <div className={grid}>
+          <div>
+            <Label htmlFor="areaValor">Área</Label>
+            <Input
+              id="areaValor"
+              type="number"
+              step="any"
+              min="0"
+              value={form.areaValor}
+              onChange={(e) => setForm((f) => ({ ...f, areaValor: e.target.value }))}
+              placeholder="0,00"
+            />
+          </div>
+          <div>
+            <Label htmlFor="areaUnidade">Unidade</Label>
+            <Select
+              id="areaUnidade"
+              value={form.areaUnidade}
+              onChange={(e) => setForm((f) => ({ ...f, areaUnidade: e.target.value }))}
+            >
+              <option value="ha">Hectare (ha)</option>
+              <option value="m²">Metro quadrado (m²)</option>
+              <option value="km²">Quilômetro quadrado (km²)</option>
+            </Select>
+          </div>
         </div>
         <div className={grid}>
           <div>

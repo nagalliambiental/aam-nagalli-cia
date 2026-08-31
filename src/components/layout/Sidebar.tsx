@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
-  LogOut, Menu, X, Mountain, Map, FileBadge, FileCheck,
-  BellRing, CalendarDays, BarChart3, FileBarChart, FileText,
+  LayoutDashboard, Building2, FolderOpen, CalendarClock,
+  LogOut, Menu, X, Mountain, FileText,
+  BellRing, CalendarDays, BarChart3, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
-  Scale, HandCoins, ChartPie, Settings2, Wallet,
+  HandCoins, ChartPie, Settings2, Wallet,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -24,8 +24,6 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/empresas", label: "Empresas", icon: Building2 },
       { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
-      { href: "/orgaos", label: "Órgãos", icon: Landmark },
-      { href: "/areas", label: "Áreas", icon: Map },
     ],
   },
   {
@@ -47,11 +45,13 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
-    label: "Atos",
-    icon: Scale,
+    label: "Acompanhamento",
+    icon: Radar,
     items: [
-      { href: "/titulos", label: "Títulos", icon: FileBadge },
-      { href: "/licencas", label: "Licenças", icon: FileCheck },
+      { href: "/alertas", label: "Alertas", icon: BellRing },
+      { href: "/calendario", label: "Calendário", icon: CalendarDays },
+      { href: "/prazos", label: "Prazos", icon: CalendarClock },
+      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
     ],
   },
   {

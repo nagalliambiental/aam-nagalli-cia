@@ -42,7 +42,10 @@ export default async function EmpreendimentosPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="hidden text-right text-sm text-muted sm:block">
-                    <p>{e._count.areas} áreas · {e._count.processos} processos</p>
+                    <p>
+                      {e.areaValor != null ? `${e.areaValor} ${e.areaUnidade}` : ""}
+                      {e.areaValor != null ? " · " : ""}{e._count.processos} processos
+                    </p>
                   </div>
                   <Badge tone={e.status === "ativo" ? "green" : "amber"}>{e.status}</Badge>
                 </div>

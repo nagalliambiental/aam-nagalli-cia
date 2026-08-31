@@ -287,6 +287,8 @@ model Empreendimento {
   endereco           String?
   status             String  @default("ativo")
   observacoes        String?
+  areaValor          Float?
+  areaUnidade        String  @default("ha")
   empresaPrincipalId Int
 
   ativo        Boolean   @default(true)

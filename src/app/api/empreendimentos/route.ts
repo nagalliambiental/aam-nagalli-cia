@@ -35,6 +35,8 @@ export async function POST(req: Request) {
         status: body.status ?? "ativo",
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,
+        areaValor: body.areaValor != null ? Number(body.areaValor) : null,
+        areaUnidade: body.areaUnidade ?? "ha",
       },
     });
 

@@ -8,16 +8,19 @@ export function TituloForm({
   orgaos,
   tiposTitulo,
   pessoas,
+  processos,
   initial,
   tituloId,
 }: {
   orgaos: { id: number; sigla: string }[];
   tiposTitulo: { id: number; nome: string }[];
   pessoas: { id: number; nome: string }[];
+  processos: { id: number; numero: string }[];
   initial?: {
     tipoTituloId?: number;
     numero?: string;
     orgaoId?: number;
+    processoId?: number;
     substancia?: string;
     municipio?: string;
     uf?: string;
@@ -34,6 +37,7 @@ export function TituloForm({
     tipoTituloId: String(initial?.tipoTituloId ?? tiposTitulo[0]?.id ?? ""),
     numero: initial?.numero ?? "",
     orgaoId: String(initial?.orgaoId ?? orgaos[0]?.id ?? ""),
+    processoId: String(initial?.processoId ?? processos[0]?.id ?? ""),
     substancia: initial?.substancia ?? "",
     municipio: initial?.municipio ?? "",
     uf: initial?.uf ?? "",
@@ -55,10 +59,17 @@ export function TituloForm({
       ...form,
       tipoTituloId: form.tipoTituloId ? Number(form.tipoTituloId) : null,
       orgaoId: form.orgaoId ? Number(form.orgaoId) : null,
+      processoId: form.processoId ? Number(form.processoId) : null,
       responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
       dataEmissao: form.dataEmissao ? new Date(form.dataEmissao) : null,
       validade: form.validade ? new Date(form.validade) : null,
     };
+
+    if (!payload.processoId) {
+      setError("Vincule o título a um processo (títulos nascem dos processos).");
+      setLoading(false);
+      return;
+    }
 
     const res = await fetch(tituloId ? `/api/titulos/${tituloId}` : "/api/titulos", {
       method: tituloId ? "PATCH" : "POST",
@@ -72,7 +83,7 @@ export function TituloForm({
       setError(data?.error ?? "Erro ao salvar.");
       return;
     }
-    router.push(`/titulos/${data.id}`);
+    router.push(payload.processoId ? `/processos/${payload.processoId}` : `/titulos/${data.id}`);
     router.refresh();
   }
 
@@ -81,6 +92,20 @@ export function TituloForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={grid}>
+        <div className="md:col-span-2">
+          <Label htmlFor="processoId" required>Processo de origem</Label>
+          <Select
+            id="processoId"
+            value={form.processoId}
+            onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}
+            required
+          >
+            {processos.map((p) => (
+              <option key={p.id} value={p.id}>{p.numero}</option>
+            ))}
+          </Select>
+          <p className="mt-1 text-xs text-muted">O título é gerado a partir de um processo.</p>
+        </div>
         <div>
           <Label htmlFor="tipoTituloId" required>Tipo</Label>
           <Select

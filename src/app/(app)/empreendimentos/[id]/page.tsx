@@ -51,6 +51,7 @@ export default async function EmpreendimentoDetalhePage({
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],
             ["Endereço", empreendimento.endereco ?? "—"],
             ["Status", <Badge key="s" tone={empreendimento.status === "ativo" ? "green" : "amber"}>{empreendimento.status}</Badge>],
+            ["Área", empreendimento.areaValor != null ? `${empreendimento.areaValor} ${empreendimento.areaUnidade}` : "—"],
             ["Processos", empreendimento._count.processos],
             ["Licenças", empreendimento._count.licencas],
           ].map(([k, v]) => (
@@ -61,22 +62,7 @@ export default async function EmpreendimentoDetalhePage({
           ))}
         </dl>
 
-        <div className="grid grid-cols-1 gap-6 border-t border-slate-200 px-5 py-4 md:grid-cols-2">
-          <div>
-            <h3 className="mb-2 text-sm font-semibold text-navy-900">Áreas vinculadas</h3>
-            {empreendimento.areas.length === 0 ? (
-              <p className="text-sm text-muted">Nenhuma área.</p>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {empreendimento.areas.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between">
-                    <span>{a.area.nome}</span>
-                    <span className="text-xs text-muted">{a.papel}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        <div className="grid grid-cols-1 gap-6 border-t border-slate-200 px-5 py-4">
           <div>
             <h3 className="mb-2 text-sm font-semibold text-navy-900">Empresas envolvidas</h3>
             {empreendimento.empresas.length === 0 ? (

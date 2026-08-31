@@ -35,6 +35,20 @@ export async function PATCH(req: Request, { params }: Ctx) {
       where: { id: tituloId },
       data: data as never,
     });
+
+    if (body.processoId) {
+      const processoId = Number(body.processoId);
+      const vinc = await prisma.tituloProcesso.findFirst({ where: { tituloId } });
+      if (vinc) {
+        await prisma.tituloProcesso.update({
+          where: { id: vinc.id },
+          data: { processoId },
+        });
+      } else {
+        await prisma.tituloProcesso.create({ data: { tituloId, processoId } });
+      }
+    }
+
     await audit({
       tipoEntidade: "titulo",
       entidadeId: titulo.id,

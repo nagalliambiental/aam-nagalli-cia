@@ -6,10 +6,14 @@ import { TituloForm } from "@/components/forms/TituloForm";
 export default async function NovoTituloPage() {
   await requirePermissao("cadastro:criar");
 
-  const [orgaos, tiposTitulo, pessoas] = await Promise.all([
+  const [orgaos, tiposTitulo, pessoas, processos] = await Promise.all([
     prisma.orgao.findMany({ where: { ativo: true }, orderBy: { sigla: "asc" } }),
     prisma.tipoTitulo.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado", "encerrado"] } },
+      orderBy: { numero: "asc" },
+    }),
   ]);
 
   return (
@@ -22,6 +26,7 @@ export default async function NovoTituloPage() {
             orgaos={orgaos.map((x) => ({ id: x.id, sigla: x.sigla }))}
             tiposTitulo={tiposTitulo.map((x) => ({ id: x.id, nome: x.nome }))}
             pessoas={pessoas.map((x) => ({ id: x.id, nome: x.nome }))}
+            processos={processos.map((x) => ({ id: x.id, numero: x.numero }))}
           />
         </div>
       </Card>

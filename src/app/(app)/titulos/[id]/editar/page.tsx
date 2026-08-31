@@ -13,13 +13,21 @@ export default async function EditarTituloPage({
   const tituloId = Number(id);
   await requirePermissao("cadastro:editar");
 
-  const [titulo, orgaos, tiposTitulo, pessoas] = await Promise.all([
-    prisma.tituloMinerario.findFirst({ where: { id: tituloId, ativo: true, deletedAt: null } }),
+  const [titulo, orgaos, tiposTitulo, pessoas, processos] = await Promise.all([
+    prisma.tituloMinerario.findFirst({
+      where: { id: tituloId, ativo: true, deletedAt: null },
+      include: { processos: { include: { processo: true } } },
+    }),
     prisma.orgao.findMany({ where: { ativo: true }, orderBy: { sigla: "asc" } }),
     prisma.tipoTitulo.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado", "encerrado"] } },
+      orderBy: { numero: "asc" },
+    }),
   ]);
   if (!titulo) notFound();
+  const processoVinc = titulo.processos[0]?.processoId;
 
   return (
     <div>
@@ -32,10 +40,12 @@ export default async function EditarTituloPage({
             orgaos={orgaos.map((x) => ({ id: x.id, sigla: x.sigla }))}
             tiposTitulo={tiposTitulo.map((x) => ({ id: x.id, nome: x.nome }))}
             pessoas={pessoas.map((x) => ({ id: x.id, nome: x.nome }))}
+            processos={processos.map((x) => ({ id: x.id, numero: x.numero }))}
             initial={{
               tipoTituloId: titulo.tipoTituloId,
               numero: titulo.numero,
               orgaoId: titulo.orgaoId,
+              processoId: processoVinc ?? undefined,
               substancia: titulo.substancia ?? undefined,
               municipio: titulo.municipio ?? undefined,
               uf: titulo.uf ?? undefined,
