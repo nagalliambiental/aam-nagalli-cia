@@ -7,32 +7,145 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
   LogOut, ClipboardList, Menu, X, Users, Mountain, Map, FileBadge, FileCheck,
-  BellRing, CalendarDays, BarChart3, FileBarChart, FileText, Workflow,
+  BellRing, CalendarDays, BarChart3, FileBarChart, FileText, Workflow, Wallet,
+  ShieldCheck, ChevronDown, CheckSquare, Boxes,
 } from "lucide-react";
 
-const NAV = [
-  { href: "/", label: "Painel", icon: LayoutDashboard },
-  { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
-  { href: "/pessoas", label: "Pessoas", icon: Users },
-  { href: "/processos", label: "Processos", icon: FolderOpen },
-  { href: "/prazos", label: "Prazos", icon: CalendarClock },
-  { href: "/areas", label: "Áreas", icon: Map },
-  { href: "/titulos", label: "Títulos", icon: FileBadge },
-  { href: "/licencas", label: "Licenças", icon: FileCheck },
-  { href: "/documentos", label: "Documentos", icon: FileText },
-  { href: "/alertas", label: "Alertas", icon: BellRing },
-  { href: "/calendario", label: "Calendário", icon: CalendarDays },
-  { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
-  { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
-  { href: "/orgaos", label: "Órgãos", icon: Landmark },
-  { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
-  { href: "/config", label: "Configurações", icon: ClipboardList },
+type NavItem = { href: string; label: string; icon: React.ElementType };
+type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
+
+const SECTIONS: { label?: string; group?: NavGroup }[] = [
+  {
+    group: {
+      label: "Visão geral",
+      icon: LayoutDashboard,
+      items: [
+        { href: "/", label: "Painel", icon: LayoutDashboard },
+        { href: "/alertas", label: "Alertas", icon: BellRing },
+        { href: "/calendario", label: "Calendário", icon: CalendarDays },
+      ],
+    },
+  },
+  {
+    group: {
+      label: "Cadastros",
+      icon: Boxes,
+      items: [
+        { href: "/empresas", label: "Empresas", icon: Building2 },
+        { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
+        { href: "/areas", label: "Áreas", icon: Map },
+        { href: "/pessoas", label: "Pessoas", icon: Users },
+        { href: "/orgaos", label: "Órgãos", icon: Landmark },
+      ],
+    },
+  },
+  {
+    group: {
+      label: "Operações",
+      icon: FolderOpen,
+      items: [
+        { href: "/processos", label: "Processos", icon: FolderOpen },
+        { href: "/prazos", label: "Prazos", icon: CalendarClock },
+        { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
+        { href: "/documentos", label: "Documentos", icon: FileText },
+      ],
+    },
+  },
+  {
+    group: {
+      label: "Atos",
+      icon: FileBadge,
+      items: [
+        { href: "/titulos", label: "Títulos", icon: FileBadge },
+        { href: "/licencas", label: "Licenças", icon: FileCheck },
+      ],
+    },
+  },
+  {
+    group: {
+      label: "Análises",
+      icon: BarChart3,
+      items: [
+        { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
+        { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
+        { href: "/financeiro", label: "Financeiro", icon: Wallet },
+      ],
+    },
+  },
+  {
+    group: {
+      label: "Sistema",
+      icon: ClipboardList,
+      items: [
+        { href: "/regras-prazo", label: "Regras de prazo", icon: Workflow },
+        { href: "/auditoria", label: "Auditoria", icon: ShieldCheck },
+        { href: "/config", label: "Configurações", icon: ClipboardList },
+      ],
+    },
+  },
 ];
+
+const FLAT_LINKS = SECTIONS.flatMap((s) => s.group?.items ?? []);
 
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  function isGroupActive(items: NavItem[]) {
+    return items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+  }
+  function isItemActive(href: string) {
+    return pathname === href || pathname.startsWith(href + "/");
+  }
+
+  const nav = (
+    <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      {SECTIONS.map(({ group }) => {
+        if (!group) return null;
+        const active = isGroupActive(group.items);
+        const isOpen = collapsed[group.label] ?? active;
+        return (
+          <div key={group.label}>
+            <button
+              onClick={() => setCollapsed((c) => ({ ...c, [group.label]: !isOpen }))}
+              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                active ? "text-gold-300" : "text-white/50 hover:text-white/80"
+              }`}
+            >
+              <span>{group.label}</span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${isOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {isOpen && (
+              <div className="mt-0.5 space-y-0.5 pb-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const itemActive = isItemActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 rounded-md py-1.5 pl-3 pr-2 text-sm transition ${
+                        itemActive
+                          ? "bg-white/15 font-medium"
+                          : "text-white/75 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
 
   const content = (
     <>
@@ -46,27 +159,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {NAV.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
-                active
-                  ? "bg-white/15 font-medium"
-                  : "text-white/75 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="whitespace-nowrap">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {nav}
 
       <div className="border-t border-white/10 px-5 py-4">
         <div className="flex items-center justify-between gap-2">
@@ -88,7 +181,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
 
   return (
     <>
-      {/* Botão hambúrguer (somente mobile) */}
       <button
         onClick={() => setOpen(true)}
         title="Abrir menu"
@@ -110,16 +202,16 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
           </div>
         </div>
         <nav className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto py-4">
-          {NAV.map((item) => {
+          {FLAT_LINKS.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const itemActive = isItemActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 title={item.label}
                 className={`flex items-center justify-center rounded-md p-2.5 transition ${
-                  active ? "bg-white/15" : "text-white/75 hover:bg-white/10 hover:text-white"
+                  itemActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0" />
@@ -141,10 +233,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
       {/* Mobile: sidebar em overlay deslizante */}
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col bg-navy-900 text-white shadow-2xl">
             <button
               onClick={() => setOpen(false)}
