@@ -25,17 +25,25 @@ async function main() {
   // TIPOS DE PROCESSO (tronco mineral | ambiental)
   // ------------------------------------------------------------------
   const tiposProcesso = [
-    { nome: "Requerimento de Pesquisa", tronco: "mineral" },
+    // Regime mais comum: Autorização de Pesquisa -> Concessão de Lavra (ANM)
+    { nome: "Requerimento de Pesquisa", tronco: "mineral", descricao: "Fase inicial - requerimento protocolado na ANM" },
+    { nome: "Autorização de Pesquisa", tronco: "mineral", descricao: "Alvará de Pesquisa vigente (1 a 4 anos)" },
+    { nome: "Direito de Requerer a Lavra", tronco: "mineral", descricao: "RFP aprovado - 1 ano para requerer lavra" },
+    { nome: "Requerimento de Lavra", tronco: "mineral", descricao: "Com PAE e licenciamento em análise" },
+    { nome: "Concessão de Lavra", tronco: "mineral", descricao: "Portaria de Lavra - título definitivo" },
+    // Outras fases / regimes mantidos para compatibilidade
     { nome: "Alvará de Pesquisa", tronco: "mineral" },
     { nome: "Relatório Final de Pesquisa", tronco: "mineral" },
-    { nome: "Requerimento de Lavra", tronco: "mineral" },
-    { nome: "Concessão de Lavra", tronco: "mineral" },
     { nome: "Licenciamento Ambiental", tronco: "ambiental" },
     { nome: "Renovação de Licença", tronco: "ambiental" },
     { nome: "Outro", tronco: "outro" },
   ];
   for (const t of tiposProcesso) {
-    await prisma.tipoProcesso.upsert({ where: { nome: t.nome }, update: {}, create: t });
+    await prisma.tipoProcesso.upsert({
+      where: { nome: t.nome },
+      update: { descricao: (t as { descricao?: string }).descricao ?? undefined, tronco: t.tronco },
+      create: t as never,
+    });
   }
 
   // ------------------------------------------------------------------

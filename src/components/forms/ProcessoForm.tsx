@@ -142,12 +142,19 @@ export function ProcessoForm({
           />
         </div>
         <div>
-          <Label htmlFor="fase">Fase</Label>
-          <Input
+          <Label htmlFor="fase">Fase (regime Autorização → Concessão)</Label>
+          <Select
             id="fase"
             value={form.fase}
             onChange={(e) => setForm((f) => ({ ...f, fase: e.target.value }))}
-          />
+          >
+            <option value="">— selecione —</option>
+            <option value="Requerimento de Pesquisa">Requerimento de Pesquisa</option>
+            <option value="Autorização de Pesquisa">Autorização de Pesquisa (Alvará)</option>
+            <option value="Direito de Requerer a Lavra">Direito de Requerer a Lavra</option>
+            <option value="Requerimento de Lavra">Requerimento de Lavra</option>
+            <option value="Concessão de Lavra">Concessão de Lavra</option>
+          </Select>
         </div>
         <div>
           <Label htmlFor="status">Status</Label>
