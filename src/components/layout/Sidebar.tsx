@@ -19,16 +19,6 @@ const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard }
 
 const SECTIONS: NavGroup[] = [
   {
-    label: "Acompanhamento",
-    icon: Radar,
-    items: [
-      { href: "/alertas", label: "Alertas", icon: BellRing },
-      { href: "/calendario", label: "Calendário", icon: CalendarDays },
-      { href: "/prazos", label: "Prazos", icon: CalendarClock },
-      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
-    ],
-  },
-  {
     label: "Cadastros",
     icon: Library,
     items: [
@@ -44,6 +34,16 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/processos", label: "Processos", icon: FolderOpen },
       { href: "/documentos", label: "Documentos", icon: FileText },
+    ],
+  },
+  {
+    label: "Acompanhamento",
+    icon: Radar,
+    items: [
+      { href: "/alertas", label: "Alertas", icon: BellRing },
+      { href: "/calendario", label: "Calendário", icon: CalendarDays },
+      { href: "/prazos", label: "Prazos", icon: CalendarClock },
+      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
     ],
   },
   {
@@ -74,7 +74,7 @@ const SECTIONS: NavGroup[] = [
 
 const CONFIG: NavItem = { href: "/config", label: "Configurações", icon: Settings2 };
 
-const FLAT_LINKS = [DASHBOARD, CONFIG, ...SECTIONS.flatMap((s) => s.items)];
+const FLAT_LINKS = [DASHBOARD, ...SECTIONS.flatMap((s) => s.items), CONFIG];
 
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
@@ -111,7 +111,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const nav = (
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
       {renderLink(DASHBOARD)}
-      {renderLink(CONFIG)}
       {SECTIONS.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
@@ -138,6 +137,9 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
           </div>
         );
       })}
+      <div className="pt-1">
+        {renderLink(CONFIG)}
+      </div>
     </nav>
   );
 
