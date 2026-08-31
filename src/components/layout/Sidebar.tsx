@@ -6,14 +6,19 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, Landmark, FolderOpen, CalendarClock,
-  LogOut, ClipboardList, Menu, X,
+  LogOut, ClipboardList, Menu, X, Users, Mountain, Map, FileBadge, FileCheck,
 } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/empresas", label: "Empresas", icon: Building2 },
+  { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
+  { href: "/pessoas", label: "Pessoas", icon: Users },
   { href: "/processos", label: "Processos", icon: FolderOpen },
   { href: "/prazos", label: "Prazos", icon: CalendarClock },
+  { href: "/areas", label: "Áreas", icon: Map },
+  { href: "/titulos", label: "Títulos", icon: FileBadge },
+  { href: "/licencas", label: "Licenças", icon: FileCheck },
   { href: "/orgaos", label: "Órgãos", icon: Landmark },
   { href: "/config", label: "Configurações", icon: ClipboardList },
 ];
