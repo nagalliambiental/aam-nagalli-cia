@@ -157,9 +157,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
           alt="AAM Ambiental & Mineral"
           className="h-24 w-full max-w-[13rem] object-contain"
         />
-        <p className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-white/60">
-          Nagalli &amp; Cia LTDA
-        </p>
       </div>
 
       {nav}
