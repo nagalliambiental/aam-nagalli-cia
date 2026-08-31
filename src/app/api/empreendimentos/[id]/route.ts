@@ -20,6 +20,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const data: Record<string, unknown> = {};
   if ("nome" in body) data.nome = body.nome;
+  if ("apelido" in body) data.apelido = body.apelido ?? null;
   if ("tipo" in body) data.tipo = body.tipo ?? null;
   if ("municipio" in body) data.municipio = body.municipio ?? null;
   if ("uf" in body) data.uf = body.uf ?? null;

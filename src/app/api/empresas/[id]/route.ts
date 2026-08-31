@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 
 const CAMPOS = [
-  "razaoSocial", "nomeFantasia", "cnpj", "inscricaoEstadual", "email",
+  "razaoSocial", "nomeFantasia", "apelido", "cnpj", "inscricaoEstadual", "email",
   "telefone", "endereco", "municipio", "uf", "cep", "observacoes",
 ] as const;
 

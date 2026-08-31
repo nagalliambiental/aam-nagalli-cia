@@ -33,7 +33,7 @@ export default async function EmpresaDetalhePage({
     <div>
       <PageHeader
         title={empresa.razaoSocial}
-        subtitle={empresa.nomeFantasia ?? "Sem nome fantasia"}
+        subtitle={empresa.apelido ? `${empresa.apelido} · ${empresa.nomeFantasia ?? "Sem nome fantasia"}` : empresa.nomeFantasia ?? "Sem nome fantasia"}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/empresas">
@@ -54,6 +54,7 @@ export default async function EmpresaDetalhePage({
           <CardHeader title="Dados gerais" />
           <dl className="space-y-3 px-5 py-4 text-sm">
             {[
+              ["Apelido", empresa.apelido ?? "—"],
               ["CNPJ", empresa.cnpj ? formatCNPJ(empresa.cnpj) : "—"],
               ["Inscrição estadual", empresa.inscricaoEstadual ?? "—"],
               ["E-mail", empresa.email ?? "—"],

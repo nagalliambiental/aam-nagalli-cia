@@ -20,6 +20,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
             OR: [
               { razaoSocial: { contains: q, mode: "insensitive" as const } },
               { nomeFantasia: { contains: q, mode: "insensitive" as const } },
+              { apelido: { contains: q, mode: "insensitive" as const } },
               { cnpj: { contains: q, mode: "insensitive" as const } },
               { municipio: { contains: q, mode: "insensitive" as const } },
             ],
@@ -51,7 +52,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
             <input
               name="q"
               defaultValue={q}
-              placeholder="Buscar por razão social, CNPJ ou município..."
+              placeholder="Buscar por razão social, apelido, CNPJ ou município..."
               className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
             />
           </div>
@@ -65,7 +66,10 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
                 className="flex items-center justify-between px-5 py-4 transition hover:bg-slate-50"
               >
                 <div>
-                  <p className="font-medium text-navy-900">{e.razaoSocial}</p>
+                  <p className="font-medium text-navy-900">
+                    {e.razaoSocial}
+                    {e.apelido ? <span className="ml-2 text-xs font-normal text-navy-600">· {e.apelido}</span> : null}
+                  </p>
                   <p className="text-sm text-muted">
                     {e.cnpj ? formatCNPJ(e.cnpj) : "sem CNPJ"}
                     {e.municipio && e.uf ? ` · ${e.municipio}/${e.uf}` : ""}

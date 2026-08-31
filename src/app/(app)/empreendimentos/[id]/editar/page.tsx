@@ -35,6 +35,7 @@ export default async function EditarEmpreendimentoPage({
             empresas={empresas.map((x) => ({ id: x.id, razaoSocial: x.razaoSocial }))}
             initial={{
               nome: empreendimento.nome,
+              apelido: (empreendimento as Record<string, unknown>).apelido as string ?? undefined,
               tipo: empreendimento.tipo ?? undefined,
               municipio: empreendimento.municipio ?? undefined,
               uf: empreendimento.uf ?? undefined,

@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     const emp = await prisma.empreendimento.create({
       data: {
         nome,
+        apelido: body.apelido ?? null,
         empresaPrincipalId,
         tipo: body.tipo ?? "pedreira",
         municipio: body.municipio ?? null,

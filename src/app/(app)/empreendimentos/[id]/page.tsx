@@ -29,7 +29,7 @@ export default async function EmpreendimentoDetalhePage({
     <div>
       <PageHeader
         title={empreendimento.nome}
-        subtitle={`${empreendimento.tipo} · ${empreendimento.empresaPrincipal.razaoSocial}`}
+        subtitle={`${empreendimento.apelido ? `${empreendimento.apelido} · ` : ""}${empreendimento.tipo} · ${empreendimento.empresaPrincipal.razaoSocial}`}
         actions={
           <>
             <Link href="/empreendimentos">
@@ -46,6 +46,7 @@ export default async function EmpreendimentoDetalhePage({
         <CardHeader title="Dados gerais" />
         <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
           {[
+            ["Apelido", empreendimento.apelido ?? "—"],
             ["Tipo", empreendimento.tipo],
             ["Empresa principal", empreendimento.empresaPrincipal.razaoSocial],
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],

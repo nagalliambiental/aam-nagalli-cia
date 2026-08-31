@@ -30,6 +30,7 @@ export default async function EditarEmpresaPage({
             initial={{
               razaoSocial: empresa.razaoSocial,
               nomeFantasia: empresa.nomeFantasia ?? undefined,
+              apelido: (empresa as Record<string, unknown>).apelido as string ?? undefined,
               cnpj: empresa.cnpj ?? undefined,
               inscricaoEstadual: empresa.inscricaoEstadual ?? undefined,
               email: empresa.email ?? undefined,

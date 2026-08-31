@@ -12,6 +12,7 @@ export function EmpreendimentoForm({
   empresas: { id: number; razaoSocial: string }[];
   initial?: {
     nome?: string;
+    apelido?: string;
     tipo?: string;
     municipio?: string;
     uf?: string;
@@ -28,6 +29,7 @@ export function EmpreendimentoForm({
   const router = useRouter();
   const [form, setForm] = useState({
     nome: initial?.nome ?? "",
+    apelido: initial?.apelido ?? "",
     tipo: initial?.tipo ?? "pedreira",
     municipio: initial?.municipio ?? "",
     uf: initial?.uf ?? "",
@@ -77,13 +79,22 @@ export function EmpreendimentoForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={grid}>
-        <div className="md:col-span-2">
+        <div>
           <Label htmlFor="nome" required>Nome</Label>
           <Input
             id="nome"
             value={form.nome}
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
             required
+          />
+        </div>
+        <div>
+          <Label htmlFor="apelido">Apelido</Label>
+          <Input
+            id="apelido"
+            value={form.apelido}
+            onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))}
+            placeholder="Ex.: Pedreira Norte"
           />
         </div>
         <div>

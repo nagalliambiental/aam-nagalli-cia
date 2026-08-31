@@ -39,6 +39,7 @@ model Empresa {
   id                Int     @id @default(autoincrement())
   razaoSocial       String
   nomeFantasia      String?
+  apelido           String?
   cnpj              String? @unique
   inscricaoEstadual String?
   email             String?
@@ -280,6 +281,7 @@ model TipoEntidade {
 model Empreendimento {
   id                 Int     @id @default(autoincrement())
   nome               String
+  apelido            String?
   descricao          String?
   tipo               String  @default("pedreira")
   municipio          String?

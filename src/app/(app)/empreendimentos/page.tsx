@@ -17,6 +17,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         ? {
             OR: [
               { nome: { contains: q, mode: "insensitive" as const } },
+              { apelido: { contains: q, mode: "insensitive" as const } },
               { municipio: { contains: q, mode: "insensitive" as const } },
               { tipo: { contains: q, mode: "insensitive" as const } },
             ],
@@ -49,7 +50,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
             <input
               name="q"
               defaultValue={q}
-              placeholder="Buscar por nome, município ou tipo..."
+              placeholder="Buscar por nome, apelido, município ou tipo..."
               className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
             />
           </div>
@@ -63,7 +64,10 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
                 className="flex items-center justify-between px-5 py-4 transition hover:bg-slate-50"
               >
                 <div>
-                  <p className="font-medium text-navy-900">{e.nome}</p>
+                  <p className="font-medium text-navy-900">
+                    {e.nome}
+                    {e.apelido ? <span className="ml-2 text-xs font-normal text-navy-600">· {e.apelido}</span> : null}
+                  </p>
                   <p className="text-sm text-muted">
                     {e.tipo}
                     {e.municipio && e.uf ? ` · ${e.municipio}/${e.uf}` : ""}
