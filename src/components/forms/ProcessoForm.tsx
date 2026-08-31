@@ -49,6 +49,44 @@ export function ProcessoForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cmLoading, setCmLoading] = useState(false);
+  const [cmMsg, setCmMsg] = useState<string | null>(null);
+
+  async function buscarCadastroMineiro() {
+    if (!form.numero.trim()) { setCmMsg("Informe o número do processo primeiro."); return; }
+    setCmLoading(true);
+    setCmMsg(null);
+    try {
+      const res = await fetch("/api/processos/cadastro-mineiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numero: form.numero }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
+        return;
+      }
+      const updates: Partial<typeof form> = {};
+      if (d.nup) updates.nup = d.nup;
+      if (d.fase) updates.fase = d.fase;
+      if (Object.keys(updates).length === 0) {
+        setCmMsg("Consulta OK, mas sem dados novos para preencher.");
+        return;
+      }
+      setForm((f) => ({ ...f, ...updates }));
+      const extras: string[] = [];
+      if (d.nup) extras.push(`NUP ${d.nup}`);
+      if (d.areaHa) extras.push(`${d.areaHa} ha`);
+      if (d.substancias) extras.push(d.substancias);
+      if (d.fase) extras.push(`Fase ${d.fase}`);
+      setCmMsg(`Preenchido: ${extras.join(" · ")}`);
+    } catch {
+      setCmMsg("Erro ao consultar Cadastro Mineiro.");
+    } finally {
+      setCmLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,13 +127,20 @@ export function ProcessoForm({
       <div className={grid}>
         <div>
           <Label htmlFor="numero" required>Número do processo</Label>
-          <Input
-            id="numero"
-            value={form.numero}
-            onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
-            placeholder="000.000/0000"
-            required
-          />
+          <div className="flex gap-2">
+            <Input
+              id="numero"
+              value={form.numero}
+              onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+              placeholder="000.000/0000"
+              required
+              className="flex-1"
+            />
+            <Button type="button" variant="secondary" onClick={buscarCadastroMineiro} disabled={cmLoading}>
+              {cmLoading ? "Buscando..." : "Buscar CM"}
+            </Button>
+          </div>
+          {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
         </div>
         <div>
           <Label htmlFor="nup">NUP (SEI)</Label>
