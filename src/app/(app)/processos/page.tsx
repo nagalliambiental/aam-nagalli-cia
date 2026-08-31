@@ -16,9 +16,10 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
       ativo: true,
       deletedAt: null,
       ...(q
-        ? {
+          ? {
             OR: [
               { numero: { contains: q, mode: "insensitive" as const } },
+              { nup: { contains: q, mode: "insensitive" as const } },
               { assunto: { contains: q, mode: "insensitive" as const } },
               { descricao: { contains: q, mode: "insensitive" as const } },
             ],
@@ -53,7 +54,7 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
             <input
               name="q"
               defaultValue={q}
-              placeholder="Buscar por número, assunto ou descrição..."
+              placeholder="Buscar por número, NUP, assunto ou descrição..."
               className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
             />
           </div>
@@ -69,6 +70,7 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
                 <div>
                   <p className="font-medium text-navy-900">
                     #{p.numero} <span className="text-muted font-normal">· {p.orgao.sigla}</span>
+                    {p.nup ? <span className="ml-2 text-xs font-normal text-navy-600">NUP {p.nup}</span> : null}
                   </p>
                   <p className="text-sm text-muted">
                     {p.tipoProcesso.nome}

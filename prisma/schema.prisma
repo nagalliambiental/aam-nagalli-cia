@@ -387,6 +387,7 @@ model AreaEmpresa {
 model Processo {
   id               Int       @id @default(autoincrement())
   numero           String
+  nup              String?   @unique
   orgaoId          Int
   tipoProcessoId   Int
   assunto          String?

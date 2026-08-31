@@ -18,10 +18,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Número é obrigatório" }, { status: 400 });
   }
 
+  const nup = body.nup ? String(body.nup).replace(/\s/g, "").trim() || null : null;
+  if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
+    return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
+  }
+
   try {
     const processo = await prisma.processo.create({
       data: {
         numero,
+        nup,
         orgaoId: body.orgaoId,
         tipoProcessoId: body.tipoProcessoId,
         empreendimentoId: body.empreendimentoId ?? null,

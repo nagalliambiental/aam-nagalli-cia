@@ -19,6 +19,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const data: Record<string, unknown> = {};
   if ("numero" in body) data.numero = body.numero;
+  if ("nup" in body) {
+    const nup = body.nup ? String(body.nup).trim() || null : null;
+    if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
+      return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
+    }
+    data.nup = nup;
+  }
   if ("orgaoId" in body) data.orgaoId = Number(body.orgaoId);
   if ("tipoProcessoId" in body) data.tipoProcessoId = Number(body.tipoProcessoId);
   if ("empreendimentoId" in body) data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;

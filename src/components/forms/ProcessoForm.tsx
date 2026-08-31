@@ -20,6 +20,7 @@ export function ProcessoForm({
   empreendimentos: EmpOpt[];
   initial?: {
     numero?: string;
+    nup?: string;
     orgaoId?: number;
     tipoProcessoId?: number;
     empreendimentoId?: number | null;
@@ -35,6 +36,7 @@ export function ProcessoForm({
   const router = useRouter();
   const [form, setForm] = useState({
     numero: initial?.numero ?? "",
+    nup: initial?.nup ?? "",
     orgaoId: initial?.orgaoId ?? orgaos[0]?.id ?? "",
     tipoProcessoId: initial?.tipoProcessoId ?? tipos[0]?.id ?? "",
     empreendimentoId: String(initial?.empreendimentoId ?? ""),
@@ -91,8 +93,19 @@ export function ProcessoForm({
             id="numero"
             value={form.numero}
             onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+            placeholder="000.000/0000"
             required
           />
+        </div>
+        <div>
+          <Label htmlFor="nup">NUP (SEI)</Label>
+          <Input
+            id="nup"
+            value={form.nup}
+            onChange={(e) => setForm((f) => ({ ...f, nup: e.target.value }))}
+            placeholder="48051.000000/0000-00"
+          />
+          <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
         </div>
         <div>
           <Label htmlFor="orgaoId" required>Órgão</Label>

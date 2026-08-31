@@ -13,6 +13,7 @@ import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { RelacionamentosPanel } from "@/components/processos/RelacionamentosPanel";
 import { ComunicacoesPanel } from "@/components/processos/ComunicacoesPanel";
 import { CustosPanel } from "@/components/processos/CustosPanel";
+import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 
 export default async function ProcessoDetalhePage({
   params,
@@ -82,19 +83,21 @@ export default async function ProcessoDetalhePage({
       id: "resumo",
       label: "Resumo",
       content: (
-        <Card>
-          <CardHeader title="Informações do processo" />
-          <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
-            {[
-              ["Número", `#${processo.numero}`],
-              ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
-              ["Tipo", processo.tipoProcesso.nome],
-              ["Empreendimento", processo.empreendimento?.nome ?? "—"],
-              ["Assunto", processo.assunto ?? "—"],
-              ["Fase", processo.fase ?? "—"],
-              ["Status", <StatusBadge key="s" status={processo.status} />],
-              ["Abertura", formatDate(processo.dataAbertura)],
-            ].map(([k, v]) => (
+        <>
+          <Card>
+            <CardHeader title="Informações do processo" />
+            <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
+              {[
+                ["Número", `#${processo.numero}`],
+                ["NUP (SEI)", processo.nup ?? "—"],
+                ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
+                ["Tipo", processo.tipoProcesso.nome],
+                ["Empreendimento", processo.empreendimento?.nome ?? "—"],
+                ["Assunto", processo.assunto ?? "—"],
+                ["Fase", processo.fase ?? "—"],
+                ["Status", <StatusBadge key="s" status={processo.status} />],
+                ["Abertura", formatDate(processo.dataAbertura)],
+              ].map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-muted">{k}</dt>
                 <dd className="mt-0.5 font-medium">{v}</dd>
@@ -113,7 +116,11 @@ export default async function ProcessoDetalhePage({
               <dd className="mt-1 whitespace-pre-wrap">{processo.observacoes}</dd>
             </div>
           )}
-        </Card>
+          </Card>
+          <div className="mt-6">
+            <SeiSyncPanel processoId={processo.id} nup={processo.nup} />
+          </div>
+        </>
       ),
     },
     {
@@ -171,11 +178,16 @@ export default async function ProcessoDetalhePage({
     <div>
       <PageHeader
         title={`Processo #${processo.numero}`}
-        subtitle={`${processo.orgao.sigla} · ${processo.tipoProcesso.nome}`}
+        subtitle={`${processo.orgao.sigla} · ${processo.tipoProcesso.nome}${processo.nup ? ` · NUP ${processo.nup}` : ""}`}
         actions={
-          <Link href="/processos">
-            <Button variant="ghost">Voltar</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/processos/${processo.id}/editar`}>
+              <Button variant="secondary">Editar</Button>
+            </Link>
+            <Link href="/processos">
+              <Button variant="ghost">Voltar</Button>
+            </Link>
+          </div>
         }
       />
 
