@@ -96,6 +96,7 @@ model Pessoa {
   exigenciasResp     Exigencia[]
   documentosResp     Documento[]
   custos             Custo[]
+  blocosExigenciaTemplate BlocoExigenciaTemplate[]
 
   @@index([nome])
   @@index([documento])
@@ -700,6 +701,24 @@ model Exigencia {
 
   @@index([processoId])
   @@index([orgaoId, status])
+}
+
+model BlocoExigenciaTemplate {
+  id                    Int      @id @default(autoincrement())
+  fase                  String
+  nome                  String
+  descricao             String
+  prazoDias             Int      @default(30)
+  unidade               String   @default("corridos")
+  responsavelPessoaId   Int?
+  ordem                 Int      @default(0)
+  ativo                 Boolean  @default(true)
+  criadoEm              DateTime @default(now())
+  atualizadoEm          DateTime @updatedAt
+
+  responsavel Pessoa? @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+
+  @@index([fase, ativo])
 }
 
 // =====================================================================

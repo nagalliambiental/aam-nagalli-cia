@@ -42,6 +42,43 @@ export async function POST(req: Request) {
       valorNovo: processo.numero,
     });
 
+    // Geração automática de blocos da fase inicial (sem RegraPrazo)
+    if (processo.fase) {
+      const blocos = await prisma.blocoExigenciaTemplate.findMany({
+        where: { fase: processo.fase as string, ativo: true },
+        orderBy: { ordem: "asc" },
+      });
+      for (const bloco of blocos) {
+        const prazoResposta = new Date();
+        prazoResposta.setDate(prazoResposta.getDate() + bloco.prazoDias);
+        const exigencia = await prisma.exigencia.create({
+          data: {
+            processoId: processo.id,
+            orgaoId: processo.orgaoId,
+            descricao: `${bloco.nome}: ${bloco.descricao}`,
+            prazoResposta,
+            status: "pendente",
+            responsavelPessoaId: bloco.responsavelPessoaId ?? null,
+            observacoes: `Gerado automaticamente do bloco "${bloco.nome}" da fase ${processo.fase}`,
+          },
+        });
+        await prisma.prazo.create({
+          data: {
+            processoId: processo.id,
+            exigenciaId: exigencia.id,
+            descricao: bloco.nome,
+            quantidade: bloco.prazoDias,
+            unidade: bloco.unidade,
+            dataInicial: new Date(),
+            dataCalculadaOriginal: prazoResposta,
+            dataCalculadaAtual: prazoResposta,
+            status: "futuro",
+            responsavelPessoaId: bloco.responsavelPessoaId ?? null,
+          },
+        });
+      }
+    }
+
     return NextResponse.json({ id: processo.id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Erro ao criar processo." }, { status: 500 });

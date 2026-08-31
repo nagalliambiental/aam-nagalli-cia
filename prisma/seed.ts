@@ -103,12 +103,48 @@ async function main() {
   }
 
   // ------------------------------------------------------------------
+  // BLOCOS DE EXIGÊNCIA POR FASE (regime Autorização -> Concessão)
+  // ------------------------------------------------------------------
+  const blocosPorFase: Record<string, { nome: string; descricao: string; prazoDias: number }[]> = {
+    "Requerimento de Pesquisa": [
+      { nome: "Protocolo REPEM", descricao: "Preenchimento e protocolo do requerimento no REPEM com plano de pesquisa e ART", prazoDias: 30 },
+      { nome: "Emolumentos e documentação", descricao: "Pagamento de emolumentos e juntada de documentos de titularidade", prazoDias: 15 },
+    ],
+    "Autorização de Pesquisa": [
+      { nome: "Comunicação de início de pesquisa", descricao: "Comunicar à ANM o início dos trabalhos em até 60 dias após DOU do Alvará", prazoDias: 60 },
+      { nome: "TAH e DIPEM anual", descricao: "Pagamento da TAH por hectare e entrega da DIPEM anualmente", prazoDias: 365 },
+      { nome: "Relatório Parcial (se prorrogação)", descricao: "Apresentar RPP justificando prorrogação com 60 dias de antecedência", prazoDias: 60 },
+    ],
+    "Direito de Requerer a Lavra": [
+      { nome: "Relatório Final de Pesquisa (RFP)", descricao: "Apresentar RFP detalhando resultados e viabilidade econômica", prazoDias: 30 },
+      { nome: "Requerimento de Lavra (1 ano)", descricao: "Protocolar requerimento de lavra com PAE no prazo de 1 ano após aprovação do RFP", prazoDias: 365 },
+    ],
+    "Requerimento de Lavra": [
+      { nome: "PAE e documentação técnica", descricao: "Plano de Aproveitamento Econômico, ART, e documentos técnicos", prazoDias: 60 },
+      { nome: "Licenciamento ambiental", descricao: "LP/LI/LO e comprovação de protocolo no órgão ambiental (60 dias)", prazoDias: 60 },
+    ],
+    "Concessão de Lavra": [
+      { nome: "RAL anual", descricao: "Relatório Anual de Lavra - entrega anual obrigatória", prazoDias: 365 },
+      { nome: "CFEM e PFM", descricao: "Pagamento mensal da CFEM e manutenção do Plano de Fechamento de Mina", prazoDias: 30 },
+    ],
+  };
+  for (const [fase, blocos] of Object.entries(blocosPorFase)) {
+    for (let i = 0; i < blocos.length; i++) {
+      const b = blocos[i];
+      const exists = await prisma.blocoExigenciaTemplate.findFirst({ where: { fase, nome: b.nome } });
+      if (!exists) {
+        await prisma.blocoExigenciaTemplate.create({ data: { fase, nome: b.nome, descricao: b.descricao, prazoDias: b.prazoDias, ordem: i } });
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
   // TIPOS DE ENTIDADE (auditoria) — marcados como sistema
   // ------------------------------------------------------------------
   const tiposEntidade = [
     "processo", "titulo", "licenca", "condicionante", "exigencia", "prazo",
     "tarefa", "documento", "empreendimento", "area", "empresa", "pessoa", "orgao",
-    "comunicacao", "custo", "regra_prazo", "contrato", "integracao", "usuario", "perfil",
+    "comunicacao", "custo", "regra_prazo", "bloco_exigencia", "contrato", "integracao", "usuario", "perfil",
   ];
   for (const nome of tiposEntidade) {
     await prisma.tipoEntidade.upsert({ where: { nome }, update: {}, create: { nome, sistema: true } });

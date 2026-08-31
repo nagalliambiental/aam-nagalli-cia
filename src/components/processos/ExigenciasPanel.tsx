@@ -28,6 +28,8 @@ export function ExigenciasPanel({
   const [error, setError] = useState<string | null>(null);
   const [descricao, setDescricao] = useState("");
   const [prazoResposta, setPrazoResposta] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,14 +55,39 @@ export function ExigenciasPanel({
     router.refresh();
   }
 
+  async function handlePdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfLoading(true);
+    setPdfMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/processos/${processoId}/exigencias/import-pdf`, { method: "POST", body: fd });
+    const d = await res.json().catch(() => ({}));
+    setPdfLoading(false);
+    if (!res.ok) {
+      setPdfMsg(d.error ?? "Erro ao importar PDF.");
+      return;
+    }
+    setPdfMsg(`${d.created?.length ?? 0} exigência(s) gerada(s) do PDF. Revise os prazos.`);
+    router.refresh();
+    e.target.value = "";
+  }
+
   return (
     <Card>
       <CardHeader
         title="Exigências"
         actions={
-          <Button variant="secondary" onClick={() => setShow((s) => !s)}>
-            {show ? "Cancelar" : "+ Exigência"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <label className="cursor-pointer rounded-md bg-white px-3 py-1.5 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
+              {pdfLoading ? "Importando..." : "Importar PDF"}
+              <input type="file" accept=".pdf" className="hidden" onChange={handlePdf} disabled={pdfLoading} />
+            </label>
+            <Button variant="secondary" onClick={() => setShow((s) => !s)}>
+              {show ? "Cancelar" : "+ Exigência"}
+            </Button>
+          </div>
         }
       />
 
@@ -91,6 +118,7 @@ export function ExigenciasPanel({
           </Button>
         </form>
       )}
+      {pdfMsg && <p className="border-b border-slate-200 bg-amber-50 px-5 py-2 text-sm text-amber-800">{pdfMsg}</p>}
 
       <ul className="divide-y divide-slate-100">
         {exigencias.map((ex) => (
