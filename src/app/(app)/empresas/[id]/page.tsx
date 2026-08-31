@@ -19,7 +19,7 @@ export default async function EmpresaDetalhePage({
   const empresa = await prisma.empresa.findFirst({
     where: { id: empresaId, ativo: true, deletedAt: null },
     include: {
-      _count: { select: { processos: true, empreendimentosPrincipais: true, pessoas: true } },
+      _count: { select: { processos: true, empreendimentosPrincipais: true } },
     },
   });
 
@@ -84,7 +84,6 @@ export default async function EmpresaDetalhePage({
               {[
                 ["Processos", empresa._count.processos],
                 ["Empreendimentos", empresa._count.empreendimentosPrincipais],
-                ["Pessoas vinculadas", empresa._count.pessoas],
               ].map(([k, v]) => (
                 <div key={k as string}>
                   <dt className="text-muted">{k}</dt>
