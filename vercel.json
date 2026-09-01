@@ -24,7 +24,7 @@
   "crons": [
     {
       "path": "/api/cron/movimentacoes",
-      "schedule": "0 9 * * *"
+      "schedule": "0 10 * * *"
     }
   ]
 }

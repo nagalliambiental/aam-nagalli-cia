@@ -13,28 +13,29 @@ function autorizado(req: Request): boolean {
   return authz === `Bearer ${CRON_SECRET}`;
 }
 
-function ehNovo(anterior: Date | null, atual: Date | null): boolean {
-  if (!atual) return false;
-  if (!anterior) return true; // primeira vez: registra sem notificar (seed)
-  return atual.getTime() > anterior.getTime();
+/** Dia (em dias desde época, UTC) correspondente a "dd/mm/aaaa". */
+function diaNum(s: string): number {
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return -1;
+  return Math.floor(Date.UTC(+m[3], +m[2] - 1, +m[1]) / 86400000);
 }
 
-/** Converte "dd/mm/aaaa" em Date (para comparação). */
-function parseDataBR(s: string): Date | null {
-  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!m) return null;
-  const d = parseInt(m[1], 10);
-  const mo = parseInt(m[2], 10);
-  const a = parseInt(m[3], 10);
-  if (d < 1 || d > 31 || mo < 1 || mo > 12) return null;
-  return new Date(a, mo - 1, d);
+/** Dia de hoje em Brasília (UTC-3, sem DST no BR desde 2019). */
+function diaHojeSP(): number {
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [y, mo, d] = dtf.format(new Date()).split("-");
+  return Math.floor(Date.UTC(+y, +mo - 1, +d) / 86400000);
 }
 
 /**
- * Cron diário: consulta movimentações de cada processo ativo.
- * Fonte primária: SEI (URL de exibição/token, sem captcha) — quando já salva no
- * processo. Fallback: SIGMINE (último evento). Se o último evento mudar e for
- * posterior ao registrado, cria notificação global (Dashboard/sino).
+ * Cron diário (07h de Brasília): consulta movimentações de cada processo ativo
+ * (SEI via token; fallback SIGMINE) e notifica APENAS se o último evento for de
+ * HOJE ou ONTEM, sem repetir aviso para o mesmo evento já registrado.
  */
 export async function GET(req: Request) {
   if (!autorizado(req)) {
@@ -49,23 +50,27 @@ export async function GET(req: Request) {
   let novos = 0;
   let semDados = 0;
   const detalhes: { id: number; numero: string; novo: boolean; fonte: "SEI" | "SIGMINE"; evento?: string }[] = [];
+  const hoje = diaHojeSP();
 
   for (const p of processos) {
     let descricao: string | null = null;
+    let dia: number = -1;
     let data: Date | null = null;
     let fonte: "SEI" | "SIGMINE" = "SIGMINE";
 
-    // Primária: SEI (token) — sem captcha.
     if (p.seiUrl && p.seiUrl.includes("md_pesq_processo_exibir")) {
       const ands = await consultarAndamentosSei(p.seiUrl).catch(() => []);
       if (ands.length > 0) {
-        descricao = ands[0].descricao; // página lista o mais recente primeiro
-        data = parseDataBR(ands[0].data);
+        descricao = ands[0].descricao;
+        dia = diaNum(ands[0].data);
+        if (dia >= 0) {
+          const [d, mo, y] = ands[0].data.split("/");
+          data = new Date(+y, +mo - 1, +d);
+        }
         fonte = "SEI";
       }
     }
 
-    // Fallback: SIGMINE.
     if (data === null) {
       const ev = await consultarSigmineEvento(p.numero).catch(() => null);
       if (!ev) {
@@ -75,14 +80,21 @@ export async function GET(req: Request) {
       descricao = ev.descricao;
       data = ev.data;
       fonte = "SIGMINE";
+      dia = ev.data ? Math.floor(Date.UTC(ev.data.getFullYear(), ev.data.getMonth(), ev.data.getDate()) / 86400000) : -1;
     }
 
-    if (ehNovo(p.ultimoEventoData, data)) {
+    const baselineData = p.ultimoEventoData
+      ? Math.floor(Date.UTC(p.ultimoEventoData.getFullYear(), p.ultimoEventoData.getMonth(), p.ultimoEventoData.getDate()) / 86400000)
+      : -1;
+    const jaRegistrado = descricao === p.ultimoEventoSigmine && baselineData === dia;
+    const recente = dia >= 0 ? hoje - dia <= 1 && dia <= hoje : false;
+
+    if (!jaRegistrado) {
       await prisma.processo.update({
         where: { id: p.id },
         data: { ultimoEventoSigmine: descricao, ultimoEventoData: data },
       });
-      if (p.ultimoEventoData !== null) {
+      if (recente) {
         const jaNotificado = await prisma.notificacao.findFirst({
           where: {
             tipo: "sei_movimentacao",
@@ -102,12 +114,14 @@ export async function GET(req: Request) {
           });
           novos++;
         }
+        detalhes.push({ id: p.id, numero: p.numero, novo: true, fonte, evento: descricao ?? undefined });
+      } else {
+        detalhes.push({ id: p.id, numero: p.numero, novo: false, fonte });
       }
-      detalhes.push({ id: p.id, numero: p.numero, novo: true, fonte, evento: descricao ?? undefined });
     } else {
       detalhes.push({ id: p.id, numero: p.numero, novo: false, fonte });
     }
   }
 
-  return NextResponse.json({ ok: true, checkados: processos.length, novos, semDados });
+  return NextResponse.json({ ok: true, checkados: processos.length, novos, semDados, hoje: new Date(hoje * 86400000).toISOString().slice(0, 10) });
 }
