@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { consultarAndamentosSei, extrairUrlExibirSei, type AndamentoSei } from "@/lib/sei";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -57,15 +58,11 @@ function montarFormSei(chave: string, codigo: string, cid: string): URLSearchPar
   });
 }
 
-type Andamento = { data: string; descricao: string };
-
 /**
- * Converte o HTML de resultado da pesquisa SEI em andamentos (data + descrição).
- * Cada linha de andamento encerra com o rótulo "Data: dd/mm/yyyy" (data da
- * consulta). A data REAL da movimentação aparece DENTRO da descrição (antes de
- * "Unidade:") — é essa que usamos como data do evento.
+ * Fallback: parse do HTML de RESULTADO da pesquisa SEI (sem hora/unidade).
+ * Usado apenas quando a URL de exibição do processo não pôde ser consultada.
  */
-function parseAndamentos(htmlHtml: string): Andamento[] {
+function parseAndamentos(htmlHtml: string): AndamentoSei[] {
   const texto = htmlHtml
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -77,8 +74,7 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     .replace(/&mdash;/g, "-")
     .replace(/\s+/g, " ");
 
-  const andamentos: Andamento[] = [];
-  // Partições: cada "Data: dd/mm/aaaa" acompanha um andamento (Rótulo da linha).
+  const andamentos: AndamentoSei[] = [];
   const reRow = /\bData:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
   const rows: { start: number; end: number; data: string }[] = [];
   let m: RegExpExecArray | null;
@@ -93,7 +89,6 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     const fim = rows[i].start;
     const seg = texto.slice(inicio, fim).trim();
     if (seg.length < 8) continue;
-    // Prefere a data DENTRO da descrição; senão usa a data do rótulo "Data:" da linha.
     const dm = seg.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
     const data = dm ? `${dm[1].split("/")[0].padStart(2, "0")}/${dm[1].split("/")[1].padStart(2, "0")}/${dm[1].split("/")[2]}` : rows[i].data;
     const descricao = seg
@@ -101,51 +96,9 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
       .replace(/\bUnidade[^]*$/i, "")
       .replace(/\s+/g, " ")
       .trim();
-    if (descricao.length >= 8) andamentos.push({ data, descricao });
+    if (descricao.length >= 8) andamentos.push({ data, descricao, hora: "", unidade: "" });
   }
   return andamentos.slice(0, 20);
-}
-
-function limparHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
-}
-
-/**
- * Parseia a página de exibição do processo (md_pesq_processo_exibir.php?token).
- * Cada linha <tr class="andamento..."> tem: data/hora, unidade e descrição.
- */
-function parseAndamentosProcesso(htmlHtml: string): Andamento[] {
-  const rows = htmlHtml.match(/<tr[^>]*class="[^"]*andamento[^"]*"[^>]*>[\s\S]*?<\/tr>/gi) ?? [];
-  const out: Andamento[] = [];
-  for (const row of rows) {
-    const tds = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) ?? [];
-    if (tds.length < 3) continue;
-    const dataHora = limparHtml(tds[0] ?? "");
-    const dm = dataHora.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
-    if (!dm) continue;
-    const data = `${dm[1].padStart(2, "0")}/${dm[2].padStart(2, "0")}/${dm[3]}`;
-    const descricao = limparHtml(tds[2] ?? "");
-    if (descricao.length >= 4) out.push({ data, descricao });
-  }
-  return out.slice(0, 30);
-}
-
-/** Extrai a URL de exibição (md_pesq_processo_exibir.php?token) do HTML de resultado. */
-function extrairUrlExibirSei(htmlSearch: string): string | null {
-  const m = htmlSearch.match(/md_pesq_processo_exibir\.php\?[A-Za-z0-9_-]{20,}/);
-  return m ? `${BASE_SEI}/sei/modulos/pesquisa/${m[0]}` : null;
-}
-
-/** Busca a página de exibição do processo e retorna os andamentos (datas reais). */
-async function fetchAndamentosPorToken(url: string): Promise<Andamento[]> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, "Accept-Language": "pt-BR,pt;q=0.9" },
-    cache: "no-store",
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok) return [];
-  const html = await res.text();
-  return parseAndamentosProcesso(html);
 }
 
 export async function POST(req: Request, { params }: Ctx) {
@@ -169,7 +122,7 @@ export async function POST(req: Request, { params }: Ctx) {
   const seiUrlRaw = processo.seiUrl ?? "";
   const seiTokenUrl = seiUrlRaw.includes("md_pesq_processo_exibir") ? seiUrlRaw : null;
 
-  const ok = (andamentos: Andamento[]) =>
+  const ok = (andamentos: AndamentoSei[]) =>
     NextResponse.json({
       ok: true,
       andamentos,
@@ -182,7 +135,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
   // (A) Direto pelo token (sem captcha), quando não estamos confirmando um código.
   if (seiTokenUrl && !codigoManual) {
-    const andamentos = await fetchAndamentosPorToken(seiTokenUrl).catch(() => []);
+    const andamentos = await consultarAndamentosSei(seiTokenUrl).catch(() => []);
     if (andamentos.length > 0) return ok(andamentos);
   }
 
@@ -245,7 +198,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const tokenUrl = extrairUrlExibirSei(json.html ?? "");
     if (tokenUrl) {
       await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrl } }).catch(() => {});
-      const andamentos = await fetchAndamentosPorToken(tokenUrl).catch(() => []);
+      const andamentos = await consultarAndamentosSei(tokenUrl).catch(() => []);
       if (andamentos.length > 0) return ok(andamentos);
     }
 

@@ -6,6 +6,7 @@ import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { EmpresaForm } from "@/components/forms/EmpresaForm";
 import { formatCNPJ } from "@/lib/format";
 import { DeleteEmpresaButton } from "@/components/forms/DeleteEmpresaButton";
+import { ArrowRight } from "lucide-react";
 
 export default async function EmpresaDetalhePage({
   params,
@@ -18,12 +19,17 @@ export default async function EmpresaDetalhePage({
 
   const empresa = await prisma.empresa.findFirst({
     where: { id: empresaId, ativo: true, deletedAt: null },
-    include: {
-      _count: { select: { processos: true, empreendimentosPrincipais: true } },
-    },
   });
 
   if (!empresa) notFound();
+
+  // Empreendimentos da empresa (vínculo via empresaPrincipalId) + contagem de processos
+  const empreendimentos = await prisma.empreendimento.findMany({
+    where: { empresaPrincipalId: empresaId, ativo: true, deletedAt: null },
+    orderBy: { nome: "asc" },
+    include: { _count: { select: { processos: true } } },
+  });
+  const totalProcessos = empreendimentos.reduce((s, e) => s + e._count.processos, 0);
 
   const podeEditar = await prisma.permissao.findFirst({
     where: { chave: "cadastro:editar" },
@@ -82,8 +88,8 @@ export default async function EmpresaDetalhePage({
             <CardHeader title="Contadores" />
             <dl className="grid grid-cols-2 gap-4 px-5 py-4 text-sm">
               {[
-                ["Processos", empresa._count.processos],
-                ["Empreendimentos", empresa._count.empreendimentosPrincipais],
+                ["Processos", totalProcessos],
+                ["Empreendimentos", empreendimentos.length],
               ].map(([k, v]) => (
                 <div key={k as string}>
                   <dt className="text-muted">{k}</dt>
@@ -94,6 +100,40 @@ export default async function EmpresaDetalhePage({
           </Card>
         </div>
       </div>
+
+      <Card>
+        <CardHeader
+          title="Empreendimentos"
+          actions={
+            <Link href={`/empreendimentos/novo?empresaId=${empresa.id}`}>
+              <Button>+ Empreendimento</Button>
+            </Link>
+          }
+        />
+        <ul className="divide-y divide-slate-100">
+          {empreendimentos.map((e) => (
+            <li key={e.id}>
+              <Link href={`/empreendimentos/${e.id}`} className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50">
+                <div className="min-w-0">
+                  <p className="font-medium text-navy-900">{e.nome}</p>
+                  <p className="text-xs text-muted">
+                    {e.municipio && e.uf ? `${e.municipio}/${e.uf}` : e.tipo}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm text-muted">
+                  {e._count.processos} {e._count.processos === 1 ? "processo" : "processos"}
+                  <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+                </span>
+              </Link>
+            </li>
+          ))}
+          {empreendimentos.length === 0 && (
+            <li className="px-5 py-10 text-center text-sm text-muted">
+              Nenhum empreendimento vinculado a esta empresa.
+            </li>
+          )}
+        </ul>
+      </Card>
     </div>
   );
 }

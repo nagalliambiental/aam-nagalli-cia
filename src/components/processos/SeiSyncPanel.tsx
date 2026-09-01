@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Input } from "@/components/ui";
 
-type Mov = { data: string; descricao: string };
+type Mov = { data: string; hora: string; unidade: string; descricao: string };
 
 export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: string | null }) {
   const [loading, setLoading] = useState(false);
@@ -80,14 +80,28 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
           <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
             Resultado da consulta
           </p>
-          <ul className="max-h-64 divide-y divide-slate-200 overflow-auto">
-          {andamentos.map((a, i) => (
-            <li key={i} className="flex items-start gap-3 px-3 py-2 text-sm">
-              <span className="mt-0.5 whitespace-nowrap text-xs font-medium text-muted">{a.data}</span>
-              <span className="min-w-0">{a.descricao}</span>
-            </li>
-          ))}
-          </ul>
+          <div className="max-h-72 overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Data/Hora</th>
+                  <th className="px-3 py-2 font-semibold">Unidade</th>
+                  <th className="px-3 py-2 font-semibold">Descrição</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {andamentos.map((a, i) => (
+                  <tr key={i} className="align-top">
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-muted">
+                      {a.data}{a.hora ? ` ${a.hora}` : ""}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs font-medium">{a.unidade}</td>
+                    <td className="px-3 py-2">{a.descricao}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
