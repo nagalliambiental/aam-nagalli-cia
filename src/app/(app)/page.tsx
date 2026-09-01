@@ -41,9 +41,9 @@ export default async function DashboardPage() {
     custosPendentes,
     contratosVigentes,
   ] = await Promise.all([
-    prisma.notificacao.count({ where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta"] } } }),
+    prisma.notificacao.count({ where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao"] } } }),
     prisma.notificacao.findMany({
-      where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta"] } },
+      where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao"] } },
       orderBy: { criadoEm: "desc" },
       take: 8,
       include: { processo: { include: { orgao: true } } },

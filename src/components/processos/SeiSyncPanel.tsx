@@ -3,38 +3,55 @@
 import { useState } from "react";
 import { Button, Input } from "@/components/ui";
 
+type Mov = { data: string; descricao: string };
+
 export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: string | null }) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [andamentos, setAndamentos] = useState<Mov[] | null>(null);
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
+  const [sessao, setSessao] = useState<{ cookies: string; cid: string } | null>(null);
 
   async function sync(codigoOverride?: string) {
     setLoading(true);
     setMsg(null);
-    setDetalhe(null);
+    setAndamentos(null);
     const res = await fetch(`/api/processos/${processoId}/sei/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(codigoOverride ? { codigo: codigoOverride } : {}),
+      body: JSON.stringify(
+        codigoOverride
+          ? { codigo: codigoOverride, cookies: sessao?.cookies, cid: sessao?.cid }
+          : {}
+      ),
     });
     const d = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok || d.ok === false) {
       if (d.modo === "captcha_manual" && d.captchaBase64) {
         setCaptcha(d.captchaBase64);
+        setSessao({ cookies: d.cookies ?? "", cid: d.cid ?? "" });
         setMsg(d.mensagem ?? "Digite o código da imagem.");
         return;
       }
       setMsg(d.mensagem ?? d.error ?? "Não foi possível sincronizar automaticamente.");
-      if (d.htmlPreview) setDetalhe(d.htmlPreview.slice(0, 800));
       return;
     }
     setCaptcha(null);
     setCodigo("");
-    setMsg(d.criados > 0 ? `${d.criados} andamento(s) importado(s) para Eventos.` : "Nenhum andamento novo. Processo está em dia no SEI.");
-    if (d.andamentos) setDetalhe(JSON.stringify(d.andamentos.slice(0, 3), null, 2));
+    setSessao(null);
+    setAndamentos(d.andamentos ?? []);
+    setMsg(
+      d.criados > 0
+        ? `${d.criados} ${d.criados === 1 ? "movimentação nova importada (veja Eventos)." : "movimentações novas importadas (veja Eventos)."}`
+        : d.mensagem ?? "Nenhuma movimentação nova. Processo em dia no SEI."
+    );
+  }
+
+  function confirmarCaptcha() {
+    if (!codigo.trim()) { setMsg("Digite o código da imagem."); return; }
+    sync(codigo.trim());
   }
 
   return (
@@ -50,16 +67,29 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
           {loading ? "Consultando..." : "Verificar movimentação"}
         </Button>
       </div>
+
       {captcha && (
         <div className="mt-3 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={captcha} alt="captcha" className="h-10 rounded border border-slate-300 bg-white" />
           <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código" className="w-24" maxLength={6} />
-          <Button variant="secondary" onClick={() => sync(codigo)} disabled={loading || !codigo}>Confirmar</Button>
+          <Button variant="secondary" onClick={confirmarCaptcha} disabled={loading || !codigo}>Confirmar</Button>
         </div>
       )}
+
       {msg && <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm text-navy-900 ring-1 ring-slate-200">{msg}</p>}
-      {detalhe && <pre className="mt-2 max-h-40 overflow-auto rounded bg-white p-3 text-xs text-muted ring-1 ring-slate-200">{detalhe}</pre>}
+
+      {andamentos && andamentos.length > 0 && (
+        <ul className="mt-3 max-h-64 divide-y divide-slate-200 overflow-auto rounded-md bg-white ring-1 ring-slate-200">
+          {andamentos.map((a, i) => (
+            <li key={i} className="flex items-start gap-3 px-3 py-2 text-sm">
+              <span className="mt-0.5 whitespace-nowrap text-xs font-medium text-muted">{a.data}</span>
+              <span className="min-w-0">{a.descricao}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {!nup && <p className="mt-2 text-xs text-amber-700">Cadastre o NUP no processo para consulta direta no SEI.</p>}
     </div>
   );
