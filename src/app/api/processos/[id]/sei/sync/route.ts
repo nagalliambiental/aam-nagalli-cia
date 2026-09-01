@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { brDate } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -185,35 +184,21 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     const andamentos = parseAndamentos(json.html ?? "");
+
+    // A consulta manual apenas DEVOLVE os andamentos para exibir na box abaixo
+    // (limpando a anterior a cada nova consulta). Não grava Eventos — as
+    // notificações/registros automáticos vêm do cron de movimentações (SIGMINE).
     if (andamentos.length === 0) {
       return NextResponse.json({ ok: true, andamentos, criados: 0, chave, mensagem: "Processo encontrado, mas sem movimentações legíveis." });
     }
 
-    // Dedup por (data + descrição) e criação de Eventos.
-    // As notificações no Dashboard vêm do cron de movimentações (SIGMINE) — a
-    // consulta manual aqui apenas importa Eventos, sem spammar alertas.
-    const tipoEvento = await prisma.tipoEvento.findFirst({ where: { ativo: true } });
-    let criados = 0;
-    const novos: Andamento[] = [];
-    for (const a of andamentos) {
-      const [d, mo, y] = a.data.split("/").map(Number);
-      // ancorado em Brasília (meio-dia UTC) para não cair no dia anterior ao exibir
-      const data = brDate(d, mo, y);
-      const jaExiste = await prisma.evento.findFirst({
-        where: {
-          processoId,
-          descricao: a.descricao,
-          data: { gte: new Date(data.getTime() - 1000), lte: new Date(data.getTime() + 1000) },
-        },
-      });
-      if (jaExiste) continue;
-      if (!tipoEvento) continue;
-      await prisma.evento.create({ data: { processoId, tipoEventoId: tipoEvento.id, descricao: a.descricao, data } });
-      criados++;
-      novos.push(a);
-    }
-
-    return NextResponse.json({ ok: true, andamentos: novos, criados, chave });
+    return NextResponse.json({
+      ok: true,
+      andamentos,
+      criados: 0,
+      chave,
+      mensagem: `${andamentos.length} ${andamentos.length === 1 ? "movimentação encontrada" : "movimentações encontradas"} no SEI.`,
+    });
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro ao consultar o SEI" }, { status: 500 });
   }

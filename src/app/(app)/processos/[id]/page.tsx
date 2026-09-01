@@ -6,7 +6,6 @@ import { Card, CardHeader, PageHeader, Button } from "@/components/ui";
 import { Tabs } from "@/components/ui/Tabs";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
-import { EventosPanel } from "@/components/processos/EventosPanel";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { PrazosPanel } from "@/components/processos/PrazosPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
@@ -35,13 +34,8 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound();
 
-  const [eventos, tarefas, prazos, exigencias, tiposEvento, pessoas, comunicacoes, custos] =
+  const [tarefas, prazos, exigencias, pessoas, comunicacoes, custos] =
     await Promise.all([
-      prisma.evento.findMany({
-        where: { processoId },
-        orderBy: { data: "desc" },
-        include: { tipoEvento: true },
-      }),
       prisma.tarefa.findMany({
         where: { processoId, ativo: true, deletedAt: null },
         orderBy: { dataCriacao: "desc" },
@@ -56,7 +50,6 @@ export default async function ProcessoDetalhePage({
         orderBy: { dataRecebimento: "desc" },
         include: { orgao: true, responsavel: true },
       }),
-      prisma.tipoEvento.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
       prisma.comunicacao.findMany({
         where: { processoId, ativo: true, deletedAt: null },
@@ -115,12 +108,6 @@ export default async function ProcessoDetalhePage({
           </div>
         </>
       ),
-    },
-    {
-      id: "eventos",
-      label: "Eventos",
-      count: eventos.length,
-      content: <EventosPanel processoId={processo.id} eventos={eventos} tiposEvento={tiposEvento} />,
     },
     {
       id: "tarefas",

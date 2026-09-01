@@ -42,11 +42,7 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
     setCodigo("");
     setSessao(null);
     setAndamentos(d.andamentos ?? []);
-    setMsg(
-      d.criados > 0
-        ? `${d.criados} ${d.criados === 1 ? "movimentação nova importada (veja Eventos)." : "movimentações novas importadas (veja Eventos)."}`
-        : d.mensagem ?? "Nenhuma movimentação nova. Processo em dia no SEI."
-    );
+    setMsg(d.mensagem ?? (d.andamentos?.length ? "Movimentações encontradas no SEI." : "Nenhuma movimentação nova. Processo em dia no SEI."));
   }
 
   function confirmarCaptcha() {
@@ -80,14 +76,19 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
       {msg && <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm text-navy-900 ring-1 ring-slate-200">{msg}</p>}
 
       {andamentos && andamentos.length > 0 && (
-        <ul className="mt-3 max-h-64 divide-y divide-slate-200 overflow-auto rounded-md bg-white ring-1 ring-slate-200">
+        <div className="mt-3 overflow-hidden rounded-md bg-white ring-1 ring-slate-200">
+          <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Resultado da consulta
+          </p>
+          <ul className="max-h-64 divide-y divide-slate-200 overflow-auto">
           {andamentos.map((a, i) => (
             <li key={i} className="flex items-start gap-3 px-3 py-2 text-sm">
               <span className="mt-0.5 whitespace-nowrap text-xs font-medium text-muted">{a.data}</span>
               <span className="min-w-0">{a.descricao}</span>
             </li>
           ))}
-        </ul>
+          </ul>
+        </div>
       )}
 
       {!nup && <p className="mt-2 text-xs text-amber-700">Cadastre o NUP no processo para consulta direta no SEI.</p>}
