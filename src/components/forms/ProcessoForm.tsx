@@ -118,6 +118,12 @@ export function ProcessoForm({
       if (d.areaHa) extras.push(`${d.areaHa} ha`);
       if (d.substancias) extras.push(d.substancias);
       if (d.fase) extras.push(`Fase ${d.fase}`);
+      if (d.uf) extras.push(d.uf);
+      if (d.modo === "sigmine") {
+        const obs = `[ANM] ${d.titular ?? ""} - Substância: ${d.substancias ?? ""} - Processo ANM: ${d.processoSigmine ?? form.numero}`.replace(/\s+/g, " ").trim();
+        setForm((f) => ({ ...f, observacoes: f.observacoes ? `${f.observacoes}\n${obs}` : obs }));
+        extras.push("dados abertos ANM");
+      }
       setCmMsg(`Preenchido: ${extras.join(" · ")}`);
       setCmCaptcha(null);
       setCmCodigo("");
