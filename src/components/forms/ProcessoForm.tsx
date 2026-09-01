@@ -87,7 +87,7 @@ async function consultaSigmineBrowser(numero: string): Promise<{
     return {
       areaHa: a.AREA_HA != null ? Number(a.AREA_HA) : null,
       fase: a.FASE ? normalizarFase(String(a.FASE)) : null,
-      substancias: a.SUBS ? String(a.SUBS) : null,
+      substancias: a.SUBS ? (a.USO ? `${String(a.SUBS)} (${String(a.USO)})` : String(a.SUBS)) : null,
       titular: a.NOME ? String(a.NOME) : null,
       uf: a.UF ? String(a.UF) : null,
       processoSigmine: a.PROCESSO ? String(a.PROCESSO) : null,
