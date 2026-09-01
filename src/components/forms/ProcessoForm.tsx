@@ -368,7 +368,7 @@ export function ProcessoForm({
         router.refresh();
         return;
       }
-      setError(data?.error ?? "Erro ao salvar.");
+      setError(data?.detail ? `${data?.error ?? "Erro ao salvar."} (${data.detail})` : data?.error ?? "Erro ao salvar.");
       return;
     }
     router.push(`/processos/${data.id}`);

@@ -124,7 +124,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ id: processo.id }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Erro ao criar processo." }, { status: 500 });
+  } catch (e) {
+    console.error("Erro ao criar processo:", e);
+    const msg = e instanceof Error ? e.message : "Erro ao criar processo.";
+    return NextResponse.json({ error: "Erro ao criar processo.", detail: msg }, { status: 500 });
   }
 }
