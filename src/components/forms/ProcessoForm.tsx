@@ -217,9 +217,14 @@ export function ProcessoForm({
         if (sig.fase) extras.push(`Fase ${sig.fase}`);
         if (sig.substancias) extras.push(sig.substancias);
         if (sig.uf) extras.push(sig.uf);
-        setCmMsg(`Preenchido automaticamente (SIGMINE/ANM): ${extras.join(" · ")}`);
-        setCmLoading(false);
-        return;
+        if (!form.nup.trim()) {
+          // SIGMINE não fornece NUP: continua para o backend (Cadastro Mineiro) só para o NUP
+          setCmMsg(`Dados da ANM preenchidos. Para preencher o NUP, resolva o captcha abaixo.`);
+        } else {
+          setCmMsg(`Preenchido automaticamente (SIGMINE/ANM): ${extras.join(" · ")}`);
+          setCmLoading(false);
+          return;
+        }
       }
     }
 
