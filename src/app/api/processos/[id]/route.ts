@@ -25,12 +25,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
       return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
     }
     if (nup) {
-      const outro = await prisma.processo.findUnique({ where: { nup }, select: { id: true } });
-      if (outro && outro.id !== processoId) {
+      const outro = await prisma.processo.findUnique({ where: { nup }, select: { id: true, ativo: true, deletedAt: true } });
+      if (outro && outro.id !== processoId && outro.ativo && !outro.deletedAt) {
         return NextResponse.json(
           { error: "Este NUP já pertence a outro processo.", existingId: outro.id },
           { status: 409 }
         );
+      }
+      // processo dono do NUP está excluído/inativo: libera o NUP
+      if (outro && outro.id !== processoId) {
+        await prisma.processo.update({ where: { id: outro.id }, data: { nup: null } });
       }
     }
     data.nup = nup;

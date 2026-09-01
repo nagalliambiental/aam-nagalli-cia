@@ -24,13 +24,18 @@ export async function POST(req: Request) {
   }
 
   // Se o NUP já existe, não duplica: informa o processo existente.
+  // Processos excluídos (soft-delete) não contam — libera o NUP para recriação.
   if (nup) {
-    const existente = await prisma.processo.findUnique({ where: { nup }, select: { id: true, numero: true } });
+    const existente = await prisma.processo.findUnique({ where: { nup }, select: { id: true, numero: true, ativo: true, deletedAt: true } });
     if (existente) {
-      return NextResponse.json(
-        { error: "Já existe um processo com este NUP.", existingId: existente.id, existingNumero: existente.numero },
-        { status: 409 }
-      );
+      if (existente.ativo && !existente.deletedAt) {
+        return NextResponse.json(
+          { error: "Já existe um processo com este NUP.", existingId: existente.id, existingNumero: existente.numero },
+          { status: 409 }
+        );
+      }
+      // processo excluído/inativo detém o NUP: limpa para permitir recriar
+      await prisma.processo.update({ where: { id: existente.id }, data: { nup: null } });
     }
   }
 
