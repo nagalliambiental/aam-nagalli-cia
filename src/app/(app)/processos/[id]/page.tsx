@@ -82,7 +82,7 @@ export default async function ProcessoDetalhePage({
                     ["Data Protocolo", processo.dataProtocolo ? formatDate(processo.dataProtocolo) : "—"],
                     ["Alerta", processo.alertaDias != null ? `${processo.alertaDias} dias` : "—"],
                   ]
-                : ["Guia de Utilização", processo.guiaUtilizacao ? "Sim" : "Não"]),
+                : [["Guia de Utilização", processo.guiaUtilizacao ? "Sim" : "Não"]]),
             ].map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-muted">{k}</dt>
