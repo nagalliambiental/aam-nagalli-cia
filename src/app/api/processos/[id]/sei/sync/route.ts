@@ -78,12 +78,13 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     .replace(/\s+/g, " ");
 
   const andamentos: Andamento[] = [];
-  // Partições: cada "Data: dd/mm/aaaa" marca o fim de um andamento.
+  // Partições: cada "Data: dd/mm/aaaa" acompanha um andamento (Rótulo da linha).
   const reRow = /\bData:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
-  const rows: { start: number; end: number }[] = [];
+  const rows: { start: number; end: number; data: string }[] = [];
   let m: RegExpExecArray | null;
   while ((m = reRow.exec(texto)) !== null) {
-    rows.push({ start: m.index, end: m.index + m[0].length });
+    const [d, mo, y] = m[1].split("/");
+    rows.push({ start: m.index, end: m.index + m[0].length, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
   }
   if (rows.length === 0) return andamentos;
 
@@ -92,13 +93,11 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     const fim = rows[i].start;
     const seg = texto.slice(inicio, fim).trim();
     if (seg.length < 8) continue;
-    // data real = primeira data dd/mm/aaaa DENTRO da descrição do andamento
+    // Prefere a data DENTRO da descrição; senão usa a data do rótulo "Data:" da linha.
     const dm = seg.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
-    if (!dm) continue; // sem data interna => não fabrica data
-    const [d, mo, y] = dm[1].split("/");
-    const data = `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}`;
+    const data = dm ? `${dm[1].split("/")[0].padStart(2, "0")}/${dm[1].split("/")[1].padStart(2, "0")}/${dm[1].split("/")[2]}` : rows[i].data;
     const descricao = seg
-      .replace(dm[1], " ")
+      .replace(dm ? dm[1] : "__NÃO__", " ")
       .replace(/\bUnidade[^]*$/i, "")
       .replace(/\s+/g, " ")
       .trim();
