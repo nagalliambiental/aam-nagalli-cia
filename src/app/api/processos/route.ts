@@ -42,8 +42,13 @@ export async function POST(req: Request) {
   }
 
   // Auto-mapeia tipoProcesso e órgão pelo tronco (mineral/ambiental), se não vierem do form.
-  const tipoProcesso = await prisma.tipoProcesso.findFirst({ where: { tronco: natureza } });
-  const orgao = await prisma.orgao.findFirst({ where: { ambito: natureza } });
+  // Fallback: se não houver linha com tronco/ambito preenchido, usa qualquer tipo/órgão.
+  const tipoProcesso =
+    (await prisma.tipoProcesso.findFirst({ where: { tronco: natureza } })) ??
+    (await prisma.tipoProcesso.findFirst());
+  const orgao =
+    (await prisma.orgao.findFirst({ where: { ambito: natureza } })) ??
+    (await prisma.orgao.findFirst());
 
   try {
     const processo = await prisma.processo.create({
