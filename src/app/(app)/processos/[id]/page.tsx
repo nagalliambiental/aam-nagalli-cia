@@ -10,10 +10,10 @@ import { EventosPanel } from "@/components/processos/EventosPanel";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { PrazosPanel } from "@/components/processos/PrazosPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
-import { RelacionamentosPanel } from "@/components/processos/RelacionamentosPanel";
 import { ComunicacoesPanel } from "@/components/processos/ComunicacoesPanel";
 import { CustosPanel } from "@/components/processos/CustosPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
+import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 
 export default async function ProcessoDetalhePage({
   params,
@@ -35,7 +35,7 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound();
 
-  const [eventos, tarefas, prazos, exigencias, relacionamentos, tiposEvento, pessoas, comunicacoes, custos] =
+  const [eventos, tarefas, prazos, exigencias, tiposEvento, pessoas, comunicacoes, custos] =
     await Promise.all([
       prisma.evento.findMany({
         where: { processoId },
@@ -54,16 +54,7 @@ export default async function ProcessoDetalhePage({
       prisma.exigencia.findMany({
         where: { processoId, ativo: true, deletedAt: null },
         orderBy: { dataRecebimento: "desc" },
-        include: { orgao: true },
-      }),
-      prisma.processoRelacionamento.findMany({
-        where: { processoId },
-        include: {
-          processoRelacionado: {
-            include: { orgao: true, tipoProcesso: true },
-          },
-          tipoRelacao: true,
-        },
+        include: { orgao: true, responsavel: true },
       }),
       prisma.tipoEvento.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
@@ -146,18 +137,7 @@ export default async function ProcessoDetalhePage({
       id: "exigencias",
       label: "Exigências",
       count: exigencias.length,
-      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} />,
-    },
-    {
-      id: "relacionamentos",
-      label: "Relacionamentos",
-      count: relacionamentos.length,
-      content: (
-        <RelacionamentosPanel
-          processoId={processo.id}
-          relacionamentos={relacionamentos}
-        />
-      ),
+      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} />,
     },
     {
       id: "comunicacoes",
@@ -185,6 +165,7 @@ export default async function ProcessoDetalhePage({
             <Link href={`/processos/${processo.id}/editar`}>
               <Button variant="secondary">Editar</Button>
             </Link>
+            <DeleteProcessoButton id={processo.id} />
             <Link href="/processos">
               <Button variant="ghost">Voltar</Button>
             </Link>

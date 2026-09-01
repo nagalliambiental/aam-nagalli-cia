@@ -13,14 +13,17 @@ type ExigenciaItem = {
   prazoResposta: Date | null;
   status: string;
   orgao: { sigla: string };
+  responsavel?: { nome: string } | null;
 };
 
 export function ExigenciasPanel({
   processoId,
   exigencias,
+  pessoas = [],
 }: {
   processoId: number;
   exigencias: ExigenciaItem[];
+  pessoas?: { id: number; nome: string }[];
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);

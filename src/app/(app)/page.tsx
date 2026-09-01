@@ -27,6 +27,9 @@ const AGORA = new Date();
 export default async function DashboardPage() {
   await requireAuth();
 
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
+
   const [
     alertasNaoLidas,
     alertas,
@@ -37,10 +40,6 @@ export default async function DashboardPage() {
     tarefasPendentes,
     custosPendentes,
     contratosVigentes,
-    processosPorStatus,
-    proximosPrazos,
-    tarefasRecentes,
-    atividade,
   ] = await Promise.all([
     prisma.notificacao.count({ where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta"] } } }),
     prisma.notificacao.findMany({
@@ -54,7 +53,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluido", "cancelado"] },
-        dataCalculadaAtual: { lte: new Date(AGORA.getTime() + 7 * 24 * 60 * 60 * 1000) },
+        dataCalculadaAtual: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { dataCalculadaAtual: "asc" },
       take: 10,
@@ -66,40 +65,28 @@ export default async function DashboardPage() {
         deletedAt: null,
         status: { notIn: ["concluida"] },
         OR: [
-          { prazoData: { lte: new Date(AGORA.getTime() + 7 * 24 * 60 * 60 * 1000) } },
+          { prazoData: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
           { prazoData: null },
         ],
       },
       orderBy: [{ prioridade: "asc" }, { prazoData: "asc" }],
-      take: 8,
+      take: 12,
       include: { processo: true, responsavel: true },
     }),
     prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] } } }),
     prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] } } }),
-    prisma.tarefa.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] } } }),
+    prisma.tarefa.count({
+      where: {
+        ativo: true,
+        deletedAt: null,
+        status: { notIn: ["concluida"] },
+      },
+    }),
     prisma.custo.aggregate({ _sum: { valor: true }, where: { ativo: true, deletedAt: null, status: { notIn: ["pago", "cancelado"] } } }),
     prisma.contrato.count({ where: { ativo: true, deletedAt: null } }),
-    prisma.processo.groupBy({ by: ["status"], _count: true, where: { ativo: true, deletedAt: null } }),
-    prisma.prazo.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] } },
-      orderBy: { dataCalculadaAtual: "asc" },
-      take: 6,
-      include: { processo: { include: { orgao: true } } },
-    }),
-    prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] } },
-      orderBy: [{ prioridade: "asc" }, { prazoData: "asc" }],
-      take: 6,
-      include: { processo: true },
-    }),
-    prisma.historico.findMany({
-      orderBy: { criadoEm: "desc" },
-      take: 8,
-      include: { tipoEntidade: true, usuario: true },
-    }),
   ]);
 
-  const cards = [
+  const allCards = [
     {
       label: "Processos ativos",
       value: processosAtivos,
@@ -144,16 +131,9 @@ export default async function DashboardPage() {
       iconBg: "bg-navy-50 text-navy-700",
     },
   ];
+  const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Custos pendentes" && c.label !== "Contratos");
 
   const totalAtencao = prazosAtencao.length + tarefasAtencao.length;
-  const statusTotal = processosPorStatus.reduce((s, x) => s + x._count, 0);
-  const statusBars = processosPorStatus
-    .map((x) => ({
-      status: PROCESSO_STATUS[x.status] ?? { label: x.status, tone: "gray" as const },
-      count: x._count,
-      pct: statusTotal ? Math.round((x._count / statusTotal) * 100) : 0,
-    }))
-    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="space-y-6">
@@ -171,9 +151,13 @@ export default async function DashboardPage() {
             O que precisa da sua atenção?
           </h1>
           <p className="mt-1 text-white/70">
-            {totalAtencao > 0
-              ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} em aberto nos próximos 7 dias.`
-              : `Tudo em dia: ${processosAtivos} ${processosAtivos === 1 ? "processo ativo" : "processos ativos"} acompanhando.`}
+            {isAdmin
+              ? totalAtencao > 0
+                ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} em 60 dias e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} da equipe.`
+                : `Tudo em dia: ${processosAtivos} ${processosAtivos === 1 ? "processo ativo" : "processos ativos"} acompanhando.`
+              : totalAtencao > 0
+                ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} em 60 dias e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} suas.`
+                : `Tudo em dia: ${tarefasAtencao.length === 0 ? "nenhuma tarefa pendente" : `${processosAtivos} processos acompanhando.`}`}
           </p>
         </div>
       </div>
@@ -206,14 +190,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Prazos que precisam de atenção */}
+        {/* Prazos que precisam de atenção - 60 dias */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
               <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-50 text-amber-600">
                 <CalendarClock className="h-4 w-4" />
               </span>
-              Prazos nos próximos 7 dias
+              Prazos nos próximos 60 dias
             </h2>
             <Link href="/prazos" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todos <ArrowRight className="h-3.5 w-3.5" />
@@ -239,7 +223,7 @@ export default async function DashboardPage() {
             })}
             {prazosAtencao.length === 0 && (
               <li className="px-5 py-10 text-center text-sm text-muted">
-                Nenhum prazo crítico nos próximos 7 dias.
+                Nenhum prazo crítico nos próximos 60 dias.
               </li>
             )}
           </ul>
@@ -290,14 +274,14 @@ export default async function DashboardPage() {
           </ul>
         </Card>
 
-        {/* Alertas */}
+        {/* Alertas - configurável até 30 dias */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
               <span className="flex h-7 w-7 items-center justify-center rounded-md bg-red-50 text-red-600">
                 <BellRing className="h-4 w-4" />
               </span>
-              Alertas urgentes
+              Alertas urgentes (30 dias)
             </h2>
             <Link href="/alertas" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todos <ArrowRight className="h-3.5 w-3.5" />
@@ -334,86 +318,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Atividade recente */}
-        <Card>
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
-              </span>
-              Atividade recente
-            </h2>
-            <Link href="/auditoria" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
-              Auditoria <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <ul className="divide-y divide-slate-100">
-            {atividade.map((h) => (
-              <li key={h.id} className="px-5 py-3">
-                <p className="text-sm text-navy-900">
-                  <span className="font-medium">{h.usuario?.email?.split("@")[0] ?? "—"}</span>{" "}
-                  <span className="text-muted">
-                    {h.acao} {h.tipoEntidade.nome}
-                  </span>
-                </p>
-                <p className="mt-0.5 text-xs text-muted">
-                  {h.campo ? `campo: ${h.campo}` : ""}· {formatDate(h.criadoEm)}
-                </p>
-              </li>
-            ))}
-            {atividade.length === 0 && (
-              <li className="px-5 py-10 text-center text-sm text-muted">
-                Sem atividade registrada ainda.
-              </li>
-            )}
-          </ul>
-        </Card>
-
-        {/* Processos por status */}
-        <Card>
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                <FilePlus2 className="h-4 w-4" />
-              </span>
-              Processos por status
-            </h2>
-            <Link href="/indicadores" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
-              Indicadores <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="space-y-3 p-5">
-            {statusBars.map((s) => (
-              <div key={s.status.label}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <Badge tone={s.status.tone}>{s.status.label}</Badge>
-                  <span className="text-muted">
-                    {s.count} ({s.pct}%)
-                  </span>
-                </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full rounded-full ${
-                      s.status.tone === "green"
-                        ? "bg-green-500"
-                        : s.status.tone === "red"
-                        ? "bg-red-500"
-                        : s.status.tone === "blue"
-                        ? "bg-navy-600"
-                        : "bg-slate-400"
-                    }`}
-                    style={{ width: `${s.pct}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-            {statusBars.length === 0 && (
-              <p className="py-6 text-center text-sm text-muted">Nenhum processo cadastrado.</p>
-            )}
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }

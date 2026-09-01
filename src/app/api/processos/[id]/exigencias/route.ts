@@ -41,6 +41,7 @@ export async function POST(req: Request, { params }: Ctx) {
         dataRecebimento: body.dataRecebimento ? new Date(body.dataRecebimento) : new Date(),
         prazoResposta: body.prazoResposta ? new Date(body.prazoResposta) : null,
         status: "pendente",
+        responsavelPessoaId: body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null,
       },
     });
 
