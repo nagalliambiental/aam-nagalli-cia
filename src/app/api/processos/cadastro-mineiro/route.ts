@@ -150,6 +150,23 @@ async function consultarComCaptcha(numCompleto: string, codigo: string, cookies:
   }
 }
 
+/** Extrai os nomes das substâncias do grid `ctl00_conteudo_gridSubstancias` (1ª coluna). */
+function extrairSubstanciasGrid(html: string): string {
+  const tbl = html.match(/<table[^>]*id="ctl00_conteudo_gridSubstancias"[\s\S]*?<\/table>/i)?.[0];
+  if (!tbl) return "";
+  const nomes: string[] = [];
+  const rows = tbl.match(/<tr[\s>][\s\S]*?<\/tr>/gi) ?? [];
+  for (const row of rows) {
+    if (/<th[ >]/i.test(row)) continue; // cabeçalho
+    const td = row.match(/<td[^>]*>([\s\S]*?)<\/td>/i)?.[1];
+    if (!td) continue;
+    const cel = td.replace(/<input[^>]*>/gi, ""); // descarta o hidden com o código
+    const nome = textoPlano(cel);
+    if (nome) nomes.push(nome);
+  }
+  return [...new Set(nomes)].join(", ");
+}
+
 /** Interpreta a resposta do SCM e devolve os dados estruturados. */
 function parseRespostaCM(postHtml: string, numCompleto: string) {
   const areaTxt = extrairValor(postHtml, "Área (ha)");
@@ -159,7 +176,7 @@ function parseRespostaCM(postHtml: string, numCompleto: string) {
     nup: extrairValor(postHtml, "NUP") || null,
     areaHa: areaMm ? parseFloat(areaMm[0].replace(/\.(?=\d{3})/g, "").replace(",", ".")) : null,
     fase: extrairValor(postHtml, "Fase atual") || null,
-    substancias: extrairValor(postHtml, "Substâncias") || null,
+    substancias: extrairSubstanciasGrid(postHtml) || extrairValor(postHtml, "Substâncias") || null,
     municipios: extrairValor(postHtml, "Municípios") || null,
     tipoRequerimento: extrairValor(postHtml, "Tipo de requerimento") || null,
     ativo: extrairValor(postHtml, "Ativo") || null,

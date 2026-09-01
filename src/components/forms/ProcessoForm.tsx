@@ -122,6 +122,7 @@ export function ProcessoForm({
     status?: string;
     areaValor?: number | null;
     areaUnidade?: string;
+    substancias?: string;
     dataAbertura?: string;
     descricao?: string;
     observacoes?: string;
@@ -140,6 +141,7 @@ export function ProcessoForm({
     status: initial?.status ?? "em_andamento",
     areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
     areaUnidade: initial?.areaUnidade ?? "ha",
+    substancias: initial?.substancias ?? "",
     dataAbertura: initial?.dataAbertura ?? new Date().toISOString().slice(0, 10),
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
@@ -204,6 +206,7 @@ export function ProcessoForm({
           updates.areaUnidade = "ha";
         }
         if (sig.fase) updates.fase = sig.fase;
+        if (sig.substancias) updates.substancias = sig.substancias;
         if (Object.keys(updates).length > 0) setForm((f) => ({ ...f, ...updates }));
         const obs = `[ANM] ${sig.titular ?? ""} - Substância: ${sig.substancias ?? ""} - Processo ANM: ${sig.processoSigmine ?? form.numero}`.replace(/\s+/g, " ").trim();
         if (obs.trim() !== "[ANM]") {
@@ -266,6 +269,7 @@ export function ProcessoForm({
         updates.areaValor = String(d.areaHa);
         updates.areaUnidade = "ha";
       }
+      if (d.substancias) updates.substancias = d.substancias;
       if (Object.keys(updates).length === 0) {
         setCmMsg("Consulta OK, mas sem dados novos para preencher.");
         return;
@@ -463,6 +467,16 @@ export function ProcessoForm({
             <option value="ha">Hectare (ha)</option>
             <option value="m²">Metro quadrado (m²)</option>
           </Select>
+        </div>
+        <div>
+          <Label htmlFor="substancias">Substâncias</Label>
+          <Input
+            id="substancias"
+            value={form.substancias}
+            onChange={(e) => setForm((f) => ({ ...f, substancias: e.target.value }))}
+            placeholder="Ex: Basalto, Brita"
+          />
+          <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
         </div>
         <div>
           <Label htmlFor="dataAbertura">Data de abertura</Label>

@@ -34,6 +34,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("status" in body) data.status = body.status;
   if ("areaValor" in body) data.areaValor = body.areaValor != null ? Number(body.areaValor) : null;
   if ("areaUnidade" in body) data.areaUnidade = body.areaUnidade ?? "ha";
+  if ("substancias" in body) data.substancias = body.substancias ?? null;
   if ("dataAbertura" in body) data.dataAbertura = body.dataAbertura ? new Date(body.dataAbertura) : null;
   if ("descricao" in body) data.descricao = body.descricao ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;

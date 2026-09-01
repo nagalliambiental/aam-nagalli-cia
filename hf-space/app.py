@@ -116,6 +116,25 @@ def extract_sei_url(html: str):
     return None
 
 
+def extrair_substancias_grid(html: str) -> str:
+    m = re.search(r'<table[^>]*id="ctl00_conteudo_gridSubstancias"[\s\S]*?</table>', html, re.I)
+    if not m:
+        return ""
+    tbl = m.group(0)
+    nomes = []
+    for row in re.findall(r"<tr[\s>][\s\S]*?</tr>", tbl, re.I):
+        if re.search(r"<th[ >]", row, re.I):
+            continue
+        td = re.search(r"<td[^>]*>([\s\S]*?)</td>", row, re.I)
+        if not td:
+            continue
+        cel = re.sub(r"<input[^>]*>", "", td.group(1), flags=re.I)
+        nome = texto_plano(cel)
+        if nome and nome not in nomes:
+            nomes.append(nome)
+    return ", ".join(nomes)
+
+
 def parse_resposta(html: str, numero: str):
     area_txt = extrair_valor(html, "Área (ha)")
     mm = re.search(r"[\d.,]+", area_txt)
@@ -131,7 +150,7 @@ def parse_resposta(html: str, numero: str):
         "nup": extrair_valor(html, "NUP") or None,
         "areaHa": area_ha,
         "fase": extrair_valor(html, "Fase atual") or None,
-        "substancias": extrair_valor(html, "Substâncias") or None,
+        "substancias": extrair_substancias_grid(html) or extrair_valor(html, "Substâncias") or None,
         "municipios": extrair_valor(html, "Municípios") or None,
         "tipoRequerimento": extrair_valor(html, "Tipo de requerimento") or None,
         "ativo": extrair_valor(html, "Ativo") or None,

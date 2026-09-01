@@ -87,6 +87,7 @@ export default async function ProcessoDetalhePage({
               ["Assunto", processo.assunto ?? "—"],
               ["Fase", processo.fase ?? "—"],
               ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
+              ["Substâncias", processo.substancias ?? "—"],
               ["Status", <StatusBadge key="s" status={processo.status} />],
               ["Abertura", formatDate(processo.dataAbertura)],
             ].map(([k, v]) => (

@@ -36,6 +36,7 @@ export async function POST(req: Request) {
         status: body.status ?? "em_andamento",
         areaValor: body.areaValor != null ? Number(body.areaValor) : null,
         areaUnidade: body.areaUnidade ?? "ha",
+        substancias: body.substancias ?? null,
         dataAbertura: body.dataAbertura ? new Date(body.dataAbertura) : new Date(),
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,
