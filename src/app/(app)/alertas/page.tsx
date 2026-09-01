@@ -127,6 +127,7 @@ export default async function AlertasPage({ searchParams }: { searchParams: Sear
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluido", "cancelado"] },
+        processo: { ativo: true, deletedAt: null },
         dataCalculadaAtual: { not: null },
       },
       include: { processo: { include: { orgao: true } } },

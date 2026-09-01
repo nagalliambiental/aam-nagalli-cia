@@ -53,6 +53,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluido", "cancelado"] },
+        processo: { ativo: true, deletedAt: null },
         dataCalculadaAtual: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { dataCalculadaAtual: "asc" },

@@ -13,6 +13,7 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
     where: {
       ativo: true,
       deletedAt: null,
+      processo: { ativo: true, deletedAt: null },
       ...(q ? { descricao: { contains: q, mode: "insensitive" as const } } : {}),
     },
     orderBy: { dataCalculadaAtual: "asc" },

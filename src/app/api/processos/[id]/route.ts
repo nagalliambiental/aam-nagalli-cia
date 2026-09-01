@@ -115,7 +115,14 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!session.user.permissoes?.includes("processo:excluir")) return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
   const { id } = await params;
-  await prisma.processo.update({ where: { id: Number(id) }, data: { ativo: false, deletedAt: new Date() } });
-  await audit({ tipoEntidade: "processo", entidadeId: Number(id), acao: "excluir", usuarioId: Number(session.user.id) });
+  const processoId = Number(id);
+  const agora = new Date();
+  // Soft-delete do processo e dos filhos (para não deixar prazos/exigências órfãos)
+  await prisma.$transaction([
+    prisma.processo.update({ where: { id: processoId }, data: { ativo: false, deletedAt: agora } }),
+    prisma.prazo.updateMany({ where: { processoId, ativo: true }, data: { ativo: false, deletedAt: agora } }),
+    prisma.exigencia.updateMany({ where: { processoId, ativo: true }, data: { ativo: false, deletedAt: agora } }),
+  ]);
+  await audit({ tipoEntidade: "processo", entidadeId: processoId, acao: "excluir", usuarioId: Number(session.user.id) });
   return NextResponse.json({ ok: true });
 }
