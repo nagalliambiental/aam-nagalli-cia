@@ -94,7 +94,6 @@ model Pessoa {
   prazosResp         Prazo[]
   condicionantesResp Condicionante[]
   exigenciasResp     Exigencia[]
-  documentosResp     Documento[]
   custos             Custo[]
   blocosExigenciaTemplate BlocoExigenciaTemplate[]
 
@@ -132,7 +131,6 @@ model Usuario {
   perfil         Perfil              @relation(fields: [perfilId], references: [id])
   tarefasCriadas Tarefa[]
   movimentacoes  PrazoMovimentacao[]
-  requisicoesOcr OcrProcessamento[]
   historicos     Historico[]
   notificacoes   Notificacao[]
 
@@ -302,7 +300,6 @@ model Empreendimento {
   areas             EmpreendimentoArea[]
   processos         Processo[]
   licencas          Licenca[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([empresaPrincipalId])
   @@index([tipo, status])
@@ -347,7 +344,6 @@ model Area {
   titulos           AreaTitulo[]
   licencas          AreaLicenca[]
   eventoVinculos    Evento[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([municipio, uf])
 }
@@ -423,7 +419,6 @@ model Processo {
   exigencias        Exigencia[]
   titulos           TituloProcesso[]
   licencas          LicencaProcesso[]
-  documentoVinculos DocumentoVinculo[]
   notificacoes      Notificacao[]
   comunicacoes      Comunicacao[]
   custos            Custo[]
@@ -526,7 +521,6 @@ model TituloMinerario {
   eventos           Evento[]
   prazos            Prazo[]
   tarefas           Tarefa[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([tipoTituloId])
   @@index([orgaoId])
@@ -600,7 +594,6 @@ model Licenca {
   eventos           Evento[]
   prazos            Prazo[]
   tarefas           Tarefa[]
-  documentoVinculos DocumentoVinculo[]
   notificacoes      Notificacao[]
 
   @@index([tipoLicencaId])
@@ -672,7 +665,6 @@ model Condicionante {
   prazos            Prazo[]
   tarefas           Tarefa[]
   eventos           Evento[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([licencaId])
   @@index([status, proximoVencimento])
@@ -702,7 +694,6 @@ model Exigencia {
   tarefas           Tarefa[]
   eventos           Evento[]
   prazos            Prazo[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([processoId])
   @@index([orgaoId, status])
@@ -899,7 +890,6 @@ model Tarefa {
   exigencia       Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: SetNull)
 
   notificacoes      Notificacao[]
-  documentoVinculos DocumentoVinculo[]
 
   @@index([responsavelPessoaId, status])
   @@index([processoId])
@@ -931,101 +921,6 @@ model Notificacao {
   @@index([destinatarioUsuarioId, lida])
   @@index([tipo, dataEnvio])
   @@index([prazoId])
-}
-
-// =====================================================================
-//  DOCUMENTOS (Object Storage) + VÍNCULOS + OCR
-// =====================================================================
-
-model Documento {
-  id                  Int      @id @default(autoincrement())
-  nome                String
-  tipo                String   @default("outro")
-  categoria           String   @default("documento")
-  storageKey          String   @unique
-  mime                String?
-  tamanho             Int?
-  hash                String?
-  versao              Int      @default(1)
-  data                DateTime @default(now())
-  origem              String   @default("upload")
-  classificacao       String?
-  status              String   @default("ativo")
-  observacoes         String?
-  responsavelPessoaId Int?
-  criadoPor           Int?
-
-  ativo        Boolean   @default(true)
-  deletedAt    DateTime?
-  criadoEm     DateTime  @default(now())
-  atualizadoEm DateTime  @updatedAt
-
-  responsavel       Pessoa?            @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
-  vinculos          DocumentoVinculo[]
-  ocrProcessamentos OcrProcessamento[]
-
-  @@index([storageKey])
-  @@index([tipo, status])
-}
-
-model DocumentoVinculo {
-  id          Int    @id @default(autoincrement())
-  documentoId Int
-  papel       String @default("anexo")
-
-  processoId       Int?
-  tituloId         Int?
-  licencaId        Int?
-  condicionanteId  Int?
-  exigenciaId      Int?
-  tarefaId         Int?
-  areaId           Int?
-  empreendimentoId Int?
-
-  criadoEm DateTime @default(now())
-
-  documento      Documento        @relation(fields: [documentoId], references: [id], onDelete: Cascade)
-  processo       Processo?        @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  titulo         TituloMinerario? @relation(fields: [tituloId], references: [id], onDelete: Cascade)
-  licenca        Licenca?         @relation(fields: [licencaId], references: [id], onDelete: Cascade)
-  condicionante  Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: Cascade)
-  exigencia      Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: Cascade)
-  tarefa         Tarefa?          @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
-  area           Area?            @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  empreendimento Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
-
-  // CHECK (no migration/raw): ao menos um alvo preenchido.
-  @@unique([documentoId, processoId, tituloId, licencaId, condicionanteId, exigenciaId, tarefaId, areaId, empreendimentoId, papel])
-  @@index([documentoId])
-  @@index([processoId])
-  @@index([tituloId])
-  @@index([licencaId])
-  @@index([condicionanteId])
-  @@index([exigenciaId])
-  @@index([tarefaId])
-  @@index([areaId])
-  @@index([empreendimentoId])
-}
-
-model OcrProcessamento {
-  id                  Int       @id @default(autoincrement())
-  documentoId         Int
-  status              String    @default("pendente")
-  provedor            String?
-  tentativas          Int       @default(0)
-  textoExtraido       String?
-  camposJson          String?
-  confianca           Float?
-  erro                String?
-  revistoPorUsuarioId Int?
-  revistoEm           DateTime?
-  criadoEm            DateTime  @default(now())
-  atualizadoEm        DateTime  @updatedAt
-
-  documento  Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
-  revistoPor Usuario?  @relation(fields: [revistoPorUsuarioId], references: [id], onDelete: SetNull)
-
-  @@index([documentoId, status])
 }
 
 // =====================================================================
