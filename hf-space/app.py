@@ -121,18 +121,19 @@ def extrair_substancias_grid(html: str) -> str:
     if not m:
         return ""
     tbl = m.group(0)
-    nomes = []
+    itens = []
     for row in re.findall(r"<tr[\s>][\s\S]*?</tr>", tbl, re.I):
         if re.search(r"<th[ >]", row, re.I):
             continue
-        td = re.search(r"<td[^>]*>([\s\S]*?)</td>", row, re.I)
-        if not td:
+        tds = re.findall(r"<td[^>]*>([\s\S]*?)</td>", row, re.I)
+        if not tds:
             continue
-        cel = re.sub(r"<input[^>]*>", "", td.group(1), flags=re.I)
-        nome = texto_plano(cel)
-        if nome and nome not in nomes:
-            nomes.append(nome)
-    return ", ".join(nomes)
+        nome = texto_plano(re.sub(r"<input[^>]*>", "", tds[0], flags=re.I))
+        uso = texto_plano(re.sub(r"<input[^>]*>", "", tds[1], flags=re.I)) if len(tds) > 1 else ""
+        item = f"{nome} ({uso})" if uso and nome else nome
+        if item and item not in itens:
+            itens.append(item)
+    return ", ".join(itens)
 
 
 def parse_resposta(html: str, numero: str):

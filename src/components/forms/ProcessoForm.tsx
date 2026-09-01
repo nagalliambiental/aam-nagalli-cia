@@ -117,12 +117,25 @@ export function ProcessoForm({
     orgaoId?: number;
     tipoProcessoId?: number;
     empreendimentoId?: number | null;
+    natureza?: string;
     assunto?: string;
     fase?: string;
     status?: string;
     areaValor?: number | null;
     areaUnidade?: string;
     substancias?: string;
+    guiaUtilizacao?: boolean;
+    numeroLicenca?: string;
+    numeroProtocolo?: string;
+    atividade?: string;
+    modalidade?: string;
+    modalidadeOutra?: string;
+    orgaoAmbiental?: string;
+    orgaoAmbientalOutro?: string;
+    validade?: string;
+    dataProtocolo?: string;
+    alertaDias?: number;
+    condicionantes?: string;
     dataAbertura?: string;
     descricao?: string;
     observacoes?: string;
@@ -133,15 +146,27 @@ export function ProcessoForm({
   const [form, setForm] = useState({
     numero: initial?.numero ?? "",
     nup: initial?.nup ?? "",
-    orgaoId: initial?.orgaoId ?? orgaos[0]?.id ?? "",
-    tipoProcessoId: initial?.tipoProcessoId ?? tipos[0]?.id ?? "",
+    orgaoId: initial?.orgaoId ?? "",
     empreendimentoId: String(initial?.empreendimentoId ?? ""),
-    assunto: initial?.assunto ?? "",
+    natureza: initial?.natureza ?? "minerario",
     fase: initial?.fase ?? "",
     status: initial?.status ?? "em_andamento",
     areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
     areaUnidade: initial?.areaUnidade ?? "ha",
     substancias: initial?.substancias ?? "",
+    guiaUtilizacao: initial?.guiaUtilizacao === true,
+    // ambientais
+    numeroLicenca: initial?.numeroLicenca ?? "",
+    numeroProtocolo: initial?.numeroProtocolo ?? "",
+    atividade: initial?.atividade ?? "",
+    modalidade: initial?.modalidade ?? "",
+    modalidadeOutra: initial?.modalidadeOutra ?? "",
+    orgaoAmbiental: initial?.orgaoAmbiental ?? "",
+    orgaoAmbientalOutro: initial?.orgaoAmbientalOutro ?? "",
+    validade: initial?.validade ?? "",
+    dataProtocolo: initial?.dataProtocolo ?? "",
+    alertaDias: initial?.alertaDias != null ? String(initial.alertaDias) : "",
+    condicionantes: initial?.condicionantes ?? "",
     dataAbertura: initial?.dataAbertura ?? new Date().toISOString().slice(0, 10),
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
@@ -316,9 +341,13 @@ export function ProcessoForm({
     const payload = {
       ...form,
       orgaoId: form.orgaoId ? Number(form.orgaoId) : null,
-      tipoProcessoId: form.tipoProcessoId ? Number(form.tipoProcessoId) : null,
       empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
+      natureza: form.natureza,
+      guiaUtilizacao: form.natureza === "minerario" && form.guiaUtilizacao,
       areaValor: form.areaValor !== "" ? Number(String(form.areaValor).replace(",", ".")) : null,
+      validade: form.validade ? new Date(form.validade) : null,
+      dataProtocolo: form.dataProtocolo ? new Date(form.dataProtocolo) : null,
+      alertaDias: form.alertaDias !== "" ? Number(form.alertaDias) : null,
       dataAbertura: form.dataAbertura ? new Date(form.dataAbertura) : null,
     };
 
@@ -347,64 +376,45 @@ export function ProcessoForm({
   }
 
   const grid = "grid grid-cols-1 gap-4 md:grid-cols-2";
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setCheck = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.checked }));
+
+  const MODALIDADES = ["Licença Prévia", "Licença de Instalação", "Licença de Operação", "Licença de Operação e Regularização", "Autorização Ambiental", "Outro"];
+  const ORGAOS_AMB = ["SMMA", "IAT", "IMA", "FATMA", "IBAMA", "Prefeitura", "Outro"];
+
+  // Import de condicionantes via PDF -> texto (usa a rota /api/processos/import-condicionantes)
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
+  async function importarCondicionantes(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfLoading(true);
+    setPdfMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/processos/import-condicionantes", { method: "POST", body: fd });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.texto) {
+        setForm((f) => ({ ...f, condicionantes: f.condicionantes ? `${f.condicionantes}\n${d.texto}` : d.texto }));
+        setPdfMsg("Condicionantes extraídas do PDF.");
+      } else {
+        setPdfMsg(d.error ?? "Não foi possível extrair o texto do PDF.");
+      }
+    } catch {
+      setPdfMsg("Erro ao processar PDF.");
+    } finally {
+      setPdfLoading(false);
+      e.target.value = "";
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={grid}>
-        <div>
-          <Label htmlFor="numero" required>Número do processo</Label>
-          <div className="flex gap-2">
-            <Input
-              id="numero"
-              value={form.numero}
-              onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
-              placeholder="000.000/0000"
-              required
-              className="flex-1"
-            />
-            <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro()} disabled={cmLoading}>
-              {cmLoading ? "Buscando..." : "Buscar CM"}
-            </Button>
-          </div>
-          {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
-        </div>
-        <div>
-          <Label htmlFor="nup">NUP (SEI)</Label>
-          <Input
-            id="nup"
-            value={form.nup}
-            onChange={(e) => setForm((f) => ({ ...f, nup: e.target.value }))}
-            placeholder="48051.000000/0000-00"
-          />
-          <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
-        </div>
-        <div>
-          <Label htmlFor="orgaoId" required>Órgão</Label>
-          <Select
-            id="orgaoId"
-            value={String(form.orgaoId)}
-            onChange={(e) => setForm((f) => ({ ...f, orgaoId: e.target.value as unknown as number }))}
-            required
-          >
-            {orgaos.map((o) => (
-              <option key={o.id} value={o.id}>{o.sigla} — {o.nome}</option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="tipoProcessoId" required>Tipo de processo</Label>
-          <Select
-            id="tipoProcessoId"
-            value={String(form.tipoProcessoId)}
-            onChange={(e) => setForm((f) => ({ ...f, tipoProcessoId: e.target.value as unknown as number }))}
-            required
-          >
-            {tipos.map((t) => (
-              <option key={t.id} value={t.id}>{t.nome}</option>
-            ))}
-          </Select>
-        </div>
-        <div>
+        <div className="md:col-span-2">
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
           <Select
             id="empreendimentoId"
@@ -417,104 +427,210 @@ export function ProcessoForm({
             ))}
           </Select>
         </div>
-        <div>
-          <Label htmlFor="assunto">Assunto</Label>
-          <Input
-            id="assunto"
-            value={form.assunto}
-            onChange={(e) => setForm((f) => ({ ...f, assunto: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="fase">Fase (regime Autorização → Concessão)</Label>
-          <Select
-            id="fase"
-            value={form.fase}
-            onChange={(e) => setForm((f) => ({ ...f, fase: e.target.value }))}
-          >
-            <option value="">— selecione —</option>
-            <option value="Requerimento de Pesquisa">Requerimento de Pesquisa</option>
-            <option value="Autorização de Pesquisa">Autorização de Pesquisa (Alvará)</option>
-            <option value="Direito de Requerer a Lavra">Direito de Requerer a Lavra</option>
-            <option value="Requerimento de Lavra">Requerimento de Lavra</option>
-            <option value="Concessão de Lavra">Concessão de Lavra</option>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select
-            id="status"
-            value={form.status}
-            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-          >
-            <option value="em_andamento">Em andamento</option>
-            <option value="ativo">Ativo</option>
-            <option value="pendente">Pendente</option>
-            <option value="arquivado">Arquivado</option>
-            <option value="cancelado">Cancelado</option>
-            <option value="encerrado">Encerrado</option>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="areaValor">Área</Label>
-          <Input
-            id="areaValor"
-            type="number"
-            step="any"
-            min="0"
-            value={form.areaValor}
-            onChange={(e) => setForm((f) => ({ ...f, areaValor: e.target.value }))}
-            placeholder="0,00"
-          />
-        </div>
-        <div>
-          <Label htmlFor="areaUnidade">Unidade</Label>
-          <Select
-            id="areaUnidade"
-            value={form.areaUnidade}
-            onChange={(e) => setForm((f) => ({ ...f, areaUnidade: e.target.value }))}
-          >
-            <option value="ha">Hectare (ha)</option>
-            <option value="m²">Metro quadrado (m²)</option>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="substancias">Substâncias</Label>
-          <Input
-            id="substancias"
-            value={form.substancias}
-            onChange={(e) => setForm((f) => ({ ...f, substancias: e.target.value }))}
-            placeholder="Ex: Basalto, Brita"
-          />
-          <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
-        </div>
-        <div>
-          <Label htmlFor="dataAbertura">Data de abertura</Label>
-          <Input
-            id="dataAbertura"
-            type="date"
-            value={form.dataAbertura}
-            onChange={(e) => setForm((f) => ({ ...f, dataAbertura: e.target.value }))}
-          />
-        </div>
         <div className="md:col-span-2">
-          <Label htmlFor="descricao">Descrição</Label>
-          <Textarea
-            id="descricao"
-            value={form.descricao}
-            onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-            rows={2}
-          />
+          <Label>Natureza do processo</Label>
+          <div className="flex overflow-hidden rounded-md ring-1 ring-slate-200">
+            {(["minerario", "ambiental"] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, natureza: n }))}
+                className={`flex-1 py-2 text-sm font-medium transition ${
+                  form.natureza === n
+                    ? n === "ambiental"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-navy-700 text-white"
+                    : "bg-white text-muted hover:bg-slate-50"
+                }`}
+              >
+                {n === "minerario" ? "Processo Minerário" : "Processo Ambiental"}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="md:col-span-2">
-          <Label htmlFor="observacoes">Observações</Label>
-          <Textarea
-            id="observacoes"
-            value={form.observacoes}
-            onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
-            rows={2}
-          />
-        </div>
+
+        {form.natureza === "minerario" ? (
+          <>
+            <div>
+              <Label htmlFor="numero" required>Número do processo</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="numero"
+                  value={form.numero}
+                  onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+                  placeholder="000.000/0000"
+                  required
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro()} disabled={cmLoading}>
+                  {cmLoading ? "Buscando..." : "Buscar CM"}
+                </Button>
+              </div>
+              {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
+            </div>
+            <div>
+              <Label htmlFor="nup">NUP (SEI)</Label>
+              <Input id="nup" value={form.nup} onChange={set("nup")} placeholder="48051.000000/0000-00" />
+              <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
+            </div>
+            <div>
+              <Label htmlFor="orgaoId" required>Órgão</Label>
+              <Select id="orgaoId" value={String(form.orgaoId)} onChange={(e) => setForm((f) => ({ ...f, orgaoId: e.target.value as unknown as number }))} required>
+                {orgaos.map((o) => (
+                  <option key={o.id} value={o.id}>{o.sigla} — {o.nome}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="fase">Fase (regime Autorização → Concessão)</Label>
+              <Select id="fase" value={form.fase} onChange={set("fase")}>
+                <option value="">— selecione —</option>
+                <option value="Requerimento de Pesquisa">Requerimento de Pesquisa</option>
+                <option value="Autorização de Pesquisa">Autorização de Pesquisa (Alvará)</option>
+                <option value="Direito de Requerer a Lavra">Direito de Requerer a Lavra</option>
+                <option value="Requerimento de Lavra">Requerimento de Lavra</option>
+                <option value="Concessão de Lavra">Concessão de Lavra</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select id="status" value={form.status} onChange={set("status")}>
+                <option value="em_andamento">Em andamento</option>
+                <option value="ativo">Ativo</option>
+                <option value="pendente">Pendente</option>
+                <option value="arquivado">Arquivado</option>
+                <option value="cancelado">Cancelado</option>
+                <option value="encerrado">Encerrado</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="areaValor">Área</Label>
+              <Input id="areaValor" type="number" step="any" min="0" value={form.areaValor} onChange={set("areaValor")} placeholder="0,00" />
+            </div>
+            <div>
+              <Label htmlFor="areaUnidade">Unidade</Label>
+              <Select id="areaUnidade" value={form.areaUnidade} onChange={set("areaUnidade")}>
+                <option value="ha">Hectare (ha)</option>
+                <option value="m²">Metro quadrado (m²)</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="substancias">Substâncias</Label>
+              <Input id="substancias" value={form.substancias} onChange={set("substancias")} placeholder="Ex: Basalto (Brita)" />
+              <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
+            </div>
+            <div>
+              <Label htmlFor="dataAbertura">Data de abertura</Label>
+              <Input id="dataAbertura" type="date" value={form.dataAbertura} onChange={set("dataAbertura")} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-2 text-sm text-navy-900">
+                <input
+                  type="checkbox"
+                  checked={form.guiaUtilizacao}
+                  onChange={setCheck("guiaUtilizacao")}
+                  className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-500"
+                />
+                Guia de Utilização
+              </label>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <Textarea id="descricao" value={form.descricao} onChange={set("descricao")} rows={2} />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="observacoes">Observações</Label>
+              <Textarea id="observacoes" value={form.observacoes} onChange={set("observacoes")} rows={2} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <Label htmlFor="numero">Número do processo</Label>
+              <Input id="numero" value={form.numero} onChange={set("numero")} placeholder="000.000/0000" />
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select id="status" value={form.status} onChange={set("status")}>
+                <option value="em_andamento">Em andamento</option>
+                <option value="ativo">Ativo</option>
+                <option value="pendente">Pendente</option>
+                <option value="arquivado">Arquivado</option>
+                <option value="cancelado">Cancelado</option>
+                <option value="encerrado">Encerrado</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="numeroLicenca">Nº Licença</Label>
+              <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" />
+            </div>
+            <div>
+              <Label htmlFor="numeroProtocolo">Nº Protocolo</Label>
+              <Input id="numeroProtocolo" value={form.numeroProtocolo} onChange={set("numeroProtocolo")} />
+            </div>
+            <div>
+              <Label htmlFor="atividade">Atividade</Label>
+              <Input id="atividade" value={form.atividade} onChange={set("atividade")} />
+            </div>
+            <div>
+              <Label htmlFor="modalidade">Modalidade</Label>
+              <Select id="modalidade" value={form.modalidade} onChange={set("modalidade")}>
+                <option value="">— selecione —</option>
+                {MODALIDADES.map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+            </div>
+            {form.modalidade === "Outro" && (
+              <div className="md:col-span-2">
+                <Label htmlFor="modalidadeOutra">Modalidade (outra)</Label>
+                <Input id="modalidadeOutra" value={form.modalidadeOutra} onChange={set("modalidadeOutra")} />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="orgaoAmbiental">Órgão</Label>
+              <Select id="orgaoAmbiental" value={form.orgaoAmbiental} onChange={set("orgaoAmbiental")}>
+                <option value="">— selecione —</option>
+                {ORGAOS_AMB.map((o) => <option key={o} value={o}>{o}</option>)}
+              </Select>
+            </div>
+            {form.orgaoAmbiental === "Outro" && (
+              <div className="md:col-span-2">
+                <Label htmlFor="orgaoAmbientalOutro">Órgão (outro)</Label>
+                <Input id="orgaoAmbientalOutro" value={form.orgaoAmbientalOutro} onChange={set("orgaoAmbientalOutro")} />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="validade">Validade</Label>
+              <Input id="validade" type="date" value={form.validade} onChange={set("validade")} />
+            </div>
+            <div>
+              <Label htmlFor="dataProtocolo">Data Protocolo</Label>
+              <Input id="dataProtocolo" type="date" value={form.dataProtocolo} onChange={set("dataProtocolo")} />
+            </div>
+            <div>
+              <Label htmlFor="alertaDias">Alerta (dias antes do vencimento)</Label>
+              <Input id="alertaDias" type="number" min="0" value={form.alertaDias} onChange={set("alertaDias")} />
+            </div>
+            <div>
+              <Label htmlFor="dataAbertura">Data de abertura</Label>
+              <Input id="dataAbertura" type="date" value={form.dataAbertura} onChange={set("dataAbertura")} />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="condicionantes">Condicionantes</Label>
+              <div className="flex items-center gap-2">
+                <Textarea id="condicionantes" value={form.condicionantes} onChange={set("condicionantes")} rows={4} className="flex-1" />
+                <label className="cursor-pointer whitespace-nowrap rounded-md bg-white px-3 py-2 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                  {pdfLoading ? "Lendo..." : "Importar PDF"}
+                  <input type="file" accept=".pdf" className="hidden" onChange={importarCondicionantes} disabled={pdfLoading} />
+                </label>
+              </div>
+              {pdfMsg && <p className="mt-1 text-xs text-muted">{pdfMsg}</p>}
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="observacoes">Observações</Label>
+              <Textarea id="observacoes" value={form.observacoes} onChange={set("observacoes")} rows={2} />
+            </div>
+          </>
+        )}
       </div>
 
       {error && (

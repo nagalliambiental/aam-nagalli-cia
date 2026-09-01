@@ -150,21 +150,21 @@ async function consultarComCaptcha(numCompleto: string, codigo: string, cookies:
   }
 }
 
-/** Extrai os nomes das substâncias do grid `ctl00_conteudo_gridSubstancias` (1ª coluna). */
+/** Extrai "Substância (Tipo de Uso)" de cada linha do grid `ctl00_conteudo_gridSubstancias`. */
 function extrairSubstanciasGrid(html: string): string {
   const tbl = html.match(/<table[^>]*id="ctl00_conteudo_gridSubstancias"[\s\S]*?<\/table>/i)?.[0];
   if (!tbl) return "";
-  const nomes: string[] = [];
+  const itens: string[] = [];
   const rows = tbl.match(/<tr[\s>][\s\S]*?<\/tr>/gi) ?? [];
   for (const row of rows) {
     if (/<th[ >]/i.test(row)) continue; // cabeçalho
-    const td = row.match(/<td[^>]*>([\s\S]*?)<\/td>/i)?.[1];
-    if (!td) continue;
-    const cel = td.replace(/<input[^>]*>/gi, ""); // descarta o hidden com o código
-    const nome = textoPlano(cel);
-    if (nome) nomes.push(nome);
+    const tds = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) ?? [];
+    const nome = textoPlano(tds[0]?.replace(/<input[^>]*>/gi, "") ?? "");
+    if (!nome) continue;
+    const uso = textoPlano(tds[1]?.replace(/<input[^>]*>/gi, "") ?? "");
+    itens.push(uso ? `${nome} (${uso})` : nome);
   }
-  return [...new Set(nomes)].join(", ");
+  return [...new Set(itens)].join(", ");
 }
 
 /** Interpreta a resposta do SCM e devolve os dados estruturados. */

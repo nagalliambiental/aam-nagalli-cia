@@ -42,12 +42,26 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("orgaoId" in body) data.orgaoId = Number(body.orgaoId);
   if ("tipoProcessoId" in body) data.tipoProcessoId = Number(body.tipoProcessoId);
   if ("empreendimentoId" in body) data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
+  if ("natureza" in body) data.natureza = body.natureza === "ambiental" ? "ambiental" : "minerario";
   if ("assunto" in body) data.assunto = body.assunto ?? null;
   if ("fase" in body) data.fase = body.fase ?? null;
   if ("status" in body) data.status = body.status;
   if ("areaValor" in body) data.areaValor = body.areaValor != null ? Number(body.areaValor) : null;
   if ("areaUnidade" in body) data.areaUnidade = body.areaUnidade ?? "ha";
   if ("substancias" in body) data.substancias = body.substancias ?? null;
+  if ("guiaUtilizacao" in body) data.guiaUtilizacao = body.guiaUtilizacao === true;
+  // ambientais
+  if ("numeroLicenca" in body) data.numeroLicenca = body.numeroLicenca ?? null;
+  if ("numeroProtocolo" in body) data.numeroProtocolo = body.numeroProtocolo ?? null;
+  if ("atividade" in body) data.atividade = body.atividade ?? null;
+  if ("modalidade" in body) data.modalidade = body.modalidade ?? null;
+  if ("modalidadeOutra" in body) data.modalidadeOutra = body.modalidadeOutra ?? null;
+  if ("orgaoAmbiental" in body) data.orgaoAmbiental = body.orgaoAmbiental ?? null;
+  if ("orgaoAmbientalOutro" in body) data.orgaoAmbientalOutro = body.orgaoAmbientalOutro ?? null;
+  if ("validade" in body) data.validade = body.validade ? new Date(body.validade) : null;
+  if ("dataProtocolo" in body) data.dataProtocolo = body.dataProtocolo ? new Date(body.dataProtocolo) : null;
+  if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
+  if ("condicionantes" in body) data.condicionantes = body.condicionantes ?? null;
   if ("dataAbertura" in body) data.dataAbertura = body.dataAbertura ? new Date(body.dataAbertura) : null;
   if ("descricao" in body) data.descricao = body.descricao ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;

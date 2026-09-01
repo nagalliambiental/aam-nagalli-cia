@@ -386,6 +386,7 @@ model Processo {
   tipoProcessoId   Int
   assunto          String?
   empreendimentoId Int?
+  natureza         String    @default("minerario") // minerario | ambiental
   fase             String?
   status           String    @default("em_andamento")
   dataAbertura     DateTime  @default(now())
@@ -393,9 +394,24 @@ model Processo {
   areaValor        Float?
   areaUnidade      String   @default("ha")
   substancias      String?
+  guiaUtilizacao   Boolean   @default(false)
   seiUrl           String?
   ultimoEventoSigmine String?
   ultimoEventoData    DateTime?
+
+  // Campos específicos de processo AMBIENTAL
+  numeroLicenca       String?
+  numeroProtocolo     String?
+  atividade           String?
+  modalidade          String?
+  modalidadeOutra     String?
+  orgaoAmbiental      String?
+  orgaoAmbientalOutro String?
+  validade            DateTime?
+  dataProtocolo       DateTime?
+  alertaDias          Int?
+  condicionantes      String?
+
   descricao        String?
   observacoes      String?
 

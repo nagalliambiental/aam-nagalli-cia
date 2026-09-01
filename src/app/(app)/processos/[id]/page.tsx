@@ -61,16 +61,28 @@ export default async function ProcessoDetalhePage({
             <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
             {[
               ["Número", `#${processo.numero}`],
+              ["Natureza", processo.natureza === "ambiental" ? "Ambiental" : "Minerário"],
               ["NUP (SEI)", processo.nup ?? "—"],
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
               ["Tipo", processo.tipoProcesso.nome],
               ["Empreendimento", processo.empreendimento?.nome ?? "—"],
-              ["Assunto", processo.assunto ?? "—"],
               ["Fase", processo.fase ?? "—"],
               ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
               ["Substâncias", processo.substancias ?? "—"],
               ["Status", <StatusBadge key="s" status={processo.status} />],
               ["Abertura", formatDate(processo.dataAbertura)],
+              ...(processo.natureza === "ambiental"
+                ? [
+                    ["Nº Licença", processo.numeroLicenca ?? "—"],
+                    ["Nº Protocolo", processo.numeroProtocolo ?? "—"],
+                    ["Atividade", processo.atividade ?? "—"],
+                    ["Modalidade", processo.modalidade === "Outro" ? processo.modalidadeOutra ?? "—" : processo.modalidade ?? "—"],
+                    ["Órgão ambiental", processo.orgaoAmbiental === "Outro" ? processo.orgaoAmbientalOutro ?? "—" : processo.orgaoAmbiental ?? "—"],
+                    ["Validade", processo.validade ? formatDate(processo.validade) : "—"],
+                    ["Data Protocolo", processo.dataProtocolo ? formatDate(processo.dataProtocolo) : "—"],
+                    ["Alerta", processo.alertaDias != null ? `${processo.alertaDias} dias` : "—"],
+                  ]
+                : ["Guia de Utilização", processo.guiaUtilizacao ? "Sim" : "Não"]),
             ].map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-muted">{k}</dt>
@@ -78,6 +90,12 @@ export default async function ProcessoDetalhePage({
               </div>
             ))}
           </dl>
+          {processo.condicionantes && (
+            <div className="border-t border-slate-200 px-5 py-4 text-sm">
+              <dt className="font-medium text-muted">Condicionantes</dt>
+              <dd className="mt-1 whitespace-pre-wrap">{processo.condicionantes}</dd>
+            </div>
+          )}
           {processo.descricao && (
             <div className="border-t border-slate-200 px-5 py-4 text-sm">
               <dt className="font-medium text-muted">Descrição</dt>

@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Número é obrigatório" }, { status: 400 });
   }
 
+  const natureza = body.natureza === "ambiental" ? "ambiental" : "minerario";
+
   const nup = body.nup ? String(body.nup).replace(/\s/g, "").trim() || null : null;
   if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
     return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
@@ -39,20 +41,37 @@ export async function POST(req: Request) {
     }
   }
 
+  // Auto-mapeia tipoProcesso e órgão pelo tronco (mineral/ambiental), se não vierem do form.
+  const tipoProcesso = await prisma.tipoProcesso.findFirst({ where: { tronco: natureza } });
+  const orgao = await prisma.orgao.findFirst({ where: { ambito: natureza } });
+
   try {
     const processo = await prisma.processo.create({
       data: {
         numero,
         nup,
-        orgaoId: body.orgaoId,
-        tipoProcessoId: body.tipoProcessoId,
+        orgaoId: body.orgaoId ?? orgao?.id,
+        tipoProcessoId: body.tipoProcessoId ?? tipoProcesso?.id,
         empreendimentoId: body.empreendimentoId ?? null,
-        assunto: body.assunto ?? null,
+        natureza,
         fase: body.fase ?? null,
         status: body.status ?? "em_andamento",
         areaValor: body.areaValor != null ? Number(body.areaValor) : null,
         areaUnidade: body.areaUnidade ?? "ha",
         substancias: body.substancias ?? null,
+        guiaUtilizacao: body.guiaUtilizacao === true,
+        // ambientais
+        numeroLicenca: body.numeroLicenca ?? null,
+        numeroProtocolo: body.numeroProtocolo ?? null,
+        atividade: body.atividade ?? null,
+        modalidade: body.modalidade ?? null,
+        modalidadeOutra: body.modalidadeOutra ?? null,
+        orgaoAmbiental: body.orgaoAmbiental ?? null,
+        orgaoAmbientalOutro: body.orgaoAmbientalOutro ?? null,
+        validade: body.validade ? new Date(body.validade) : null,
+        dataProtocolo: body.dataProtocolo ? new Date(body.dataProtocolo) : null,
+        alertaDias: body.alertaDias != null ? Number(body.alertaDias) : null,
+        condicionantes: body.condicionantes ?? null,
         dataAbertura: body.dataAbertura ? new Date(body.dataAbertura) : new Date(),
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,
