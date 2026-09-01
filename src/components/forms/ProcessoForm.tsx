@@ -384,10 +384,10 @@ export function ProcessoForm({
   const MODALIDADES = ["Licença Prévia", "Licença de Instalação", "Licença de Operação", "Licença de Operação e Regularização", "Autorização Ambiental", "Outro"];
   const ORGAOS_AMB = ["SMMA", "IAT", "IMA", "FATMA", "IBAMA", "Prefeitura", "Outro"];
 
-  // Import de condicionantes via PDF -> texto (usa a rota /api/processos/import-condicionantes)
+  // Upload da licença (PDF/imagem) -> extrai campos + condicionantes
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
-  async function importarCondicionantes(e: React.ChangeEvent<HTMLInputElement>) {
+  async function importarLicenca(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPdfLoading(true);
@@ -395,19 +395,70 @@ export function ProcessoForm({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/processos/import-condicionantes", { method: "POST", body: fd });
+      const res = await fetch("/api/processos/licenca/extrair", { method: "POST", body: fd });
       const d = await res.json().catch(() => ({}));
-      if (res.ok && d.texto) {
-        setForm((f) => ({ ...f, condicionantes: f.condicionantes ? `${f.condicionantes}\n${d.texto}` : d.texto }));
-        setPdfMsg("Condicionantes extraídas do PDF.");
+      if (res.ok && d.campos) {
+        const c = d.campos;
+        setForm((f) => ({
+          ...f,
+          numeroLicenca: c.numeroLicenca || f.numeroLicenca,
+          numeroProtocolo: c.numeroProtocolo || f.numeroProtocolo,
+          atividade: c.atividade || f.atividade,
+          modalidade: c.modalidade || f.modalidade,
+          orgaoAmbiental: c.orgaoSigla || f.orgaoAmbiental,
+          validade: c.validade || f.validade,
+          dataProtocolo: c.dataProtocolo || f.dataProtocolo,
+          condicionantes: c.condicionantes ? `${f.condicionantes ? f.condicionantes + "\n" : ""}${c.condicionantes}` : f.condicionantes,
+        }));
+        setPdfMsg("Dados extraídos do documento da licença.");
       } else {
-        setPdfMsg(d.error ?? "Não foi possível extrair o texto do PDF.");
+        setPdfMsg(d.error ?? "Não foi possível extrair os dados do documento.");
       }
     } catch {
-      setPdfMsg("Erro ao processar PDF.");
+      setPdfMsg("Erro ao processar documento.");
     } finally {
       setPdfLoading(false);
       e.target.value = "";
+    }
+  }
+
+  // Consulta a licença no IAT (SGA)/IMA pela número/protocolo
+  const [buscaLicLoading, setBuscaLicLoading] = useState(false);
+  const [buscaLicMsg, setBuscaLicMsg] = useState<string | null>(null);
+  async function consultarLicenca() {
+    const licenca = form.numeroLicenca.trim();
+    const protocolo = form.numeroProtocolo.trim();
+    if (!licenca && !protocolo) {
+      setBuscaLicMsg("Informe o nº da licença ou do protocolo para consultar.");
+      return;
+    }
+    setBuscaLicLoading(true);
+    setBuscaLicMsg(null);
+    try {
+      const qs = new URLSearchParams();
+      if (licenca) qs.set("licenca", licenca);
+      if (protocolo) qs.set("protocolo", protocolo);
+      if (form.orgaoAmbiental && form.orgaoAmbiental !== "Outro") qs.set("orgao", form.orgaoAmbiental);
+      const res = await fetch(`/api/processos/licenca/consulta?${qs.toString()}`, { cache: "no-store" });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setForm((f) => ({
+          ...f,
+          numeroLicenca: d.licenca || f.numeroLicenca,
+          numeroProtocolo: d.protocolo || f.numeroProtocolo,
+          atividade: d.atividade || f.atividade,
+          modalidade: d.modalidade || f.modalidade,
+          orgaoAmbiental: d.orgaoSigla || f.orgaoAmbiental,
+          validade: d.validade || f.validade,
+        }));
+        setBuscaLicMsg(d.orgao ? `Dados preenchidos (${d.sistema || d.orgao})` : "Dados preenchidos.");
+      } else {
+        setBuscaLicMsg(d.error ?? "Licença não encontrada no IAT/IMA.");
+      }
+    } catch {
+      setBuscaLicMsg("Falha ao consultar o órgão.");
+    } finally {
+      setBuscaLicLoading(false);
     }
   }
 
@@ -562,7 +613,13 @@ export function ProcessoForm({
             </div>
             <div>
               <Label htmlFor="numeroLicenca">Nº Licença</Label>
-              <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" />
+              <div className="flex gap-2">
+                <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" />
+                <Button type="button" variant="secondary" onClick={consultarLicenca} disabled={buscaLicLoading}>
+                  {buscaLicLoading ? "Buscando..." : "Buscar"}
+                </Button>
+              </div>
+              {buscaLicMsg && <p className="mt-1 text-xs text-muted">{buscaLicMsg}</p>}
             </div>
             <div>
               <Label htmlFor="numeroProtocolo">Nº Protocolo</Label>
@@ -620,7 +677,7 @@ export function ProcessoForm({
                 <Textarea id="condicionantes" value={form.condicionantes} onChange={set("condicionantes")} rows={4} className="flex-1" />
                 <label className="cursor-pointer whitespace-nowrap rounded-md bg-white px-3 py-2 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
                   {pdfLoading ? "Lendo..." : "Importar PDF"}
-                  <input type="file" accept=".pdf" className="hidden" onChange={importarCondicionantes} disabled={pdfLoading} />
+                  <input type="file" accept=".pdf,image/*" className="hidden" onChange={importarLicenca} disabled={pdfLoading} />
                 </label>
               </div>
               {pdfMsg && <p className="mt-1 text-xs text-muted">{pdfMsg}</p>}

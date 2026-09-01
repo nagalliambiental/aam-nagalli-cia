@@ -13,6 +13,12 @@
     "src/app/api/cron/movimentacoes/route.ts": {
       "regions": ["gru1"],
       "maxDuration": 60
+    },
+    "src/app/api/processos/licenca/consulta/route.ts": {
+      "regions": ["gru1"]
+    },
+    "src/app/api/processos/licenca/extrair/route.ts": {
+      "regions": ["gru1"]
     }
   },
   "crons": [
