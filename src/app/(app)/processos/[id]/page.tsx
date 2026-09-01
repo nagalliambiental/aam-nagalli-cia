@@ -7,7 +7,6 @@ import { Tabs } from "@/components/ui/Tabs";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
-import { PrazosPanel } from "@/components/processos/PrazosPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { ComunicacoesPanel } from "@/components/processos/ComunicacoesPanel";
 import { CustosPanel } from "@/components/processos/CustosPanel";
@@ -116,16 +115,10 @@ export default async function ProcessoDetalhePage({
       content: <TarefasPanel processoId={processo.id} tarefas={tarefas} pessoas={pessoas} />,
     },
     {
-      id: "prazos",
-      label: "Prazos",
-      count: prazos.length,
-      content: <PrazosPanel prazos={prazos} />,
-    },
-    {
       id: "exigencias",
-      label: "Exigências",
+      label: "Exigências & Prazos",
       count: exigencias.length,
-      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} />,
+      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} prazos={prazos} />,
     },
     {
       id: "comunicacoes",

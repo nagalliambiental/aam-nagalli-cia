@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/processos/StatusBadge";
+import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
+import { Check } from "lucide-react";
 
 type ExigenciaItem = {
   id: number;
@@ -16,14 +18,25 @@ type ExigenciaItem = {
   responsavel?: { nome: string } | null;
 };
 
+type PrazoItem = {
+  id: number;
+  exigenciaId: number | null;
+  descricao: string;
+  dataCalculadaAtual: Date | null;
+  dataEfetiva: Date | null;
+  status: string;
+};
+
 export function ExigenciasPanel({
   processoId,
   exigencias,
   pessoas = [],
+  prazos = [],
 }: {
   processoId: number;
   exigencias: ExigenciaItem[];
   pessoas?: { id: number; nome: string }[];
+  prazos?: PrazoItem[];
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -36,6 +49,13 @@ export function ExigenciasPanel({
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<{ nome: string; descricao: string; prazoDias: number; unidade: string }[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [completingId, setCompletingId] = useState<number | null>(null);
+
+  // Prazo vinculado a cada exigência (a exigência "calcula"/origina o prazo)
+  const prazoPorExigencia = new Map<number, PrazoItem>(
+    prazos.filter((p) => p.exigenciaId != null).map((p) => [p.exigenciaId as number, p])
+  );
+  const prazosAvulsos = prazos.filter((p) => !p.exigenciaId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +101,33 @@ export function ExigenciasPanel({
     router.refresh();
   }
 
+  async function concluirExigencia(ex: ExigenciaItem) {
+    setCompletingId(ex.id);
+    const jaConcluida = ex.status === "concluida";
+    const prazo = prazoPorExigencia.get(ex.id);
+    try {
+      if (prazo) {
+        await fetch(`/api/processos/${processoId}/prazos/${prazo.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            jaConcluida
+              ? { status: "em_andamento", dataEfetiva: null }
+              : { status: "concluido", dataEfetiva: new Date().toISOString() }
+          ),
+        });
+      }
+      await fetch(`/api/processos/${processoId}/exigencias/${ex.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: jaConcluida ? "em_andamento" : "concluida" }),
+      });
+      router.refresh();
+    } finally {
+      setCompletingId(null);
+    }
+  }
+
   async function handlePdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -122,7 +169,7 @@ export function ExigenciasPanel({
   return (
     <Card>
       <CardHeader
-        title="Exigências"
+        title="Exigências &amp; Prazos"
         actions={
           <div className="flex items-center gap-2">
             <label className="cursor-pointer rounded-md bg-white px-3 py-1.5 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
@@ -220,29 +267,74 @@ export function ExigenciasPanel({
       )}
 
       <ul className="divide-y divide-slate-100">
-        {exigencias.map((ex) => (
-          <li key={ex.id} className="flex items-start justify-between gap-4 px-5 py-3">
-            <div className="min-w-0">
-              <p className="font-medium text-navy-900">{ex.descricao}</p>
-              <p className="text-xs text-muted">
-                {ex.orgao.sigla} · recebida {formatDate(ex.dataRecebimento)}
-                {ex.prazoResposta ? ` · resposta até ${formatDate(ex.prazoResposta)}` : ""}
-                {ex.responsavel ? ` · resp. ${ex.responsavel.nome}` : ""}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <StatusBadge status={ex.status} />
-              <button onClick={() => startEdit(ex)} className="text-xs text-navy-600 hover:underline">Editar</button>
-              <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-600 hover:underline">Excluir</button>
-            </div>
-          </li>
-        ))}
+        {exigencias.map((ex) => {
+          const prazo = prazoPorExigencia.get(ex.id);
+          const deadline = prazo?.dataCalculadaAtual ?? ex.prazoResposta;
+          const concluida = ex.status === "concluida";
+          return (
+            <li key={ex.id} className="flex items-start justify-between gap-4 px-5 py-3">
+              <div className="min-w-0">
+                <p className="font-medium text-navy-900">{ex.descricao}</p>
+                <p className="text-xs text-muted">
+                  {ex.orgao.sigla} · recebida {formatDate(ex.dataRecebimento)}
+                  {deadline ? ` · até ${formatDate(deadline)}` : ""}
+                  {ex.responsavel ? ` · resp. ${ex.responsavel.nome}` : ""}
+                  {prazo?.dataEfetiva ? ` · efetivo ${formatDate(prazo.dataEfetiva)}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={ex.status} />
+                <button
+                  type="button"
+                  onClick={() => concluirExigencia(ex)}
+                  disabled={completingId === ex.id}
+                  title={concluida ? "Reabrir" : "Marcar como cumprido"}
+                  className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ${
+                    concluida
+                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100"
+                      : "bg-slate-50 text-navy-700 ring-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  {concluida ? "cumprido" : completingId === ex.id ? "..." : "Concluir"}
+                </button>
+                <button onClick={() => startEdit(ex)} className="text-xs text-navy-600 hover:underline">Editar</button>
+                <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-600 hover:underline">Excluir</button>
+              </div>
+            </li>
+          );
+        })}
         {exigencias.length === 0 && (
           <li className="px-5 py-10 text-center text-sm text-muted">
             Nenhuma exigência.
           </li>
         )}
       </ul>
+
+      {prazosAvulsos.length > 0 && (
+        <div className="border-t border-slate-200">
+          <p className="bg-slate-50 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Prazos avulsos (sem exigência)
+          </p>
+          <ul className="divide-y divide-slate-100">
+            {prazosAvulsos.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-navy-900">{p.descricao}</p>
+                  <p className="text-xs text-muted">
+                    até {formatDate(p.dataCalculadaAtual ?? p.dataEfetiva)}
+                    {p.dataEfetiva ? ` · efetivo ${formatDate(p.dataEfetiva)}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {p.status !== "concluido" && <StatusBadge status={p.status} />}
+                  <PrazoStatusButton processoId={processoId} prazoId={p.id} status={p.status} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Card>
   );
 }
