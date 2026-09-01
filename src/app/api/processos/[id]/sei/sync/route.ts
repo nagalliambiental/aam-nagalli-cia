@@ -62,8 +62,9 @@ type Andamento = { data: string; descricao: string };
 
 /**
  * Converte o HTML de resultado da pesquisa SEI em andamentos (data + descrição).
- * No SEI cada andamento aparece com o rótulo "Data:" seguido da data real da
- * movimentação — usamos esse rótulo como fonte da data (não a "data de hoje").
+ * Cada linha de andamento encerra com o rótulo "Data: dd/mm/yyyy" (data da
+ * consulta). A data REAL da movimentação aparece DENTRO da descrição (antes de
+ * "Unidade:") — é essa que usamos como data do evento.
  */
 function parseAndamentos(htmlHtml: string): Andamento[] {
   const texto = htmlHtml
@@ -78,39 +79,31 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     .replace(/\s+/g, " ");
 
   const andamentos: Andamento[] = [];
-
-  // Rótulo "Data: dd/mm/yyyy" = data real da movimentação
-  const reData = /\bData:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
-  const marcas: { start: number; end: number; data: string }[] = [];
+  // Partições: cada "Data: dd/mm/aaaa" marca o fim de um andamento.
+  const reRow = /\bData:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
+  const rows: { start: number; end: number }[] = [];
   let m: RegExpExecArray | null;
-  while ((m = reData.exec(texto)) !== null) {
-    const [d, mo, y] = m[1].split("/");
-    marcas.push({ start: m.index, end: m.index + m[0].length, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
+  while ((m = reRow.exec(texto)) !== null) {
+    rows.push({ start: m.index, end: m.index + m[0].length });
   }
+  if (rows.length === 0) return andamentos;
 
-  if (marcas.length > 0) {
-    for (let i = 0; i < marcas.length; i++) {
-      const descInicio = i > 0 ? marcas[i - 1].end : 0;
-      let descricao = texto.slice(descInicio, marcas[i].start).trim().replace(/\s+/g, " ");
-      descricao = descricao.replace(/\s+(?:Unidade|Unid\.|Nr\.|Nº|Andamento|Setor)\s*:[^]*$/i, "").trim();
-      if (descricao.length >= 8) andamentos.push({ data: marcas[i].data, descricao });
-    }
-    return andamentos.slice(0, 20);
-  }
-
-  // Fallback: sem rótulo "Data:", usa qualquer data dd/mm/aaaa
-  const re = /(\d{1,2}\/\d{1,2}\/\d{4})/g;
-  const matches: { index: number; data: string }[] = [];
-  let mm2: RegExpExecArray | null;
-  while ((mm2 = re.exec(texto)) !== null) {
-    const [d, mo, y] = mm2[1].split("/");
-    matches.push({ index: mm2.index, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
-  }
-  for (let i = 0; i < matches.length; i++) {
-    const inicio = matches[i].index + matches[i].data.length;
-    const fim = i + 1 < matches.length ? matches[i + 1].index : texto.length;
-    const descricao = texto.slice(inicio, fim).trim().replace(/\s+/g, " ");
-    if (descricao.length >= 8) andamentos.push({ data: matches[i].data, descricao });
+  for (let i = 0; i < rows.length; i++) {
+    const inicio = i > 0 ? rows[i - 1].end : 0;
+    const fim = rows[i].start;
+    const seg = texto.slice(inicio, fim).trim();
+    if (seg.length < 8) continue;
+    // data real = primeira data dd/mm/aaaa DENTRO da descrição do andamento
+    const dm = seg.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
+    if (!dm) continue; // sem data interna => não fabrica data
+    const [d, mo, y] = dm[1].split("/");
+    const data = `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}`;
+    const descricao = seg
+      .replace(dm[1], " ")
+      .replace(/\bUnidade[^]*$/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (descricao.length >= 8) andamentos.push({ data, descricao });
   }
   return andamentos.slice(0, 20);
 }
