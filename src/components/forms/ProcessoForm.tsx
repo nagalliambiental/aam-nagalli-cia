@@ -70,16 +70,17 @@ export function ProcessoForm({
         body: JSON.stringify({ numero: form.numero, codigo: codigoOverride ?? undefined }),
       });
       const d = await res.json();
+      // 422 com captcha_manual ou 200 com manual_fallback são fluxos normais, não erro
+      if (d.modo === "captcha_manual" && d.captchaBase64) {
+        setCmCaptcha(d.captchaBase64);
+        setCmMsg(d.mensagem ?? "Digite o código da imagem.");
+        return;
+      }
+      if (d.modo === "manual_fallback") {
+        setCmMsg(d.mensagem ?? "Preencha NUP e área manualmente e salve.");
+        return;
+      }
       if (!res.ok) {
-        if (d.modo === "captcha_manual" && d.captchaBase64) {
-          setCmCaptcha(d.captchaBase64);
-          setCmMsg(d.mensagem ?? "Digite o código da imagem.");
-          return;
-        }
-        if (d.modo === "manual_fallback") {
-          setCmMsg(d.mensagem ?? "Preencha NUP e área manualmente.");
-          return;
-        }
         setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
         return;
       }

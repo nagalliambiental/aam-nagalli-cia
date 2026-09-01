@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { PageHeader, Card } from "@/components/ui";
-import { Users, ShieldCheck, UserCog, ArrowRight, History } from "lucide-react";
+import { Users, ShieldCheck, UserCog, ArrowRight, History, Download } from "lucide-react";
 
 export default async function ConfigPage() {
   await requirePermissao("config:ler");
@@ -37,6 +37,14 @@ export default async function ConfigPage() {
       desc: "Histórico de ações realizadas no sistema",
       badge: `${auditoria.toLocaleString("pt-BR")} registros`,
       iconBg: "bg-violet-50 text-violet-600",
+    },
+    {
+      href: "/backup",
+      icon: Download,
+      title: "Backup",
+      desc: "Exportação completa em XLSX com abas por módulo",
+      badge: "XLSX",
+      iconBg: "bg-slate-100 text-slate-700",
     },
   ];
 

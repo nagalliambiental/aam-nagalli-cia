@@ -9,7 +9,7 @@ import {
   LogOut, Menu, X, Mountain, FileText,
   BellRing, CalendarDays, BarChart3, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
-  HandCoins, ChartPie, Settings2, Wallet,
+  HandCoins, ChartPie, Settings2, Wallet, Download,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -58,6 +58,7 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
       { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
+      { href: "/backup", label: "Backup", icon: Download },
     ],
   },
 ];

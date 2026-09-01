@@ -103,19 +103,19 @@ export async function POST(req: Request) {
       }, { status: 422 });
     }
   } catch (e) {
-    // Fallback: ANM fora do ar ou timeout no serverless -> permite preenchimento manual
-    const msg = e instanceof Error && e.name === "AbortError" ? "Tempo esgotado ao consultar ANM. Preencha NUP e área manualmente." : "Cadastro Mineiro indisponível no momento. Preencha NUP e área manualmente.";
+    // Fallback: ANM fora do ar ou timeout -> permite preenchimento manual sem bloquear
+    const msg = e instanceof Error && e.name === "AbortError" ? "ANM demorou para responder. Você pode preencher NUP e área manualmente e salvar." : "Cadastro Mineiro indisponível no momento. Preencha NUP e área manualmente e salve.";
     return NextResponse.json({
       ok: false,
       modo: "manual_fallback",
       mensagem: msg,
       numero: numCompleto,
-    }, { status: 422 });
+    }, { status: 200 });
   }
   return NextResponse.json({
     ok: false,
     modo: "manual_fallback",
-    mensagem: "Não foi possível carregar o captcha. Preencha NUP e área manualmente.",
+    mensagem: "Preencha NUP e área manualmente e salve o processo.",
     numero: numCompleto,
-  }, { status: 422 });
+  }, { status: 200 });
 }
