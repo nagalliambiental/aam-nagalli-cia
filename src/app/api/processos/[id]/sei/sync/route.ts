@@ -34,7 +34,7 @@ function extractCaptchaUrl(html: string, base: string): string | null {
   return null;
 }
 
-export async function POST(_req: Request, { params }: Ctx) {
+export async function POST(req: Request, { params }: Ctx) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
@@ -46,78 +46,45 @@ export async function POST(_req: Request, { params }: Ctx) {
   const chave = processo.nup ?? processo.numero;
   if (!chave) return NextResponse.json({ error: "Processo sem NUP ou número" }, { status: 400 });
 
+  const body = await req.json().catch(() => ({}));
+  const codigoManual = (body.codigo as string ?? "").trim();
+
   const baseSei = "https://sei.anm.gov.br";
   const urlPesquisa = `${baseSei}/sei/modulos/pesquisa/md_pesq_processo_pesquisar.php?acao_externa=protocolo_pesquisar&acao_origem_externa=protocolo_pesquisar&id_orgao_acesso_externo=0`;
 
-  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+  // Se veio código manual, faz consulta direta
+  if (codigoManual) {
     try {
       const getRes = await fetch(urlPesquisa, { headers: { "User-Agent": "Mozilla/5.0" } });
       const cookies = getRes.headers.get("set-cookie") ?? "";
       const html = await getRes.text();
-
-      // tenta achar captcha
-      const captchaUrl = extractCaptchaUrl(html, baseSei);
-      let codigo = "";
-      if (captchaUrl) {
-        const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" } });
-        const buf = Buffer.from(await capRes.arrayBuffer());
-        codigo = await solveCaptcha(buf);
-        if (!codigo) continue;
-      } else {
-        // sem captcha visível, tenta direto (alguns ambientes não exigem)
-        codigo = "";
-      }
-
-      // extrai campos hidden do SEI (infra params)
-      const infraCaptcha = html.match(/name="infraCaptcha"[^>]*value="([^"]*)"/)?.[1] ?? "";
       const infraHash = html.match(/name="infraHash"[^>]*value="([^"]*)"/)?.[1] ?? "";
-
-      const body = new URLSearchParams({
+      const postBody = new URLSearchParams({
         txtProtocolo: chave,
         txtUnidade: "",
         chkSinProcessos: "on",
         chkSinDocumentos: "on",
-        infraCaptcha: codigo,
-        infraHash: infraHash,
+        infraCaptcha: codigoManual,
+        infraHash,
       });
-
       const postRes = await fetch(urlPesquisa, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookies, "User-Agent": "Mozilla/5.0" },
-        body: body.toString(),
+        body: postBody.toString(),
       });
       const postHtml = await postRes.text();
-
       if (postHtml.includes("captcha") && postHtml.includes("Código")) {
-        continue; // captcha errado, tenta de novo
+        return NextResponse.json({ ok: false, error: "Código incorreto." }, { status: 422 });
       }
-
-      // extrai andamentos
       const andamentos: { data: string; descricao: string }[] = [];
       const regex = /(\d{2}\/\d{2}\/\d{4})\s*[-–]\s*([^<]{10,300})/g;
       let m: RegExpExecArray | null;
       while ((m = regex.exec(postHtml)) !== null && andamentos.length < 20) {
         andamentos.push({ data: m[1], descricao: m[2].trim().replace(/<[^>]+>/g, "").slice(0, 300) });
       }
-
-      // fallback: procura por tabela de andamentos
-      if (andamentos.length === 0 && postHtml.includes("Andamento")) {
-        // tenta extrair linhas de tabela
-        const rows = [...postHtml.matchAll(/<tr[^>]*>[\s\S]*?<td[^>]*>([^<]+)<\/td>[\s\S]*?<td[^>]*>([^<]+)<\/td>/g)];
-        for (const r of rows) {
-          if (/\d{2}\/\d{2}\/\d{4}/.test(r[1])) andamentos.push({ data: r[1].trim(), descricao: r[2].trim().slice(0, 300) });
-          if (andamentos.length >= 20) break;
-        }
-      }
-
       if (andamentos.length === 0) {
-        // sem andamentos mas página carregou -> pode ser sem resultados
-        if (postHtml.includes("Nenhum") || postHtml.includes("não encontrado")) {
-          return NextResponse.json({ ok: false, modo: "sem_resultados", mensagem: `Nenhum andamento público para ${chave}`, chave, tentativa });
-        }
-        continue;
+        return NextResponse.json({ ok: false, modo: "sem_resultados", mensagem: `Nenhum andamento para ${chave}`, chave });
       }
-
       let criados = 0;
       for (const a of andamentos) {
         const [d, mo, y] = a.data.split("/").map(Number);
@@ -131,17 +98,24 @@ export async function POST(_req: Request, { params }: Ctx) {
         await prisma.evento.create({ data: { processoId, tipoEventoId: tipo.id, descricao: a.descricao, data } });
         criados++;
       }
-
-      return NextResponse.json({ ok: true, modo: "tesseract", tentativa, andamentos, criados, chave });
+      return NextResponse.json({ ok: true, andamentos, criados, chave });
     } catch (e) {
-      if (tentativa === 3) return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro SEI", chave }, { status: 500 });
+      return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro SEI" }, { status: 500 });
     }
   }
 
-  return NextResponse.json({
-    ok: false,
-    modo: "captcha_falhou",
-    mensagem: "Não foi possível resolver o captcha do SEI após 3 tentativas. Tente novamente ou importe o PDF do andamento manualmente.",
-    chave,
-  }, { status: 422 });
+  // Sem código: retorna captcha para digitação manual (evita Tesseract e timeout)
+  try {
+    const getRes = await fetch(urlPesquisa, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const cookies = getRes.headers.get("set-cookie") ?? "";
+    const html = await getRes.text();
+    const captchaUrl = extractCaptchaUrl(html, baseSei);
+    if (captchaUrl) {
+      const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" } });
+      const buf = Buffer.from(await capRes.arrayBuffer());
+      const base64 = `data:image/jpeg;base64,${buf.toString("base64")}`;
+      return NextResponse.json({ ok: false, modo: "captcha_manual", mensagem: "Digite o código da imagem para ver movimentações.", chave, captchaBase64: base64 }, { status: 422 });
+    }
+  } catch {}
+  return NextResponse.json({ ok: false, modo: "captcha_falhou", mensagem: "Não foi possível carregar captcha. Tente novamente.", chave }, { status: 422 });
 }
