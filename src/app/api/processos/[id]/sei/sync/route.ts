@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { brDate } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -203,7 +204,8 @@ export async function POST(req: Request, { params }: Ctx) {
     const novos: Andamento[] = [];
     for (const a of andamentos) {
       const [d, mo, y] = a.data.split("/").map(Number);
-      const data = new Date(y, mo - 1, d);
+      // ancorado em Brasília (meio-dia UTC) para não cair no dia anterior ao exibir
+      const data = brDate(d, mo, y);
       const jaExiste = await prisma.evento.findFirst({
         where: {
           processoId,

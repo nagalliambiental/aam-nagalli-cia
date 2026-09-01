@@ -51,15 +51,26 @@ export async function GET(req: Request) {
       // Só notifica a partir da segunda execução (a primeira é o "seed" do estado
       // inicial, senão dispara notificação para processos já conhecidos).
       if (p.ultimoEventoData !== null) {
-        await prisma.notificacao.create({
-          data: {
+        // Evita repetir o mesmo alerta se já existe notificação não lida idêntica.
+        const jaNotificado = await prisma.notificacao.findFirst({
+          where: {
             tipo: "sei_movimentacao",
-            mensagem: `Nova movimentação no processo ${p.numero}: ${ev.descricao}`,
             processoId: p.id,
-            destinatarioUsuarioId: null, // global: aparece no Dashboard/sino de todos
+            mensagem: `Nova movimentação no processo ${p.numero}: ${ev.descricao}`,
+            lida: false,
           },
         });
-        novos++;
+        if (!jaNotificado) {
+          await prisma.notificacao.create({
+            data: {
+              tipo: "sei_movimentacao",
+              mensagem: `Nova movimentação no processo ${p.numero}: ${ev.descricao}`,
+              processoId: p.id,
+              destinatarioUsuarioId: null, // global: aparece no Dashboard/sino de todos
+            },
+          });
+          novos++;
+        }
       }
       detalhes.push({ id: p.id, numero: p.numero, novo: true, evento: ev.descricao });
     } else {

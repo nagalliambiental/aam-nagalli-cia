@@ -1,6 +1,9 @@
+const TIMEZONE = "America/Sao_Paulo";
+
 export function formatDate(d?: Date | null) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: TIMEZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -10,12 +13,25 @@ export function formatDate(d?: Date | null) {
 export function formatDateTime(d?: Date | null) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: TIMEZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(d));
+}
+
+/**
+ * Cria uma data a partir de dia/mês/ano de modo que o dia calendário seja
+ * preservado em qualquer fuso horário (ancorado ao meio-dia UTC). Útil para
+ * valores "só de data" (sem horário real) vindos de datas brasileiras.
+ */
+export function brDate(dia: number, mes: number, ano: number): Date {
+  const d = dia | 0;
+  const m = mes | 0;
+  const a = ano | 0;
+  return new Date(a, m - 1, d, 12, 0, 0);
 }
 
 export function formatCNPJ(cnpj?: string | null) {
