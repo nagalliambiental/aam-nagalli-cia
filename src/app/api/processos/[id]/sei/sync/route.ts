@@ -106,6 +106,48 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
   return andamentos.slice(0, 20);
 }
 
+function limparHtml(s: string): string {
+  return s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Parseia a página de exibição do processo (md_pesq_processo_exibir.php?token).
+ * Cada linha <tr class="andamento..."> tem: data/hora, unidade e descrição.
+ */
+function parseAndamentosProcesso(htmlHtml: string): Andamento[] {
+  const rows = htmlHtml.match(/<tr[^>]*class="[^"]*andamento[^"]*"[^>]*>[\s\S]*?<\/tr>/gi) ?? [];
+  const out: Andamento[] = [];
+  for (const row of rows) {
+    const tds = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) ?? [];
+    if (tds.length < 3) continue;
+    const dataHora = limparHtml(tds[0] ?? "");
+    const dm = dataHora.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+    if (!dm) continue;
+    const data = `${dm[1].padStart(2, "0")}/${dm[2].padStart(2, "0")}/${dm[3]}`;
+    const descricao = limparHtml(tds[2] ?? "");
+    if (descricao.length >= 4) out.push({ data, descricao });
+  }
+  return out.slice(0, 30);
+}
+
+/** Extrai a URL de exibição (md_pesq_processo_exibir.php?token) do HTML de resultado. */
+function extrairUrlExibirSei(htmlSearch: string): string | null {
+  const m = htmlSearch.match(/md_pesq_processo_exibir\.php\?[A-Za-z0-9_-]{20,}/);
+  return m ? `${BASE_SEI}/sei/modulos/pesquisa/${m[0]}` : null;
+}
+
+/** Busca a página de exibição do processo e retorna os andamentos (datas reais). */
+async function fetchAndamentosPorToken(url: string): Promise<Andamento[]> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, "Accept-Language": "pt-BR,pt;q=0.9" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  return parseAndamentosProcesso(html);
+}
+
 export async function POST(req: Request, { params }: Ctx) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -123,7 +165,28 @@ export async function POST(req: Request, { params }: Ctx) {
   const cookiesIn = (body.cookies as string ?? "").trim();
   const cidIn = (body.cid as string ?? "").trim();
 
-  // 1) Sem código: retorna captcha para digitação manual (fluxo do SeiSyncPanel)
+  // Se já temos a URL de exibição (token), consultamos direto — SEM captcha.
+  const seiUrlRaw = processo.seiUrl ?? "";
+  const seiTokenUrl = seiUrlRaw.includes("md_pesq_processo_exibir") ? seiUrlRaw : null;
+
+  const ok = (andamentos: Andamento[]) =>
+    NextResponse.json({
+      ok: true,
+      andamentos,
+      criados: 0,
+      chave,
+      mensagem: andamentos.length === 0
+        ? "Nenhum andamento encontrado."
+        : `${andamentos.length} ${andamentos.length === 1 ? "movimentação" : "movimentações"} no SEI.`,
+    });
+
+  // (A) Direto pelo token (sem captcha), quando não estamos confirmando um código.
+  if (seiTokenUrl && !codigoManual) {
+    const andamentos = await fetchAndamentosPorToken(seiTokenUrl).catch(() => []);
+    if (andamentos.length > 0) return ok(andamentos);
+  }
+
+  // (B) Sem código e sem token: retorna captcha para digitação manual.
   if (!codigoManual) {
     try {
       const res = await fetch(URL_PESQUISA, { headers: { "User-Agent": UA }, cache: "no-store" });
@@ -144,8 +207,7 @@ export async function POST(req: Request, { params }: Ctx) {
     );
   }
 
-  // 2) Com código: pesquisa real no SEI (endpoint AJAX) e parse das movimentações.
-  // Obs.: a pesquisa pública do SEI é stateless (não usa cookie) — depende só do hdnCId.
+  // (C) Com código: pesquisa no SEI (AJAX) → extrai URL do processo → consulta direto.
   if (!cidIn) {
     return NextResponse.json({ ok: false, error: "Sessão expirada. Clique em Verificar movimentação novamente." }, { status: 422 });
   }
@@ -170,34 +232,29 @@ export async function POST(req: Request, { params }: Ctx) {
     let json: { html?: string; itens?: number } = {};
     try {
       json = JSON.parse(raw);
-    } catch {
-      // não-JSON: resposta inesperada
-    }
-    const itens = json.itens ?? 0;
+    } catch {}
 
     if (/c[oó]digo de confirma[cç][aã]o inv[aá]lido|inv[aá]lido/i.test(raw)) {
       return NextResponse.json({ ok: false, error: "Código incorreto. Tente novamente." }, { status: 422 });
     }
-    if (itens === 0) {
+    if ((json.itens ?? 0) === 0) {
       return NextResponse.json({ ok: false, modo: "sem_resultados", mensagem: `Nenhum processo encontrado no SEI para ${chave}.`, chave });
     }
 
-    const andamentos = parseAndamentos(json.html ?? "");
+    // Extrai a URL de exibição (token) do resultado e guarda no processo.
+    const tokenUrl = extrairUrlExibirSei(json.html ?? "");
+    if (tokenUrl) {
+      await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrl } }).catch(() => {});
+      const andamentos = await fetchAndamentosPorToken(tokenUrl).catch(() => []);
+      if (andamentos.length > 0) return ok(andamentos);
+    }
 
-    // A consulta manual apenas DEVOLVE os andamentos para exibir na box abaixo
-    // (limpando a anterior a cada nova consulta). Não grava Eventos — as
-    // notificações/registros automáticos vêm do cron de movimentações (SIGMINE).
+    // Fallback: parse direto da pesquisa (sem datas por andamento).
+    const andamentos = parseAndamentos(json.html ?? "");
     if (andamentos.length === 0) {
       return NextResponse.json({ ok: true, andamentos, criados: 0, chave, mensagem: "Processo encontrado, mas sem movimentações legíveis." });
     }
-
-    return NextResponse.json({
-      ok: true,
-      andamentos,
-      criados: 0,
-      chave,
-      mensagem: `${andamentos.length} ${andamentos.length === 1 ? "movimentação encontrada" : "movimentações encontradas"} no SEI.`,
-    });
+    return ok(andamentos);
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro ao consultar o SEI" }, { status: 500 });
   }
