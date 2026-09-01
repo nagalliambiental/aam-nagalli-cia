@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 
@@ -153,6 +153,41 @@ export function ProcessoForm({
   const [cmSession, setCmSession] = useState<{ cookies: string; viewState: string; viewStateGen: string; eventValidation: string } | null>(null);
   const [cmPopupOpen, setCmPopupOpen] = useState(false);
 
+  // OCR gratuito no navegador: preenche o código do captcha automaticamente (Tesseract.js)
+  const [cmOcr, setCmOcr] = useState(false);
+  async function automatizarCaptcha() {
+    if (!cmCaptcha) return;
+    setCmOcr(true);
+    setCmMsg("Lendo captcha automaticamente...");
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng");
+      await worker.setParameters({ tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" });
+      const { data } = await worker.recognize(cmCaptcha);
+      await worker.terminate();
+      const txt = (data.text ?? "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 4);
+      if (txt.length === 4) {
+        setCmCodigo(txt);
+        setCmMsg(`Código detectado: ${txt.toUpperCase()}. Revise e confirme.`);
+        setCmOcr(false);
+        return;
+      }
+      setCmMsg("Não consegui ler o captcha. Digite o código da imagem manualmente.");
+    } catch {
+      setCmMsg("OCR indisponível. Digite o código da imagem manualmente.");
+    } finally {
+      setCmOcr(false);
+    }
+  }
+
+  // Dispara o OCR assim que o popup recebe a imagem
+  useEffect(() => {
+    if (cmPopupOpen && cmCaptcha) {
+      automatizarCaptcha();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cmPopupOpen, cmCaptcha]);
+
   async function buscarCadastroMineiro(codigoOverride?: string) {
     if (!form.numero.trim()) { setCmMsg("Informe o número do processo primeiro."); return; }
     setCmLoading(true);
@@ -200,6 +235,8 @@ export function ProcessoForm({
       const d = await res.json();
       if (d.modo === "captcha_manual" && d.captchaBase64) {
         setCmCaptcha(d.captchaBase64);
+        setCmSession(d.cookies ? { cookies: d.cookies, viewState: d.viewState, viewStateGen: d.viewStateGen, eventValidation: d.eventValidation } : cmSession);
+        setCmPopupOpen(true);
         setCmMsg(d.mensagem ?? "Digite o código da imagem.");
         return;
       }
@@ -473,7 +510,7 @@ export function ProcessoForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-navy-900">Cadastro Mineiro</h3>
-            <p className="mt-1 text-sm text-muted">Digite o código da imagem para buscar automaticamente os dados do processo.</p>
+            <p className="mt-1 text-sm text-muted">Resolva o captcha para buscar automaticamente os dados do processo na ANM.</p>
             <div className="mt-4 flex justify-center rounded-lg border border-slate-200 bg-slate-50 p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={cmCaptcha} alt="captcha" className="h-12 rounded border border-slate-300 bg-white" />
@@ -481,8 +518,8 @@ export function ProcessoForm({
             <Input
               value={cmCodigo}
               onChange={(e) => setCmCodigo(e.target.value)}
-              placeholder="Código (4 dígitos)"
-              maxLength={4}
+              placeholder="Código da imagem"
+              maxLength={6}
               className="mt-4 text-center text-lg tracking-[0.3em]"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarCaptcha(); } }}
@@ -492,8 +529,11 @@ export function ProcessoForm({
               <Button type="button" variant="ghost" onClick={() => { setCmPopupOpen(false); setCmCaptcha(null); setCmCodigo(""); }} disabled={cmLoading}>
                 Cancelar
               </Button>
+              <Button type="button" variant="secondary" onClick={automatizarCaptcha} disabled={cmOcr || cmLoading}>
+                {cmOcr ? "Lendo..." : "Ler código"}
+              </Button>
               <Button type="button" onClick={confirmarCaptcha} disabled={cmLoading || !cmCodigo}>
-                {cmLoading ? "Buscando..." : "Buscar preenchimento automático"}
+                {cmLoading ? "Buscando..." : "Buscar dados"}
               </Button>
             </div>
           </div>

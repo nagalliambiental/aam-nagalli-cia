@@ -396,6 +396,7 @@ model Processo {
   dataEncerramento DateTime?
   areaValor        Float?
   areaUnidade      String   @default("ha")
+  seiUrl           String?
   descricao        String?
   observacoes      String?
 

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/api/processos/cadastro-mineiro/route.ts": {
+      "regions": ["gru1"]
+    },
+    "src/app/api/processos/[id]/sei/sync/route.ts": {
+      "regions": ["gru1"]
+    },
+    "src/app/api/anm/health/route.ts": {
+      "regions": ["gru1"]
+    }
+  }
+}
