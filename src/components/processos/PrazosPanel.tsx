@@ -1,9 +1,11 @@
 import { Card, CardHeader } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/processos/StatusBadge";
+import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
 
 type PrazoItem = {
   id: number;
+  processoId: number;
   descricao: string;
   tipo: string | null;
   status: string;
@@ -30,7 +32,10 @@ export function PrazosPanel({ prazos }: { prazos: PrazoItem[] }) {
                 {p.dataEfetiva ? ` · efetivo ${formatDate(p.dataEfetiva)}` : ""}
               </p>
             </div>
-            <StatusBadge status={p.status} />
+            <div className="flex items-center gap-2">
+              {p.status !== "concluido" && <StatusBadge status={p.status} />}
+              <PrazoStatusButton processoId={p.processoId} prazoId={p.id} status={p.status} />
+            </div>
           </li>
         ))}
         {prazos.length === 0 && (

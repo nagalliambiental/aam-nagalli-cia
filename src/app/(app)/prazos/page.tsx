@@ -1,19 +1,27 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PageHeader, Card, CardHeader, Badge, Button } from "@/components/ui";
+import { PageHeader, Card, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
-import { Search } from "lucide-react";
+import { Search, CheckCircle2, Clock } from "lucide-react";
+import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
 export default async function PrazosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const verConcluidos = typeof sp.status === "string" && sp.status === "concluido";
+
+  const statusFilter = verConcluidos
+    ? { status: "concluido" as const }
+    : { status: { notIn: ["concluido", "cancelado"] as string[] } };
 
   const prazos = await prisma.prazo.findMany({
     where: {
       ativo: true,
       deletedAt: null,
       processo: { ativo: true, deletedAt: null },
+      ...statusFilter,
       ...(q ? { descricao: { contains: q, mode: "insensitive" as const } } : {}),
     },
     orderBy: { dataCalculadaAtual: "asc" },
@@ -40,6 +48,20 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
           </div>
           <Button type="submit" variant="secondary">Buscar</Button>
         </form>
+        <div className="flex items-center gap-2 border-b border-slate-200 p-4">
+          <Link
+            href="/prazos"
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${!verConcluidos ? "bg-navy-100 text-navy-800" : "text-muted hover:bg-slate-100"}`}
+          >
+            <Clock className="h-3.5 w-3.5" /> A cumprir
+          </Link>
+          <Link
+            href="/prazos?status=concluido"
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${verConcluidos ? "bg-emerald-50 text-emerald-800" : "text-muted hover:bg-slate-100"}`}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" /> Concluídos
+          </Link>
+        </div>
         <ul className="divide-y divide-slate-100">
           {prazos.map((p) => (
             <li key={p.id} className="px-5 py-3">
@@ -61,14 +83,14 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
                       até {formatDate(p.dataCalculadaAtual)}
                     </span>
                   )}
-                  <Badge tone="amber">{p.status}</Badge>
+                  <PrazoStatusButton processoId={p.processoId} prazoId={p.id} status={p.status} />
                 </div>
               </div>
             </li>
           ))}
           {prazos.length === 0 && (
             <li className="px-5 py-12 text-center text-sm text-muted">
-              Nenhum prazo cadastrado.
+              {verConcluidos ? "Nenhum prazo concluído." : "Nenhum prazo a cumprir."}
             </li>
           )}
         </ul>
