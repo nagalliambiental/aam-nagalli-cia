@@ -8,8 +8,6 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
-import { ComunicacoesPanel } from "@/components/processos/ComunicacoesPanel";
-import { CustosPanel } from "@/components/processos/CustosPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 
@@ -33,7 +31,7 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound();
 
-  const [tarefas, prazos, exigencias, pessoas, comunicacoes, custos] =
+  const [tarefas, prazos, exigencias, pessoas] =
     await Promise.all([
       prisma.tarefa.findMany({
         where: { processoId, ativo: true, deletedAt: null },
@@ -50,15 +48,6 @@ export default async function ProcessoDetalhePage({
         include: { orgao: true, responsavel: true },
       }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
-      prisma.comunicacao.findMany({
-        where: { processoId, ativo: true, deletedAt: null },
-        orderBy: { data: "desc" },
-      }),
-      prisma.custo.findMany({
-        where: { processoId, ativo: true, deletedAt: null },
-        orderBy: { data: "desc" },
-        include: { responsavel: true },
-      }),
     ]);
 
   const tabs = [
@@ -119,20 +108,6 @@ export default async function ProcessoDetalhePage({
       label: "Exigências & Prazos",
       count: exigencias.length,
       content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} prazos={prazos} />,
-    },
-    {
-      id: "comunicacoes",
-      label: "Comunicações",
-      count: comunicacoes.length,
-      content: (
-        <ComunicacoesPanel processoId={processo.id} comunicacoes={comunicacoes} />
-      ),
-    },
-    {
-      id: "custos",
-      label: "Custos",
-      count: custos.length,
-      content: <CustosPanel processoId={processo.id} custos={custos} />,
     },
   ];
 
