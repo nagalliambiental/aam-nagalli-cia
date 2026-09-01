@@ -180,14 +180,21 @@ def captcha_img(client: httpx.Client, guid: str):
 
 def consultar_com_captcha(client: httpx.Client, numero: str, codigo: str, vs: str, vg: str, ev: str):
     data = {
+        "__EVENTTARGET": "",
+        "__EVENTARGUMENT": "",
         "__VIEWSTATE": vs,
         "__VIEWSTATEGENERATOR": vg,
+        "__VIEWSTATEENCRYPTED": "",
         "__EVENTVALIDATION": ev,
         "ctl00$conteudo$txtNumeroProcesso": numero,
         "ctl00$conteudo$CaptchaControl1": codigo,
         "ctl00$conteudo$btnConsultarProcesso": "Consultar",
     }
-    r = client.post(URL_CM, data=data)
+    r = client.post(URL_CM, data=data, headers={
+        "Referer": URL_CM,
+        "Origin": BASE,
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    })
     html = r.text
     codigo_errado = "CaptchaImage.aspx" in html and re.search(r"Informe o c[oó]digo|Informe o código", html, re.I) is not None
     return html, codigo_errado
@@ -257,6 +264,8 @@ def cm_consultar(body: ConsultarIn, x_solver_token: str = Header(default="")):
             )
         if erro:
             return JSONResponse(status_code=422, content={"ok": False, "error": "Código incorreto. Tente novamente."})
+        if "Validation of viewstate MAC failed" in html:
+            return JSONResponse(status_code=422, content={"ok": False, "error": "Sessão expirada ou bloqueada pela ANM. Dispare a consulta novamente."})
         d = parse_resposta(html, numero)
         if d:
             return {"ok": True, "modo": "cm", **d, "mensagem": "Dados do Cadastro Mineiro."}

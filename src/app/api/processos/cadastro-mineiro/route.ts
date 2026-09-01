@@ -117,8 +117,11 @@ async function prepararSessaoCM() {
 
 async function consultarComCaptcha(numCompleto: string, codigo: string, cookies: string, viewState: string, viewStateGen: string, eventValidation: string): Promise<string> {
   const form = new URLSearchParams({
+    __EVENTTARGET: "",
+    __EVENTARGUMENT: "",
     __VIEWSTATE: viewState,
     __VIEWSTATEGENERATOR: viewStateGen,
+    __VIEWSTATEENCRYPTED: "",
     __EVENTVALIDATION: eventValidation,
     "ctl00$conteudo$txtNumeroProcesso": numCompleto,
     "ctl00$conteudo$CaptchaControl1": codigo,
@@ -129,7 +132,13 @@ async function consultarComCaptcha(numCompleto: string, codigo: string, cookies:
   try {
     const res = await fetch(URL_CM, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookies, "User-Agent": UA },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        Cookie: cookies,
+        "User-Agent": UA,
+        Referer: URL_CM,
+        Origin: "https://sistemas.anm.gov.br",
+      },
       body: form.toString(),
       signal: controller.signal,
     });
@@ -213,6 +222,9 @@ export async function POST(req: Request) {
     try {
       if (!cookiesIn || !viewStateIn) return NextResponse.json({ error: "Sessão expirada. Clique em Buscar CM novamente." }, { status: 422 });
       const postHtml = await consultarComCaptcha(numCompleto, codigoManual, cookiesIn, viewStateIn, viewStateGenIn, eventValidationIn);
+      if (/Validation of viewstate MAC failed/i.test(postHtml)) {
+        return NextResponse.json({ ok: false, error: "Sessão expirada ou bloqueada pela ANM. Clique em Buscar CM novamente." }, { status: 422 });
+      }
       if (/CaptchaImage\.aspx/.test(postHtml) && /Informe o c[óo]digo|Informe o código/i.test(postHtml)) {
         return NextResponse.json({ ok: false, error: "Código incorreto. Tente novamente." }, { status: 422 });
       }
