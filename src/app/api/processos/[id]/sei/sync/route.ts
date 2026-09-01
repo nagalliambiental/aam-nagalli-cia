@@ -131,22 +131,25 @@ export async function POST(req: Request, { params }: Ctx) {
     );
   }
 
-  // 2) Com código: pesquisa real no SEI (endpoint AJAX) e parse das movimentações
-  if (!cookiesIn || !cidIn) {
+  // 2) Com código: pesquisa real no SEI (endpoint AJAX) e parse das movimentações.
+  // Obs.: a pesquisa pública do SEI é stateless (não usa cookie) — depende só do hdnCId.
+  if (!cidIn) {
     return NextResponse.json({ ok: false, error: "Sessão expirada. Clique em Verificar movimentação novamente." }, { status: 422 });
   }
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "User-Agent": UA,
+      Referer: URL_PESQUISA,
+      Origin: BASE_SEI,
+      "X-Requested-With": "XMLHttpRequest",
+      Accept: "*/*",
+    };
+    if (cookiesIn) headers.Cookie = cookiesIn;
+
     const post = await fetch(URL_AJAX, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        Cookie: cookiesIn,
-        "User-Agent": UA,
-        Referer: URL_PESQUISA,
-        Origin: BASE_SEI,
-        "X-Requested-With": "XMLHttpRequest",
-        Accept: "*/*",
-      },
+      headers,
       body: montarFormSei(chave, codigoManual, cidIn).toString(),
       cache: "no-store",
     });
