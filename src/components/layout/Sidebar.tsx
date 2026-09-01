@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, FolderOpen, CalendarClock,
-  LogOut, Menu, X, Mountain, FileText,
+  LogOut, Menu, X, Mountain,
   BellRing, CalendarDays, BarChart3, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
   HandCoins, ChartPie, Settings2, Wallet, Download,
@@ -16,6 +16,7 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
+const PROCESSOS: NavItem = { href: "/processos", label: "Processos", icon: FolderOpen };
 
 const SECTIONS: NavGroup[] = [
   {
@@ -24,14 +25,6 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/empresas", label: "Empresas", icon: Building2 },
       { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
-    ],
-  },
-  {
-    label: "Processos",
-    icon: FolderOpen,
-    items: [
-      { href: "/processos", label: "Processos", icon: FolderOpen },
-      { href: "/documentos", label: "Documentos", icon: FileText },
     ],
   },
   {
@@ -65,7 +58,7 @@ const SECTIONS: NavGroup[] = [
 
 const CONFIG: NavItem = { href: "/config", label: "Configurações", icon: Settings2 };
 
-const FLAT_LINKS = [DASHBOARD, ...SECTIONS.flatMap((s) => s.items), CONFIG];
+const FLAT_LINKS = [DASHBOARD, PROCESSOS, ...SECTIONS.flatMap((s) => s.items), CONFIG];
 
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
@@ -102,6 +95,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const nav = (
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
       {renderLink(DASHBOARD)}
+      {renderLink(PROCESSOS)}
       {SECTIONS.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
