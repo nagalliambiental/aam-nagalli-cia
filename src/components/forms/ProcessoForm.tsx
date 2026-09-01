@@ -76,6 +76,10 @@ export function ProcessoForm({
           setCmMsg(d.mensagem ?? "Digite o código da imagem.");
           return;
         }
+        if (d.modo === "manual_fallback") {
+          setCmMsg(d.mensagem ?? "Preencha NUP e área manualmente.");
+          return;
+        }
         setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
         return;
       }

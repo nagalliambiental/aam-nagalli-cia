@@ -1,22 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-async function solveCaptchaWithTesseract(buf: Buffer): Promise<string> {
-  try {
-    const sharp = (await import("sharp")).default;
-    const { createWorker } = await import("tesseract.js");
-    const processed = await sharp(buf).grayscale().threshold(150).normalize().toBuffer();
-    const worker = await createWorker("eng");
-    // @ts-ignore
-    await worker.setParameters({ tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" });
-    const { data } = await worker.recognize(processed);
-    await worker.terminate();
-    return data.text.trim().replace(/\s/g, "").slice(0, 4);
-  } catch {
-    return "";
-  }
-}
-
 function extractInput(html: string, name: string): string {
   const re = new RegExp(`name="${name.replace(/\$/g, "\\$")}"[^>]*value="([^"]*)"`, "i");
   const m = html.match(re);
@@ -94,19 +78,20 @@ export async function POST(req: Request) {
     }
   }
 
-  // Fluxo simplificado sem Tesseract para evitar timeout no serverless:
-  // 1ª chamada (sem codigo) -> retorna captcha para digitação manual
-  // 2ª chamada (com codigo) -> já tratada acima
+  // Fluxo: tenta buscar captcha, mas se falhar retorna fallback manual sem depender do ANM
   try {
     const base = "https://sistemas.anm.gov.br";
     const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
-    const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: controller.signal, cache: "no-store" });
+    clearTimeout(timeout);
     const cookies = getRes.headers.get("set-cookie") ?? "";
     const html = await getRes.text();
     const guid = extractCaptchaGuid(html);
     if (guid) {
       const captchaUrl = `${base}/SCM/extra/CaptchaImage.aspx?guid=${guid}`;
-      const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" } });
+      const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" }, cache: "no-store" });
       const buf = Buffer.from(await capRes.arrayBuffer());
       const base64 = `data:image/jpeg;base64,${buf.toString("base64")}`;
       return NextResponse.json({
@@ -118,12 +103,19 @@ export async function POST(req: Request) {
       }, { status: 422 });
     }
   } catch (e) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro ao gerar captcha", numero: numCompleto }, { status: 500 });
+    // Fallback: ANM fora do ar ou timeout no serverless -> permite preenchimento manual
+    const msg = e instanceof Error && e.name === "AbortError" ? "Tempo esgotado ao consultar ANM. Preencha NUP e área manualmente." : "Cadastro Mineiro indisponível no momento. Preencha NUP e área manualmente.";
+    return NextResponse.json({
+      ok: false,
+      modo: "manual_fallback",
+      mensagem: msg,
+      numero: numCompleto,
+    }, { status: 422 });
   }
   return NextResponse.json({
     ok: false,
-    modo: "captcha_falhou",
-    mensagem: "Não foi possível carregar o captcha. Tente novamente.",
+    modo: "manual_fallback",
+    mensagem: "Não foi possível carregar o captcha. Preencha NUP e área manualmente.",
     numero: numCompleto,
   }, { status: 422 });
 }
