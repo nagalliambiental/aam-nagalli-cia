@@ -10,8 +10,11 @@ export async function POST() {
 
   await prisma.notificacao.updateMany({
     where: {
-      destinatarioUsuarioId: Number(session.user.id),
       lida: false,
+      OR: [
+        { destinatarioUsuarioId: Number(session.user.id) },
+        { destinatarioUsuarioId: null },
+      ],
     },
     data: { lida: true },
   });

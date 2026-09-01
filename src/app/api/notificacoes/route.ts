@@ -10,8 +10,11 @@ export async function GET() {
 
   const notificacoes = await prisma.notificacao.findMany({
     where: {
-      destinatarioUsuarioId: Number(session.user.id),
       lida: false,
+      OR: [
+        { destinatarioUsuarioId: Number(session.user.id) },
+        { destinatarioUsuarioId: null }, // notificações globais (ex.: movimentação ANM)
+      ],
     },
     orderBy: { dataEnvio: "desc" },
     take: 10,

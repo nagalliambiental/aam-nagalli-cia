@@ -9,6 +9,16 @@
     },
     "src/app/api/anm/health/route.ts": {
       "regions": ["gru1"]
+    },
+    "src/app/api/cron/movimentacoes/route.ts": {
+      "regions": ["gru1"],
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/movimentacoes",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

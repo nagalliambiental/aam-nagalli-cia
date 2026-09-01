@@ -61,8 +61,8 @@ type Andamento = { data: string; descricao: string };
 
 /**
  * Converte o HTML de resultado da pesquisa SEI em andamentos (data + descrição).
- * Abordagem à prova de markup: remove as tags, localiza cada data dd/mm/aaaa e
- * toma como descrição o texto compreendido até a próxima data (ou fim).
+ * No SEI cada andamento aparece com o rótulo "Data:" seguido da data real da
+ * movimentação — usamos esse rótulo como fonte da data (não a "data de hoje").
  */
 function parseAndamentos(htmlHtml: string): Andamento[] {
   const texto = htmlHtml
@@ -77,12 +77,33 @@ function parseAndamentos(htmlHtml: string): Andamento[] {
     .replace(/\s+/g, " ");
 
   const andamentos: Andamento[] = [];
+
+  // Rótulo "Data: dd/mm/yyyy" = data real da movimentação
+  const reData = /\bData:\s*(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
+  const marcas: { start: number; end: number; data: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = reData.exec(texto)) !== null) {
+    const [d, mo, y] = m[1].split("/");
+    marcas.push({ start: m.index, end: m.index + m[0].length, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
+  }
+
+  if (marcas.length > 0) {
+    for (let i = 0; i < marcas.length; i++) {
+      const descInicio = i > 0 ? marcas[i - 1].end : 0;
+      let descricao = texto.slice(descInicio, marcas[i].start).trim().replace(/\s+/g, " ");
+      descricao = descricao.replace(/\s+(?:Unidade|Unid\.|Nr\.|Nº|Andamento|Setor)\s*:[^]*$/i, "").trim();
+      if (descricao.length >= 8) andamentos.push({ data: marcas[i].data, descricao });
+    }
+    return andamentos.slice(0, 20);
+  }
+
+  // Fallback: sem rótulo "Data:", usa qualquer data dd/mm/aaaa
   const re = /(\d{1,2}\/\d{1,2}\/\d{4})/g;
   const matches: { index: number; data: string }[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(texto)) !== null) {
-    const [d, mo, y] = m[1].split("/");
-    matches.push({ index: m.index, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
+  let mm2: RegExpExecArray | null;
+  while ((mm2 = re.exec(texto)) !== null) {
+    const [d, mo, y] = mm2[1].split("/");
+    matches.push({ index: mm2.index, data: `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}` });
   }
   for (let i = 0; i < matches.length; i++) {
     const inicio = matches[i].index + matches[i].data.length;
@@ -174,7 +195,9 @@ export async function POST(req: Request, { params }: Ctx) {
       return NextResponse.json({ ok: true, andamentos, criados: 0, chave, mensagem: "Processo encontrado, mas sem movimentações legíveis." });
     }
 
-    // Dedup por (data + descrição) e criação de Eventos + Notificacao
+    // Dedup por (data + descrição) e criação de Eventos.
+    // As notificações no Dashboard vêm do cron de movimentações (SIGMINE) — a
+    // consulta manual aqui apenas importa Eventos, sem spammar alertas.
     const tipoEvento = await prisma.tipoEvento.findFirst({ where: { ativo: true } });
     let criados = 0;
     const novos: Andamento[] = [];
@@ -191,14 +214,6 @@ export async function POST(req: Request, { params }: Ctx) {
       if (jaExiste) continue;
       if (!tipoEvento) continue;
       await prisma.evento.create({ data: { processoId, tipoEventoId: tipoEvento.id, descricao: a.descricao, data } });
-      await prisma.notificacao.create({
-        data: {
-          tipo: "sei_movimentacao",
-          mensagem: `Nova movimentação no SEI (${processo.numero}): ${a.descricao}`,
-          processoId,
-          destinatarioUsuarioId: Number(session.user.id),
-        },
-      });
       criados++;
       novos.push(a);
     }

@@ -398,6 +398,8 @@ model Processo {
   areaUnidade      String   @default("ha")
   substancias      String?
   seiUrl           String?
+  ultimoEventoSigmine String?
+  ultimoEventoData    DateTime?
   descricao        String?
   observacoes      String?
 
