@@ -61,8 +61,10 @@ function textoPlano(html: string): string {
 function parseParesCM(html: string): Record<string, string> {
   const texto = textoPlano(html);
   const labelAlt = LABELS_CM.map((l) => l.replace(/\s+/g, "\\s+").replace(/\(/g, "\\(").replace(/\)/g, "\\)")).join("|");
+  // Nota: \b no JS é ASCII-only e "Área" começa com Á (não-\w), então usamos
+  // fronteira por espaço/início (equivalente em Python e JS).
   const re = new RegExp(
-    `\\b(${labelAlt})\\s*:\\s*([\\s\\S]*?)(?=\\s+\\b(?:${labelAlt})\\s*:|$)`,
+    `(?:^|\\s)(${labelAlt})\\s*:\\s*([\\s\\S]*?)(?=\\s+(?:${labelAlt})\\s*:|$)`,
     "gi"
   );
   const mapa: Record<string, string> = {};

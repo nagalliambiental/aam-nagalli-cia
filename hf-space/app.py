@@ -77,7 +77,9 @@ def _esc_label(label: str) -> str:
 def parse_pares(html: str):
     texto = texto_plano(html)
     alt = "|".join(_esc_label(l) for l in LABELS_CM)
-    pattern = rf"\b({alt})\s*:\s*([\s\S]*?)(?=\s+\b(?:{alt})\s*:|$)"
+    # Fronteira por espaço/início (sem \b): em JS \b é ASCII-only e "Área"
+    # começa com Á (não-\w); assim o comportamento é idêntico em Python e JS.
+    pattern = rf"(?:^|\s)({alt})\s*:\s*([\s\S]*?)(?=\s+(?:{alt})\s*:|$)"
     mapa = {}
     for m in re.finditer(pattern, texto, re.I):
         key = m.group(1).strip().lower()
