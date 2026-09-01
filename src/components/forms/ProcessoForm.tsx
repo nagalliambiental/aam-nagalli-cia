@@ -57,6 +57,8 @@ export function ProcessoForm({
   const [cmMsg, setCmMsg] = useState<string | null>(null);
   const [cmCaptcha, setCmCaptcha] = useState<string | null>(null);
   const [cmCodigo, setCmCodigo] = useState("");
+  const [cmSession, setCmSession] = useState<{ cookies: string; viewState: string; viewStateGen: string; eventValidation: string } | null>(null);
+  const [cmPopupOpen, setCmPopupOpen] = useState(false);
 
   async function buscarCadastroMineiro(codigoOverride?: string) {
     if (!form.numero.trim()) { setCmMsg("Informe o número do processo primeiro."); return; }
@@ -67,20 +69,35 @@ export function ProcessoForm({
       const res = await fetch("/api/processos/cadastro-mineiro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numero: form.numero, codigo: codigoOverride ?? undefined }),
+        body: JSON.stringify({
+          numero: form.numero,
+          codigo: codigoOverride ?? undefined,
+          // reenvia a sessão do popup para a consulta com o código digitado
+          ...(cmSession && { cookies: cmSession.cookies, viewState: cmSession.viewState, viewStateGen: cmSession.viewStateGen, eventValidation: cmSession.eventValidation }),
+        }),
       });
       const d = await res.json();
-      // 422 com captcha_manual ou 200 com manual_fallback são fluxos normais, não erro
       if (d.modo === "captcha_manual" && d.captchaBase64) {
         setCmCaptcha(d.captchaBase64);
         setCmMsg(d.mensagem ?? "Digite o código da imagem.");
         return;
       }
+      if (d.modo === "captcha_popup" && d.captchaUrl) {
+        setCmCaptcha(d.captchaUrl);
+        setCmSession({ cookies: d.cookies, viewState: d.viewState, viewStateGen: d.viewStateGen, eventValidation: d.eventValidation });
+        setCmPopupOpen(true);
+        setCmMsg("");
+        return;
+      }
       if (d.modo === "manual_fallback") {
+        setCmPopupOpen(false);
+        setCmSession(null);
         setCmMsg(d.mensagem ?? "Preencha NUP e área manualmente e salve.");
         return;
       }
       if (!res.ok) {
+        setCmPopupOpen(false);
+        setCmSession(null);
         setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
         return;
       }
@@ -104,11 +121,18 @@ export function ProcessoForm({
       setCmMsg(`Preenchido: ${extras.join(" · ")}`);
       setCmCaptcha(null);
       setCmCodigo("");
+      setCmPopupOpen(false);
+      setCmSession(null);
     } catch {
       setCmMsg("Erro ao consultar Cadastro Mineiro.");
     } finally {
       setCmLoading(false);
     }
+  }
+
+  function confirmarCaptcha() {
+    if (!cmCodigo.trim()) { setCmMsg("Digite o código da imagem."); return; }
+    buscarCadastroMineiro(cmCodigo.trim());
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -165,16 +189,6 @@ export function ProcessoForm({
             </Button>
           </div>
           {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
-          {cmCaptcha && (
-            <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cmCaptcha} alt="captcha" className="h-10 rounded border border-slate-300 bg-white" />
-              <Input value={cmCodigo} onChange={(e) => setCmCodigo(e.target.value)} placeholder="Código" className="w-24" maxLength={4} />
-              <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro(cmCodigo)} disabled={cmLoading || !cmCodigo}>
-                Confirmar
-              </Button>
-            </div>
-          )}
         </div>
         <div>
           <Label htmlFor="nup">NUP (SEI)</Label>
@@ -327,6 +341,37 @@ export function ProcessoForm({
           Cancelar
         </Button>
       </div>
+
+      {cmPopupOpen && cmCaptcha && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-navy-900">Cadastro Mineiro</h3>
+            <p className="mt-1 text-sm text-muted">Digite o código da imagem para buscar automaticamente os dados do processo.</p>
+            <div className="mt-4 flex justify-center rounded-lg border border-slate-200 bg-slate-50 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cmCaptcha} alt="captcha" className="h-12 rounded border border-slate-300 bg-white" />
+            </div>
+            <Input
+              value={cmCodigo}
+              onChange={(e) => setCmCodigo(e.target.value)}
+              placeholder="Código (4 dígitos)"
+              maxLength={4}
+              className="mt-4 text-center text-lg tracking-[0.3em]"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarCaptcha(); } }}
+            />
+            {cmMsg && <p className="mt-2 text-xs text-muted">{cmMsg}</p>}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => { setCmPopupOpen(false); setCmCaptcha(null); setCmCodigo(""); }} disabled={cmLoading}>
+                Cancelar
+              </Button>
+              <Button type="button" onClick={confirmarCaptcha} disabled={cmLoading || !cmCodigo}>
+                {cmLoading ? "Buscando..." : "Buscar preenchimento automático"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

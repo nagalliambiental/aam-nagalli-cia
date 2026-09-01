@@ -19,6 +19,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const numeroRaw = (body.numero as string ?? "").trim();
   const codigoManual = (body.codigo as string ?? "").trim();
+  // Estado retornado pelo passo do popup para reutilizar a mesma sessão na consulta
+  const cookies = (body.cookies as string ?? "").trim();
+  const viewState = (body.viewState as string ?? "").trim();
+  const viewStateGen = (body.viewStateGen as string ?? "").trim();
+  const eventValidation = (body.eventValidation as string ?? "").trim();
   if (!numeroRaw) return NextResponse.json({ error: "Número do processo obrigatório (ex: 866.123/2024)" }, { status: 400 });
 
   // normaliza numero: mantém formato com ponto para o Cadastro Mineiro (ex: 815.310/2008)
@@ -30,17 +35,17 @@ export async function POST(req: Request) {
   const num = m[1] + m[2];
   const ano = m[3];
 
-  // Se veio código manual do usuário, faz tentativa única com esse código
+  const base = "https://sistemas.anm.gov.br";
+  const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  // Se veio código manual, usa a MESMA sessão do popup (cookies/estado recebidos) para o POST
   if (codigoManual) {
     try {
-      const base = "https://sistemas.anm.gov.br";
-      const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
-      const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-      const cookies = getRes.headers.get("set-cookie") ?? "";
-      const html = await getRes.text();
-      const viewState = extractInput(html, "__VIEWSTATE");
-      const viewStateGen = extractInput(html, "__VIEWSTATEGENERATOR");
-      const eventValidation = extractInput(html, "__EVENTVALIDATION");
+      if (!cookies || !viewState) {
+        return NextResponse.json({ error: "Sessão expirada. Clique em Buscar CM novamente." }, { status: 422 });
+      }
       const form = new URLSearchParams({
         __VIEWSTATE: viewState,
         __VIEWSTATEGENERATOR: viewStateGen,
@@ -78,44 +83,33 @@ export async function POST(req: Request) {
     }
   }
 
-  // Fluxo: tenta buscar captcha, mas se falhar retorna fallback manual sem depender do ANM
+  // Fluxo popup: retorna captcha URL + sessão (cookies/estado) para reusar na consulta
   try {
-    const base = "https://sistemas.anm.gov.br";
-    const url = `${base}/SCM/extra/site/admin/dadosProcesso.aspx`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
     const getRes = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: controller.signal, cache: "no-store" });
-    clearTimeout(timeout);
-    const cookies = getRes.headers.get("set-cookie") ?? "";
+    const cookiesRes = getRes.headers.get("set-cookie") ?? "";
     const html = await getRes.text();
+    const vs = extractInput(html, "__VIEWSTATE");
+    const vsg = extractInput(html, "__VIEWSTATEGENERATOR");
+    const ev = extractInput(html, "__EVENTVALIDATION");
     const guid = extractCaptchaGuid(html);
     if (guid) {
       const captchaUrl = `${base}/SCM/extra/CaptchaImage.aspx?guid=${guid}`;
-      const capRes = await fetch(captchaUrl, { headers: { Cookie: cookies, "User-Agent": "Mozilla/5.0" }, cache: "no-store" });
-      const buf = Buffer.from(await capRes.arrayBuffer());
-      const base64 = `data:image/jpeg;base64,${buf.toString("base64")}`;
       return NextResponse.json({
         ok: false,
-        modo: "captcha_manual",
-        mensagem: "Digite o código da imagem para consultar o Cadastro Mineiro.",
+        modo: "captcha_popup",
+        mensagem: "Digite o código da imagem para buscar no Cadastro Mineiro.",
         numero: numCompleto,
-        captchaBase64: base64,
+        captchaUrl,
+        viewState: vs,
+        viewStateGen: vsg,
+        eventValidation: ev,
+        cookies: cookiesRes,
       }, { status: 422 });
     }
   } catch (e) {
-    // Fallback: ANM fora do ar ou timeout -> permite preenchimento manual sem bloquear
-    const msg = e instanceof Error && e.name === "AbortError" ? "ANM demorou para responder. Você pode preencher NUP e área manualmente e salvar." : "Cadastro Mineiro indisponível no momento. Preencha NUP e área manualmente e salve.";
-    return NextResponse.json({
-      ok: false,
-      modo: "manual_fallback",
-      mensagem: msg,
-      numero: numCompleto,
-    }, { status: 200 });
+    const msg = e instanceof Error && e.name === "AbortError" ? "ANM demorou para responder. Você pode preencher NUP e área manualmente e salvar." : "Cadastro Mineiro indisponível. Preencha NUP e área manualmente.";
+    return NextResponse.json({ ok: false, modo: "manual_fallback", mensagem: msg, numero: numCompleto }, { status: 200 });
+  } finally {
+    clearTimeout(timeout);
   }
-  return NextResponse.json({
-    ok: false,
-    modo: "manual_fallback",
-    mensagem: "Preencha NUP e área manualmente e salve o processo.",
-    numero: numCompleto,
-  }, { status: 200 });
 }
