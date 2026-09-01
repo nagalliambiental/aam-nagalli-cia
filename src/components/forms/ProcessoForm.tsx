@@ -4,6 +4,99 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 
+const FASES_VALIDAS = [
+  "Requerimento de Pesquisa",
+  "Autorização de Pesquisa",
+  "Direito de Requerer a Lavra",
+  "Requerimento de Lavra",
+  "Concessão de Lavra",
+];
+
+function normalizarFase(fase: string): string | null {
+  const f = fase.toLowerCase();
+  const mapeia: [RegExp, string][] = [
+    [/\brequerimento.*pesquisa\b/, "Requerimento de Pesquisa"],
+    [/\bautoriza.+\bpesquisa\b|\bauth\b.*\bpesquisa\b/, "Autorização de Pesquisa"],
+    [/direito de requerer a lavra/, "Direito de Requerer a Lavra"],
+    [/\brequerimento.*lavra\b/, "Requerimento de Lavra"],
+    [/\bconcess.+\blavra\b|\blavra\b/, "Concessão de Lavra"],
+    [/\bpesquisa\b/, "Autorização de Pesquisa"],
+  ];
+  for (const [re, valor] of mapeia) {
+    if (re.test(f)) return valor;
+  }
+  return FASES_VALIDAS.includes(fase.trim()) ? fase.trim() : null;
+}
+
+// ArcGIS REST API suporta JSONP (callback) - contorna CORS e roda direto no navegador do usuário
+function jsonp(url: string, timeoutMs = 9000): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const cbName = `__anm_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
+    const script = document.createElement("script");
+    const cleanup = () => {
+      delete (globalThis as unknown as Record<string, unknown>)[cbName];
+      script.remove();
+    };
+    (globalThis as unknown as Record<string, (d: unknown) => void>)[cbName] = (data: unknown) => {
+      cleanup();
+      resolve(data);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("timeout"));
+    }, timeoutMs);
+    script.onerror = () => {
+      clearTimeout(timer);
+      cleanup();
+      reject(new Error("error"));
+    };
+    script.src = `${url}${url.includes("?") ? "&" : "?"}callback=${cbName}`;
+    document.head.appendChild(script);
+  });
+}
+
+// Consulta SIGMINE direto do navegador (sem depender do servidor/Vercel)
+async function consultaSigmineBrowser(numero: string): Promise<{
+  areaHa: number | null;
+  fase: string | null;
+  substancias: string | null;
+  titular: string | null;
+  uf: string | null;
+  processoSigmine: string | null;
+} | null> {
+  const m2 = numero.replace(/\s/g, "").match(/(\d{3})\.?(\d{3})\/(\d{4})/);
+  if (!m2) return null;
+  const num = m2[1] + m2[2];
+  const ano = m2[3];
+  try {
+    const url =
+      "https://geo.anm.gov.br/arcgis/rest/services/SIGMINE/dados_anm/FeatureServer/0/query";
+    const params = new URLSearchParams({
+      where: `NUMERO=${num} AND ANO=${ano}`,
+      outFields: "PROCESSO,NUMERO,ANO,FASE,NOME,SUBS,USO,AREA_HA,UF,ULT_EVENTO",
+      returnGeometry: "false",
+      f: "json",
+      resultRecordCount: "5",
+    });
+    const data = (await jsonp(`${url}?${params}`)) as {
+      features?: { attributes?: Record<string, unknown> }[];
+    };
+    const feats = data?.features;
+    if (!feats?.length) return null;
+    const a = feats[0].attributes ?? {};
+    return {
+      areaHa: a.AREA_HA != null ? Number(a.AREA_HA) : null,
+      fase: a.FASE ? normalizarFase(String(a.FASE)) : null,
+      substancias: a.SUBS ? String(a.SUBS) : null,
+      titular: a.NOME ? String(a.NOME) : null,
+      uf: a.UF ? String(a.UF) : null,
+      processoSigmine: a.PROCESSO ? String(a.PROCESSO) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export type OrgaoOpt = { id: number; sigla: string; nome: string };
 export type TipoOpt = { id: number; nome: string };
 export type EmpOpt = { id: number; nome: string };
@@ -65,6 +158,34 @@ export function ProcessoForm({
     setCmLoading(true);
     setCmMsg(null);
     setCmCaptcha(null);
+
+    // 1) Tentativa automática direto no navegador via SIGMINE (dados abertos ANM, JSONP)
+    if (!codigoOverride) {
+      const sig = await consultaSigmineBrowser(form.numero);
+      if (sig && (sig.areaHa != null || sig.fase || sig.processoSigmine)) {
+        const updates: Partial<typeof form> = {};
+        if (sig.areaHa != null) {
+          updates.areaValor = String(sig.areaHa);
+          updates.areaUnidade = "ha";
+        }
+        if (sig.fase) updates.fase = sig.fase;
+        if (Object.keys(updates).length > 0) setForm((f) => ({ ...f, ...updates }));
+        const obs = `[ANM] ${sig.titular ?? ""} - Substância: ${sig.substancias ?? ""} - Processo ANM: ${sig.processoSigmine ?? form.numero}`.replace(/\s+/g, " ").trim();
+        if (obs.trim() !== "[ANM]") {
+          setForm((f) => ({ ...f, observacoes: f.observacoes ? `${f.observacoes}\n${obs}` : obs }));
+        }
+        const extras: string[] = [];
+        if (sig.areaHa != null) extras.push(`${sig.areaHa} ha`);
+        if (sig.fase) extras.push(`Fase ${sig.fase}`);
+        if (sig.substancias) extras.push(sig.substancias);
+        if (sig.uf) extras.push(sig.uf);
+        setCmMsg(`Preenchido automaticamente (SIGMINE/ANM): ${extras.join(" · ")}`);
+        setCmLoading(false);
+        return;
+      }
+    }
+
+    // 2) Fallback: backend (popup captcha manual do Cadastro Mineiro)
     try {
       const res = await fetch("/api/processos/cadastro-mineiro", {
         method: "POST",
