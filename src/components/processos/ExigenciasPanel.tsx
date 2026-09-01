@@ -31,31 +31,53 @@ export function ExigenciasPanel({
   const [error, setError] = useState<string | null>(null);
   const [descricao, setDescricao] = useState("");
   const [prazoResposta, setPrazoResposta] = useState("");
+  const [responsavelId, setResponsavelId] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<{ nome: string; descricao: string; prazoDias: number; unidade: string }[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const res = await fetch(`/api/processos/${processoId}/exigencias`, {
-      method: "POST",
+    const url = editingId ? `/api/processos/${processoId}/exigencias/${editingId}` : `/api/processos/${processoId}/exigencias`;
+    const method = editingId ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         descricao,
         prazoResposta: prazoResposta ? new Date(prazoResposta) : null,
+        responsavelPessoaId: responsavelId ? Number(responsavelId) : null,
       }),
     });
     const d = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
-      setError(d.error ?? "Erro ao adicionar exigência.");
+      setError(d.error ?? "Erro ao salvar exigência.");
       return;
     }
     setDescricao("");
     setPrazoResposta("");
+    setResponsavelId("");
+    setEditingId(null);
     setShow(false);
+    router.refresh();
+  }
+
+  function startEdit(ex: ExigenciaItem) {
+    setDescricao(ex.descricao);
+    setPrazoResposta(ex.prazoResposta ? new Date(ex.prazoResposta).toISOString().slice(0, 10) : "");
+    // @ts-ignore
+    setResponsavelId(ex.responsavelPessoaId ? String(ex.responsavelPessoaId) : "");
+    setEditingId(ex.id);
+    setShow(true);
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Excluir exigência?")) return;
+    await fetch(`/api/processos/${processoId}/exigencias/${id}`, { method: "DELETE" });
     router.refresh();
   }
 
@@ -126,19 +148,35 @@ export function ExigenciasPanel({
               rows={2}
             />
           </div>
-          <div className="max-w-xs">
-            <Label htmlFor="prazoResposta">Prazo de resposta</Label>
-            <Input
-              id="prazoResposta"
-              type="date"
-              value={prazoResposta}
-              onChange={(e) => setPrazoResposta(e.target.value)}
-            />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label htmlFor="prazoResposta">Prazo de resposta</Label>
+              <Input
+                id="prazoResposta"
+                type="date"
+                value={prazoResposta}
+                onChange={(e) => setPrazoResposta(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="responsavel">Responsável</Label>
+              <Select id="responsavel" value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
+                <option value="">— sem responsável —</option>
+                {pessoas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nome}</option>
+                ))}
+              </Select>
+            </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? "Salvando..." : "Adicionar exigência"}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Salvando..." : editingId ? "Salvar alterações" : "Adicionar exigência"}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => { setShow(false); setEditingId(null); setDescricao(""); setPrazoResposta(""); setResponsavelId(""); }}>
+              Cancelar
+            </Button>
+          </div>
         </form>
       )}
       {pdfMsg && <p className="border-b border-slate-200 bg-amber-50 px-5 py-2 text-sm text-amber-800">{pdfMsg}</p>}
@@ -184,14 +222,19 @@ export function ExigenciasPanel({
       <ul className="divide-y divide-slate-100">
         {exigencias.map((ex) => (
           <li key={ex.id} className="flex items-start justify-between gap-4 px-5 py-3">
-            <div>
+            <div className="min-w-0">
               <p className="font-medium text-navy-900">{ex.descricao}</p>
               <p className="text-xs text-muted">
                 {ex.orgao.sigla} · recebida {formatDate(ex.dataRecebimento)}
                 {ex.prazoResposta ? ` · resposta até ${formatDate(ex.prazoResposta)}` : ""}
+                {ex.responsavel ? ` · resp. ${ex.responsavel.nome}` : ""}
               </p>
             </div>
-            <StatusBadge status={ex.status} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={ex.status} />
+              <button onClick={() => startEdit(ex)} className="text-xs text-navy-600 hover:underline">Editar</button>
+              <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-600 hover:underline">Excluir</button>
+            </div>
           </li>
         ))}
         {exigencias.length === 0 && (
