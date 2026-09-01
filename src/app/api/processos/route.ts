@@ -23,6 +23,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
   }
 
+  // Se o NUP já existe, não duplica: informa o processo existente.
+  if (nup) {
+    const existente = await prisma.processo.findUnique({ where: { nup }, select: { id: true, numero: true } });
+    if (existente) {
+      return NextResponse.json(
+        { error: "Já existe um processo com este NUP.", existingId: existente.id, existingNumero: existente.numero },
+        { status: 409 }
+      );
+    }
+  }
+
   try {
     const processo = await prisma.processo.create({
       data: {

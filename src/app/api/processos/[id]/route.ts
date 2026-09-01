@@ -24,6 +24,15 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
       return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
     }
+    if (nup) {
+      const outro = await prisma.processo.findUnique({ where: { nup }, select: { id: true } });
+      if (outro && outro.id !== processoId) {
+        return NextResponse.json(
+          { error: "Este NUP já pertence a outro processo.", existingId: outro.id },
+          { status: 409 }
+        );
+      }
+    }
     data.nup = nup;
   }
   if ("orgaoId" in body) data.orgaoId = Number(body.orgaoId);

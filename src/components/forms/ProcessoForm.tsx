@@ -334,6 +334,11 @@ export function ProcessoForm({
     setLoading(false);
 
     if (!res.ok) {
+      if (res.status === 409 && data.existingId) {
+        router.push(`/processos/${data.existingId}`);
+        router.refresh();
+        return;
+      }
       setError(data?.error ?? "Erro ao salvar.");
       return;
     }
