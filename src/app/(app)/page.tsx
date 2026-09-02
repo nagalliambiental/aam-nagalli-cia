@@ -29,7 +29,7 @@ export default async function DashboardPage() {
 
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
-  const segProcesso = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
+  const segProcesso = {};
   const segTarefa = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
