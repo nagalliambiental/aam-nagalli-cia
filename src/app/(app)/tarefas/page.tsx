@@ -4,6 +4,7 @@ import { PageHeader, Card, Badge, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
+import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -16,7 +17,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     ? { status: "concluida" as const }
     : { status: { notIn: ["concluida"] as string[] } };
 
-  const [tarefas, pessoas, processos] = await Promise.all([
+  const [tarefas, pessoas, empreendimentos] = await Promise.all([
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
@@ -24,8 +25,18 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       take: 200,
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
-    prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { dataAbertura: "desc" }, select: { id: true, numero: true, nup: true } }),
+    prisma.empreendimento.findMany({
+      where: { ativo: true, deletedAt: null },
+      orderBy: { nome: "asc" },
+      include: { processos: { where: { ativo: true, deletedAt: null }, select: { id: true, numero: true } } },
+    }),
   ]);
+
+  const empreendimentosOpt = empreendimentos.map((e) => ({
+    id: e.id,
+    nome: e.nome,
+    processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
+  }));
 
   return (
     <div>
@@ -36,7 +47,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
 
       <NovaTarefaBotao
         pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-        processos={processos}
+        empreendimentos={empreendimentosOpt}
       />
 
       <Card>
@@ -85,6 +96,14 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                     {t.status}
                   </Badge>
                 </div>
+              </div>
+              <div className="mt-2">
+                <EdicaoRapidaTarefa
+                  tarefaId={t.id}
+                  responsavelPessoaId={t.responsavelPessoaId}
+                  prazoData={t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null}
+                  pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+                />
               </div>
             </li>
           ))}

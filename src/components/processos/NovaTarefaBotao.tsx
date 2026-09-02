@@ -7,10 +7,10 @@ import { TarefaNovaForm } from "@/components/processos/TarefaNovaForm";
 
 export function NovaTarefaBotao({
   pessoas,
-  processos,
+  empreendimentos,
 }: {
   pessoas: { id: number; nome: string }[];
-  processos: { id: number; numero: string; nup: string | null }[];
+  empreendimentos: { id: number; nome: string; processos: { id: number; numero: string }[] }[];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -32,7 +32,7 @@ export function NovaTarefaBotao({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <TarefaNovaForm pessoas={pessoas} processos={processos} onClose={() => setOpen(false)} />
+          <TarefaNovaForm pessoas={pessoas} empreendimentos={empreendimentos} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>

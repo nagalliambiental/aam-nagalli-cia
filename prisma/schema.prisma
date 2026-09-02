@@ -300,6 +300,7 @@ model Empreendimento {
   empresas          EmpreendimentoEmpresa[]
   areas             EmpreendimentoArea[]
   processos         Processo[]
+  tarefas           Tarefa[]
   licencas          Licenca[]
 
   @@index([empresaPrincipalId])
@@ -888,6 +889,7 @@ model Tarefa {
   criadorUsuarioId    Int?
 
   processoId        Int?
+  empreendimentoId  Int?
   prazoId           Int?
   condicionanteId   Int?
   licencaId         Int?
@@ -902,6 +904,7 @@ model Tarefa {
   responsavel     Pessoa           @relation(fields: [responsavelPessoaId], references: [id])
   criador         Usuario?         @relation(fields: [criadorUsuarioId], references: [id], onDelete: SetNull)
   processo        Processo?        @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  empreendimento  Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
   prazoAssociado  Prazo?           @relation(fields: [prazoId], references: [id], onDelete: SetNull)
   condicionante   Condicionante?   @relation(fields: [condicionanteId], references: [id], onDelete: SetNull)
   licenca         Licenca?         @relation(fields: [licencaId], references: [id], onDelete: SetNull)

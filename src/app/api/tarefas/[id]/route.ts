@@ -1,0 +1,35 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { audit } from "@/lib/audit";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: Request, { params }: Ctx) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session.user.permissoes?.includes("tarefa:editar")) {
+    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const tarefaId = Number(id);
+  const body = await req.json().catch(() => ({}));
+
+  const data: Record<string, unknown> = {};
+  if ("titulo" in body) data.titulo = body.titulo;
+  if ("descricao" in body) data.descricao = body.descricao ?? null;
+  if ("responsavelPessoaId" in body) data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
+  if ("prazoData" in body) data.prazoData = body.prazoData ? new Date(body.prazoData) : null;
+  if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
+  if ("prioridade" in body) data.prioridade = body.prioridade;
+  if ("status" in body) data.status = body.status;
+
+  try {
+    const tarefa = await prisma.tarefa.update({ where: { id: tarefaId }, data: data as never });
+    await audit({ tipoEntidade: "tarefa", entidadeId: tarefa.id, acao: "editar", usuarioId: Number(session.user.id) });
+    return NextResponse.json({ id: tarefa.id });
+  } catch {
+    return NextResponse.json({ error: "Erro ao atualizar tarefa." }, { status: 500 });
+  }
+}

@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   const titulo = (body.titulo as string) ?? "";
   const responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
   const processoId = body.processoId ? Number(body.processoId) : null;
+  const empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
   if (!titulo) return NextResponse.json({ error: "Título é obrigatório" }, { status: 400 });
   if (!responsavelPessoaId) return NextResponse.json({ error: "Responsável é obrigatório" }, { status: 400 });
 
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
     const prazoData = body.prazoData ? new Date(body.prazoData) : null;
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
+    // Cria a exigência vinculada ao processo (mesmo prazo e alerta) apenas se houver processo.
     let exigenciaId: number | null = null;
     if (processo) {
       const exigencia = await prisma.exigencia.create({
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
         titulo,
         descricao,
         processoId: processo?.id ?? null,
+        empreendimentoId,
         exigenciaId,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",
