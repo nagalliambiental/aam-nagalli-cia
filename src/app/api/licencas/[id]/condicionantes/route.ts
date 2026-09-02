@@ -21,6 +21,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!descricao) {
     return NextResponse.json({ error: "Descrição é obrigatória" }, { status: 400 });
   }
+  const tipo = (body.tipo as string) === "informativo" ? "informativo" : "exigencia";
 
   try {
     const cond = await prisma.condicionante.create({
@@ -28,6 +29,7 @@ export async function POST(req: Request, { params }: Ctx) {
         licencaId,
         codigo: body.codigo ?? null,
         descricao,
+        tipo,
         periodicidade: body.periodicidade ?? null,
         dataInicial: body.dataInicial ? new Date(body.dataInicial) : null,
         proximoVencimento: body.proximoVencimento ? new Date(body.proximoVencimento) : null,

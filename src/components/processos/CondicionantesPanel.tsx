@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, Button, Input, Label, Textarea } from "@/components/ui";
+import { Card, CardHeader, Button, Input, Label, Select, Textarea, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 
@@ -10,6 +10,7 @@ type CondicionanteItem = {
   id: number;
   codigo: string | null;
   descricao: string;
+  tipo: string | null;
   periodicidade: string | null;
   proximoVencimento: Date | null;
   status: string;
@@ -29,6 +30,7 @@ export function CondicionantesPanel({
   const [error, setError] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState("exigencia");
   const [periodicidade, setPeriodicidade] = useState("");
   const [proximoVencimento, setProximoVencimento] = useState("");
 
@@ -42,6 +44,7 @@ export function CondicionantesPanel({
       body: JSON.stringify({
         codigo: codigo || null,
         descricao,
+        tipo,
         periodicidade: periodicidade || null,
         proximoVencimento: proximoVencimento ? new Date(proximoVencimento) : null,
       }),
@@ -54,6 +57,7 @@ export function CondicionantesPanel({
     }
     setCodigo("");
     setDescricao("");
+    setTipo("exigencia");
     setPeriodicidade("");
     setProximoVencimento("");
     setShow(false);
@@ -73,7 +77,7 @@ export function CondicionantesPanel({
 
       {show && (
         <form onSubmit={handleSubmit} className="space-y-3 border-b border-slate-200 p-5">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
               <Label htmlFor="codigo">Código</Label>
               <Input
@@ -81,6 +85,13 @@ export function CondicionantesPanel({
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
               />
+            </div>
+            <div>
+              <Label htmlFor="tipo">Tipo</Label>
+              <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                <option value="exigencia">Exigência</option>
+                <option value="informativo">Informativo</option>
+              </Select>
             </div>
             <div>
               <Label htmlFor="periodicidade">Periodicidade</Label>
@@ -121,17 +132,21 @@ export function CondicionantesPanel({
       <ul className="divide-y divide-slate-100">
         {condicionantes.map((c) => (
           <li key={c.id} className="flex items-start justify-between gap-4 px-5 py-3">
-            <div>
+            <div className="min-w-0">
               <p className="font-medium text-navy-900">
                 {c.codigo ? `${c.codigo} — ` : ""}{c.descricao}
               </p>
               <p className="text-xs text-muted">
+                {c.tipo ? `${c.tipo === "informativo" ? "Informativo" : "Exigência"} · ` : ""}
                 {c.periodicidade ? `${c.periodicidade}` : ""}
                 {c.proximoVencimento ? ` · venc. ${formatDate(c.proximoVencimento)}` : ""}
                 {c.responsavel ? ` · ${c.responsavel.nome}` : ""}
               </p>
             </div>
-            <StatusBadge status={c.status} />
+            <div className="flex shrink-0 items-center gap-2">
+              {c.tipo === "informativo" && <Badge tone="gray">Informativo</Badge>}
+              <StatusBadge status={c.status} />
+            </div>
           </li>
         ))}
         {condicionantes.length === 0 && (

@@ -669,6 +669,7 @@ model Condicionante {
   licencaId           Int
   codigo              String?
   descricao           String
+  tipo                String    @default("exigencia") // exigencia | informativo
   periodicidade       String?
   dataInicial         DateTime?
   proximoVencimento   DateTime?
