@@ -175,16 +175,21 @@ export function EmpreendimentoForm({
         </div>
         <div>
           <Label htmlFor="cep">CEP</Label>
-          <Input
-            id="cep"
-            value={form.cep}
-            onChange={(e) => {
-              const d = e.target.value.replace(/\D/g, "").slice(0, 8);
-              setForm((f) => ({ ...f, cep: d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d }));
-            }}
-            onBlur={buscarCep}
-            placeholder="00000-000"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="cep"
+              value={form.cep}
+              onChange={(e) => {
+                const d = e.target.value.replace(/\D/g, "").slice(0, 8);
+                setForm((f) => ({ ...f, cep: d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d }));
+              }}
+              onBlur={buscarCep}
+              placeholder="00000-000"
+            />
+            <Button type="button" variant="secondary" onClick={buscarCep} disabled={cepLoading} className="shrink-0">
+              {cepLoading ? "Buscando..." : "Buscar CEP"}
+            </Button>
+          </div>
         </div>
         <div>
             <Label htmlFor="municipio">Município</Label>
