@@ -39,7 +39,7 @@ export function parseAndamentosProcesso(htmlHtml: string): AndamentoSei[] {
       });
     }
   }
-  return out.slice(0, 30);
+  return out;
 }
 
 /** Extrai a URL de exibição (md_pesq_processo_exibir.php?token) do HTML de resultado. */

@@ -202,12 +202,11 @@ export async function POST(req: Request, { params }: Ctx) {
       if (andamentos.length > 0) return ok(andamentos);
     }
 
-    // Fallback: parse direto da pesquisa (sem datas por andamento).
-    const andamentos = parseAndamentos(json.html ?? "");
-    if (andamentos.length === 0) {
-      return NextResponse.json({ ok: true, andamentos, criados: 0, chave, mensagem: "Processo encontrado, mas sem movimentações legíveis." });
-    }
-    return ok(andamentos);
+    // Não usamos o parse da busca (datas incorretas) — melhor informar do que mostrar errado.
+    return NextResponse.json(
+      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível ler os andamentos. Tente novamente em instantes.", chave },
+      { status: 422 }
+    );
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro ao consultar o SEI" }, { status: 500 });
   }
