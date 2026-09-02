@@ -74,7 +74,7 @@ export default async function DashboardPage() {
       },
       orderBy: [{ prioridade: "asc" }, { prazoData: "asc" }],
       take: 12,
-      include: { processo: true, responsavel: true },
+      include: { processo: true, responsavel: true, empreendimento: true },
     }),
     prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] }, ...segProcesso } }),
     prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: { ativo: true, deletedAt: null, ...segProcesso } } }),
@@ -261,8 +261,9 @@ export default async function DashboardPage() {
               return (
                 <li key={t.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-navy-900">{t.titulo}</p>
+                    <Link href={`/tarefas/${t.id}`} className="block truncate text-sm font-medium text-navy-900 hover:underline">{t.titulo}</Link>
                     <p className="truncate text-xs text-muted">
+                      {t.empreendimento?.nome ? `${t.empreendimento.nome} · ` : ""}
                       {t.processo ? `Processo ${t.processo.numero}` : "Sem processo"}
                       {t.responsavel?.nome ? ` · ${t.responsavel.nome}` : ""}
                     </p>

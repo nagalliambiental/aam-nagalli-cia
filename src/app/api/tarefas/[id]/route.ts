@@ -19,11 +19,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const data: Record<string, unknown> = {};
   if ("titulo" in body) data.titulo = body.titulo;
   if ("descricao" in body) data.descricao = body.descricao ?? null;
+  if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
   if ("responsavelPessoaId" in body) data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
+  if ("processoId" in body) data.processoId = body.processoId ? Number(body.processoId) : null;
+  if ("empreendimentoId" in body) data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
   if ("prazoData" in body) data.prazoData = body.prazoData ? new Date(body.prazoData) : null;
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("prioridade" in body) data.prioridade = body.prioridade;
-  if ("status" in body) data.status = body.status;
+  if ("status" in body) {
+    data.status = body.status;
+    data.dataConclusao = body.status === "concluida" ? new Date() : null;
+  }
 
   try {
     const tarefa = await prisma.tarefa.update({ where: { id: tarefaId }, data: data as never });

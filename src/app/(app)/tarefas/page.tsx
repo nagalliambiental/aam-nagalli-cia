@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
+import { TarefaStatusBotao } from "@/components/processos/TarefaStatusBotao";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
@@ -28,7 +29,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
-      include: { responsavel: true, processo: { include: { orgao: true } } },
+      include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
       take: 200,
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
@@ -83,10 +84,13 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
           {tarefas.map((t) => (
             <li key={t.id} className="px-5 py-3">
               <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium text-navy-900">{t.titulo}</p>
-                  <p className="text-xs text-muted">
+                <div className="min-w-0">
+                  <p className="font-medium text-navy-900">
+                    <Link href={`/tarefas/${t.id}`} className="hover:underline">{t.titulo}</Link>
+                  </p>
+                  <p className="truncate text-xs text-muted">
                     {t.responsavel.nome}
+                    {t.empreendimento?.nome ? ` · ${t.empreendimento.nome}` : null}
                     {t.processo ? (
                       <>
                         {" "}· processo{" "}
@@ -98,11 +102,12 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                     {t.alertaDias ? ` · alerta ${t.alertaDias} dias antes` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {t.prazoData && <span className="text-xs text-muted">{formatDate(t.prazoData)}</span>}
                   <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
                     {t.status}
                   </Badge>
+                  <TarefaStatusBotao tarefaId={t.id} status={t.status} />
                 </div>
               </div>
               <div className="mt-2">

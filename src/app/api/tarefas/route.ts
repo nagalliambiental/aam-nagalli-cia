@@ -23,6 +23,7 @@ export async function POST(req: Request) {
 
   try {
     const descricao = (body.descricao as string ?? "").trim();
+    const observacoes = (body.observacoes as string ?? "").trim();
     const prazoData = body.prazoData ? new Date(body.prazoData) : null;
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       data: {
         titulo,
         descricao,
+        observacoes,
         processoId: processo?.id ?? null,
         empreendimentoId,
         exigenciaId,
