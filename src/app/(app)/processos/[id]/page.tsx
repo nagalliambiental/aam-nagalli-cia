@@ -162,7 +162,11 @@ export default async function ProcessoDetalhePage({
     <div>
       <PageHeader
         title={`Processo #${processo.numero}`}
-        subtitle={`${processo.orgao.sigla} · Fase ${processo.fase ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`}
+        subtitle={
+          processo.natureza === "ambiental"
+            ? `${processo.orgao.sigla} · Modalidade ${processo.modalidade ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`
+            : `${processo.orgao.sigla} · Fase ${processo.fase ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`
+        }
         actions={
           <div className="flex items-center gap-2">
             {podeEditar && (
