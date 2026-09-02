@@ -2,8 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Card, Badge, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
-import { Search, Plus } from "lucide-react";
-import { TarefaNovaForm } from "@/components/processos/TarefaNovaForm";
+import { Search } from "lucide-react";
+import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -33,14 +33,10 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         title="Tarefas"
         subtitle="Tarefas e suas exigências vinculadas"
         actions={
-          <details className="relative">
-            <summary className="flex cursor-pointer items-center gap-1 rounded-md bg-navy-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-800">
-              <Plus className="h-4 w-4" /> Nova tarefa
-            </summary>
-            <div className="absolute right-0 z-10 mt-2 w-[26rem] max-w-[90vw] rounded-lg border border-slate-200 bg-white shadow-xl">
-              <TarefaNovaForm pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))} processos={processos} onClose={() => {}} />
-            </div>
-          </details>
+          <NovaTarefaBotao
+            pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+            processos={processos}
+          />
         }
       />
 
