@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, FolderOpen, CalendarClock,
   LogOut, Menu, X, Mountain,
-  BellRing, CalendarDays, BarChart3, FileBarChart,
+  BellRing, CalendarDays, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
   HandCoins, ChartPie, Settings2, Wallet, Download,
 } from "lucide-react";
@@ -50,7 +50,6 @@ const SECTIONS: NavGroup[] = [
     icon: ChartPie,
     items: [
       { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
-      { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
     ],
   },
   {

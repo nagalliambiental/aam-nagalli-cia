@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { formatDate } from "@/lib/format";
 import { PageHeader, Card, CardHeader, Button, EmptyState } from "@/components/ui";
+import { ImprimirBotao } from "@/components/ImprimirBotao";
 
 const REPORTS = [
   {
@@ -251,9 +252,7 @@ export default async function RelatoriosPage({
           subtitle={report.descricao}
           actions={
             <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => window.print()}>
-                Imprimir
-              </Button>
+              <ImprimirBotao />
               <Link href="/relatorios">
                 <Button variant="ghost">← Voltar</Button>
               </Link>
