@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
+import { StatusBadge } from "@/components/processos/StatusBadge";
+import { ArrowRight } from "lucide-react";
 
 export default async function EmpreendimentoDetalhePage({
   params,
@@ -19,11 +21,18 @@ export default async function EmpreendimentoDetalhePage({
       empresaPrincipal: true,
       areas: { include: { area: true } },
       empresas: { include: { empresa: true } },
-      _count: { select: { processos: true, licencas: true } },
+      _count: { select: { licencas: true } },
     },
   });
 
   if (!empreendimento) notFound();
+
+  // Processos ativos vinculados a este empreendimento (exclui os excluídos, sem órfãos)
+  const processos = await prisma.processo.findMany({
+    where: { empreendimentoId, ativo: true, deletedAt: null },
+    orderBy: { dataAbertura: "desc" },
+    include: { orgao: true, tipoProcesso: true },
+  });
 
   return (
     <div>
@@ -52,7 +61,7 @@ export default async function EmpreendimentoDetalhePage({
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],
             ["Endereço", empreendimento.endereco ?? "—"],
             ["Status", <Badge key="s" tone={empreendimento.status === "ativo" ? "green" : "amber"}>{empreendimento.status}</Badge>],
-            ["Processos", empreendimento._count.processos],
+            ["Processos", processos.length],
             ["Licenças", empreendimento._count.licencas],
           ].map(([k, v]) => (
             <div key={k as string}>
@@ -79,6 +88,34 @@ export default async function EmpreendimentoDetalhePage({
             )}
           </div>
         </div>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader title={`Processos (${processos.length})`} />
+        <ul className="divide-y divide-slate-100">
+          {processos.map((proc) => (
+            <li key={proc.id}>
+              <Link href={`/processos/${proc.id}`} className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50">
+                <div className="min-w-0">
+                  <p className="font-medium text-navy-900">
+                    {proc.numero}
+                    {proc.nup ? <span className="ml-2 text-xs font-normal text-navy-600">NUP {proc.nup}</span> : null}
+                  </p>
+                  <p className="text-xs text-muted">{proc.tipoProcesso.nome} · {proc.orgao.sigla}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <StatusBadge status={proc.status} />
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+              </Link>
+            </li>
+          ))}
+          {processos.length === 0 && (
+            <li className="px-5 py-8 text-center text-sm text-muted">
+              Nenhum processo vinculado a este empreendimento.
+            </li>
+          )}
+        </ul>
       </Card>
     </div>
   );

@@ -41,15 +41,16 @@ export async function POST(req: Request, { params }: Ctx) {
 
   let criados = 0;
   for (const bloco of blocos) {
-    const jaExiste = await prisma.exigencia.findFirst({
-      where: { processoId, descricao: { contains: bloco.nome, mode: "insensitive" } },
-    });
-    if (jaExiste) continue;
-
     const prazoResposta = new Date();
     prazoResposta.setDate(prazoResposta.getDate() + bloco.prazoDias);
 
     for (const parte of separarExigencias(bloco.nome, bloco.descricao)) {
+      // Dedup por parte (evita duplicar "CFEM" e "PFM" ao re-gerar).
+      const jaExiste = await prisma.exigencia.findFirst({
+        where: { processoId, descricao: { contains: `${parte.nome}:`, mode: "insensitive" } },
+      });
+      if (jaExiste) continue;
+
       const exigencia = await prisma.exigencia.create({
         data: {
           processoId,
