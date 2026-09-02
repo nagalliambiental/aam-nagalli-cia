@@ -127,6 +127,7 @@ function extrairData(texto: string, padroes: RegExp[]): string | null {
 
 function extrairNumeroLicenca(texto: string): string | null {
   const padroes = [
+    /licen[çc]a[\s\S]{0,80}?\bn[º°o]\s*\.?\s*(\d{6,8})/i,
     /(?:licen[çc]a|autoriza[çc][ãa]o|outorga)\s*n[º°o]?\s*\.?\s*([\d\/\.\-]+)/i,
     /n[º°o]\s*(?:da\s+)?licen[çc]a[:\s]*([\d\/\.\-]+)/i,
     /n[úu]mero\s+do\s+documento[\n\r\s]*([\d]{3,})/i,
@@ -144,8 +145,10 @@ function extrairNumeroLicenca(texto: string): string | null {
 
 function extrairProtocolo(texto: string): string | null {
   const padroes = [
+    /protocolo\s*[:.\-]?\s*(\d{6,})/i,
     /n[úu]mero\s+do\s+protocolo[^\d]*?([\d][\d\.\/\-]{4,})/i,
     /protocolo\s*n[º°o]?\s*\.?\s*([\d\/\.\-]+)/i,
+    /protocolo\s+sob\s+o\s+n[º°o]\s*\.?\s*(\d+)/i,
     /processo(?:\s+administrativo)?\s*n[º°o]?\s*\.?\s*([\d\/\.\-]+)/i,
   ];
   for (const p of padroes) {
@@ -171,6 +174,7 @@ function extrairRazaoSocial(texto: string): string | null {
 }
 
 const INICIOS_SECAO = [
+  /DETALHAMENTO\s+DOS\s+REQUISITOS\s+DE\s+LICENCIAMENTO\b[^\n]*/i,
   /CONDICIONANTES\s+AMBIENTAIS?\b[^\n]*/i,
   /CONDICIONANTES\s+D[AE]\s+(?:LICEN[ÇC]A|AUTORIZA[ÇC][ÃA]O|OUTORGA)[^\n]*/i,
   /LISTA\s+DE\s+CONDICIONANTES\b[^\n]*/i,
@@ -189,8 +193,6 @@ const FINS_SECAO = [
   /ASSINATURAS?\b[^\n]*/i,
   /LOCAL\s+E\s+DATA\b[^\n]*/i,
   /ASSINADO\b[^\n]*/i,
-  /RESPONS[ÁA]VEL\s+T[ÉE]CNICO\b[^\n]*/i,
-  /P[aá]gina\s+\d+/i,
 ];
 
 function extrairSecaoCondicionantes(texto: string): string | null {
@@ -214,6 +216,8 @@ function extrairSecaoCondicionantes(texto: string): string | null {
   }
   let secao = texto.slice(inicio, fim);
   secao = secao.replace(/^\s*(?:P[aá]gina\s+\d+(?:\/\d+)?|\d{1,4})\s*$/gm, "");
+  secao = secao.replace(/\bImp[aá]?[a-z]*[aA]\s*:?\s*\d{2}\/\d{2}\/\d{4}\s*\d{2}:\d{2}:\d{2}\b/gi, "");
+  secao = secao.replace(/P[aá]gina\s*:?\s*\d+\s+de\s+\d+/gi, "");
   secao = secao.replace(/https?:\/\/\S+/gi, "");
   secao = secao.replace(/^\s*C[OÓD]IGO\s+DE\s+BARRAS[^\n]*$/gim, "");
   secao = secao
@@ -233,6 +237,7 @@ export async function analisarLicenca(buffer: Buffer, ext: string): Promise<Camp
     numeroLicenca: extrairNumeroLicenca(texto),
     numeroProtocolo: extrairProtocolo(texto),
     dataProtocolo: extrairData(texto, [
+      /impress[ãa]?[ao]?\s*[:.]?\s*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
       /data\s+de\s+protocolo[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
       /data\s+do\s+protocolo[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
       /protocolad[oa]\s+em[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
