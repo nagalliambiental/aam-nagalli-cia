@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, Badge, Button } from "@/components/ui";
+import { Card, Badge, Button, Select } from "@/components/ui";
 
 type Prazo = { id: number; descricao: string; status: string; dataInicial: string; dataCalculadaAtual: string | null; alertaDias: number | null; processoNumero: string | null };
 type Tarefa = { id: number; titulo: string; status: string; prazoData: string | null; responsavelNome: string | null };
@@ -15,6 +15,8 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const anoAtual = hoje.getFullYear();
+  const anos = Array.from({ length: 11 }, (_, i) => anoAtual - 5 + i);
 
   const itensPorDia = useMemo(() => {
     const map = new Map<string, { tipo: "prazo" | "tarefa"; titulo: string; status: string }[]>();
@@ -124,8 +126,18 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
 
       {aba === "calendario" && (
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-            <h3 className="text-sm font-semibold text-navy-900">{MESES[month.getMonth()]} {month.getFullYear()}</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3">
+            <div className="flex items-center gap-1">
+              <Select value={month.getMonth()} onChange={(e) => setMonth(new Date(month.getFullYear(), Number(e.target.value), 1))}>
+                {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+              </Select>
+              <Select value={month.getFullYear()} onChange={(e) => setMonth(new Date(Number(e.target.value), month.getMonth(), 1))}>
+                {anos.map((a) => <option key={a} value={a}>{a}</option>)}
+              </Select>
+              <Button variant="secondary" onClick={() => { const n = new Date(); setMonth(new Date(n.getFullYear(), n.getMonth(), 1)); }} className="text-xs px-3 py-1.5">
+                Hoje
+              </Button>
+            </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" onClick={() => navMes(-1)} className="h-7 w-7 p-0"><ChevronLeft className="h-4 w-4" /></Button>
               <Button variant="ghost" onClick={() => navMes(1)} className="h-7 w-7 p-0"><ChevronRight className="h-4 w-4" /></Button>
