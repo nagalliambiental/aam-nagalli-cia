@@ -785,6 +785,7 @@ model Prazo {
   dataInicial           DateTime  @default(now())
   dataCalculadaOriginal DateTime?
   dataCalculadaAtual    DateTime?
+  alertaDias            Int?
   dataEfetiva           DateTime?
   status                String    @default("futuro")
   prioridade            String    @default("media")

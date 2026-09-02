@@ -73,6 +73,7 @@ export async function POST(req: Request, { params }: Ctx) {
           dataInicial: new Date(),
           dataCalculadaOriginal: prazoResposta,
           dataCalculadaAtual: prazoResposta,
+          alertaDias: 30,
           status: "futuro",
           responsavelPessoaId: bloco.responsavelPessoaId ?? null,
         },

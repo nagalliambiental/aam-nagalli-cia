@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 
-type Prazo = { id: number; descricao: string; status: string; dataInicial: string; dataCalculadaAtual: string | null; processoNumero: string | null };
+type Prazo = { id: number; descricao: string; status: string; dataInicial: string; dataCalculadaAtual: string | null; alertaDias: number | null; processoNumero: string | null };
 type Tarefa = { id: number; titulo: string; status: string; prazoData: string | null; responsavelNome: string | null };
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -80,10 +80,11 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
   }, [prazos, tarefas, month]);
 
   const vencidos = prazos.filter((p) => p.dataCalculadaAtual && new Date(p.dataCalculadaAtual) < hoje);
-  const proximos30 = prazos.filter((p) => {
+  const dentroAlerta = prazos.filter((p) => {
     if (!p.dataCalculadaAtual) return false;
-    const d = new Date(p.dataCalculadaAtual).getTime();
-    return d >= hoje.getTime() && d <= hoje.getTime() + 30 * 86400000;
+    const dias = p.alertaDias ?? 30;
+    const alvo = new Date(p.dataCalculadaAtual).getTime() - dias * 86400000;
+    return alvo <= hoje.getTime();
   });
 
   const navMes = (delta: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
@@ -179,10 +180,10 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
             {vencidos.map((p) => (
               <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="red">vencido</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""}</p></li>
             ))}
-            {proximos30.map((p) => (
-              <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="amber">próx. 30d</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""} — até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR") : "—"}</p></li>
+            {dentroAlerta.map((p) => (
+              <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""} — até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR") : "—"}</p></li>
             ))}
-            {vencidos.length === 0 && proximos30.length === 0 && <li className="px-5 py-10 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
+            {vencidos.length === 0 && dentroAlerta.length === 0 && <li className="px-5 py-10 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
           </ul>
         </Card>
       )}

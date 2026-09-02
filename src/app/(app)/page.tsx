@@ -54,10 +54,9 @@ export default async function DashboardPage() {
         deletedAt: null,
         status: { notIn: ["concluido", "cancelado"] },
         processo: { ativo: true, deletedAt: null },
-        dataCalculadaAtual: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { dataCalculadaAtual: "asc" },
-      take: 10,
+      take: 200,
       include: { processo: { include: { orgao: true } } },
     }),
     prisma.tarefa.findMany({
@@ -134,7 +133,15 @@ export default async function DashboardPage() {
   ];
   const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Custos pendentes" && c.label !== "Contratos");
 
-  const totalAtencao = prazosAtencao.length + tarefasAtencao.length;
+  // Prazo entra em atenção quando está a ≤ seu alertaDias do vencimento (ou já vencido).
+  const dentroAlerta = (p: (typeof prazosAtencao)[number]) => {
+    if (!p.dataCalculadaAtual) return false;
+    const dias = p.alertaDias ?? 30;
+    const alvo = p.dataCalculadaAtual.getTime() - dias * 24 * 60 * 60 * 1000;
+    return alvo <= AGORA.getTime();
+  };
+  const prazosAlertas = prazosAtencao.filter(dentroAlerta).slice(0, 10);
+  const totalAtencao = prazosAlertas.length + tarefasAtencao.length;
 
   return (
     <div className="space-y-6">
@@ -154,10 +161,10 @@ export default async function DashboardPage() {
           <p className="mt-1 text-white/70">
             {isAdmin
               ? totalAtencao > 0
-                ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} em 60 dias e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} da equipe.`
+                  ? `${prazosAlertas.length} ${prazosAlertas.length === 1 ? "prazo" : "prazos"} perto do vencimento e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} da equipe.`
                 : `Tudo em dia: ${processosAtivos} ${processosAtivos === 1 ? "processo ativo" : "processos ativos"} acompanhando.`
               : totalAtencao > 0
-                ? `${prazosAtencao.length} ${prazosAtencao.length === 1 ? "prazo" : "prazos"} em 60 dias e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} suas.`
+                  ? `${prazosAlertas.length} ${prazosAlertas.length === 1 ? "prazo" : "prazos"} perto do vencimento e ${tarefasAtencao.length} ${tarefasAtencao.length === 1 ? "tarefa" : "tarefas"} suas.`
                 : `Tudo em dia: ${tarefasAtencao.length === 0 ? "nenhuma tarefa pendente" : `${processosAtivos} processos acompanhando.`}`}
           </p>
         </div>
@@ -191,21 +198,21 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Prazos que precisam de atenção - 60 dias */}
+        {/* Prazos perto do vencimento (definido pelo alerta de cada um) */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
               <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-50 text-amber-600">
                 <CalendarClock className="h-4 w-4" />
               </span>
-              Prazos nos próximos 60 dias
+              Prazos perto do vencimento
             </h2>
-            <Link href="/prazos" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
+            <Link href="/operacoes" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todos <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
-            {prazosAtencao.map((p) => {
+            {prazosAlertas.map((p) => {
               const rel = formatRelative(p.dataCalculadaAtual);
               return (
                 <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-3">
@@ -222,9 +229,9 @@ export default async function DashboardPage() {
                 </li>
               );
             })}
-            {prazosAtencao.length === 0 && (
+            {prazosAlertas.length === 0 && (
               <li className="px-5 py-10 text-center text-sm text-muted">
-                Nenhum prazo crítico nos próximos 60 dias.
+                Nenhum prazo próximo do vencimento.
               </li>
             )}
           </ul>

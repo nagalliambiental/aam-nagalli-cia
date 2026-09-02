@@ -11,7 +11,7 @@ export default async function OperacoesPage() {
       where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] } },
       orderBy: { dataCalculadaAtual: "asc" },
       select: {
-        id: true, descricao: true, status: true, dataInicial: true, dataCalculadaAtual: true,
+        id: true, descricao: true, status: true, dataInicial: true, dataCalculadaAtual: true, alertaDias: true,
         processo: { select: { numero: true } },
       },
     }),
@@ -36,6 +36,7 @@ export default async function OperacoesPage() {
           status: p.status,
           dataInicial: p.dataInicial.toISOString(),
           dataCalculadaAtual: p.dataCalculadaAtual ? p.dataCalculadaAtual.toISOString() : null,
+          alertaDias: p.alertaDias,
           processoNumero: p.processo?.numero ?? null,
         }))}
         tarefas={tarefas.map((t) => ({
