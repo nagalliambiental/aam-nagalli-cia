@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { consultarPaginaSei, extrairUrlsExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
+import { consultarPaginaSei, extrairUrlExibirPorNup, extrairUrlsExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -196,9 +196,18 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     // Extrai a URL de exibição (token) do resultado e guarda no processo.
-    // Testa os vários processos relacionados e usa o primeiro cuja página
-    // confirme o NUP procurado (o SEI retorna vários por pesquisa). Se nenhum
-    // confirmar, usa o primeiro que tenha andamentos reais (fallback).
+    // Primeiro tenta achar pelo título da "Gestão de Título" (NUP no título).
+    const porNup = extrairUrlExibirPorNup(json.html ?? "", chave);
+    if (porNup) {
+      const { andamentos, nup } = await consultarPaginaSei(porNup).catch(() => ({ andamentos: [], nup: null }));
+      if (andamentos.length > 0 && nupConfere(chave, nup)) {
+        await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: porNup } }).catch(() => {});
+        return ok(andamentos);
+      }
+    }
+
+    // Senão, testa os vários processos relacionados e usa o primeiro cuja página
+    // confirme o NUP procurado. Se nenhum confirmar, usa o que tiver andamentos.
     const urls = extrairUrlsExibirSei(json.html ?? "");
     let fallback: { url: string; andamentos: AndamentoSei[] } | null = null;
     for (const url of urls) {

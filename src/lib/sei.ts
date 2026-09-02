@@ -53,6 +53,29 @@ export function extrairUrlsExibirSei(htmlSearch: string): string[] {
   return [...set];
 }
 
+/**
+ * Encontra o processo da "Gestão de Título" cujo NUP (primeiro "nº...") bate com o
+ * do sistema. O SEI lista vários itens relacionados; o correto é o que tem o NUP
+ * no título — usamos o PRIMEIRO "nº<numero>" de cada item para não confundir com
+ * NUPs citados no corpo de outros itens.
+ */
+export function extrairUrlExibirPorNup(htmlSearch: string, chave: string): string | null {
+  const chaveDigits = normalizarNup(chave);
+  if (chaveDigits.length < 17) return null;
+
+  const re = /md_pesq_processo_exibir\.php\?[A-Za-z0-9_-]{20,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(htmlSearch)) !== null) {
+    const janela = htmlSearch.slice(Math.max(0, m.index - 800), m.index + 800);
+    const texto = limparHtml(janela);
+    const primeiroNup = texto.match(/n[º°o]?\s*([0-9][0-9\.\/\-]{10,})/i);
+    if (primeiroNup && normalizarNup(primeiroNup[1]) === chaveDigits) {
+      return `${BASE_SEI}/sei/modulos/pesquisa/${m[0]}`;
+    }
+  }
+  return null;
+}
+
 /** Extrai os DÍGITOS do NUP do processo que a página de exibição representa (ex.: "Processo: 48411.815240/2017-52"). */
 export function extrairNupProcessoSei(html: string): string | null {
   const m = limparHtml(html).match(/Processo:\s*([0-9][0-9\.\/\-]{10,})/);
