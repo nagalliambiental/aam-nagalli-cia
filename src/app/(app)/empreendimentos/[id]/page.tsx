@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { ArrowRight } from "lucide-react";
+import { labelTipoEmpreendimento } from "@/lib/empreendimentos";
 
 export default async function EmpreendimentoDetalhePage({
   params,
@@ -56,7 +57,7 @@ export default async function EmpreendimentoDetalhePage({
         <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
           {[
             ["Apelido", empreendimento.apelido ?? "—"],
-            ["Tipo", empreendimento.tipo],
+            ["Tipo", labelTipoEmpreendimento(empreendimento.tipo)],
             ["Empresa principal", empreendimento.empresaPrincipal.razaoSocial],
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],
             ["Endereço", empreendimento.endereco ?? "—"],

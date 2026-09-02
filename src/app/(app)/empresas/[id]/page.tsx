@@ -7,6 +7,7 @@ import { formatCNPJ } from "@/lib/format";
 import { DeleteEmpresaButton } from "@/components/forms/DeleteEmpresaButton";
 import { EmpreendimentoDropdown } from "@/components/EmpreendimentoDropdown";
 import { ArrowRight } from "lucide-react";
+import { labelTipoEmpreendimento } from "@/lib/empreendimentos";
 
 export default async function EmpresaDetalhePage({
   params,
@@ -101,7 +102,7 @@ export default async function EmpresaDetalhePage({
                   <div className="min-w-0">
                     <p className="font-medium text-navy-900">{e.nome}</p>
                     <p className="text-xs text-muted">
-                      {e.municipio && e.uf ? `${e.municipio}/${e.uf}` : e.tipo}
+                      {e.municipio && e.uf ? `${e.municipio}/${e.uf}` : labelTipoEmpreendimento(e.tipo)}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm text-muted">

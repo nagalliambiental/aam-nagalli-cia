@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { TIPOS_EMPREENDIMENTO } from "@/lib/empreendimentos";
 
 export function EmpreendimentoForm({
   empresas,
@@ -25,10 +26,12 @@ export function EmpreendimentoForm({
   empreendimentoId?: number;
 }) {
   const router = useRouter();
+  const ehTipoCustom = !!initial?.tipo && !TIPOS_EMPREENDIMENTO.some((t) => t.value === initial.tipo);
   const [form, setForm] = useState({
     nome: initial?.nome ?? "",
     apelido: initial?.apelido ?? "",
-    tipo: initial?.tipo ?? "pedreira",
+    tipo: ehTipoCustom ? "outro" : (initial?.tipo ?? "pedreira"),
+    tipoOutro: ehTipoCustom ? (initial?.tipo ?? "") : "",
     municipio: initial?.municipio ?? "",
     uf: initial?.uf ?? "",
     endereco: initial?.endereco ?? "",
@@ -47,6 +50,7 @@ export function EmpreendimentoForm({
 
     const payload = {
       ...form,
+      tipo: form.tipo === "outro" ? (form.tipoOutro.trim() || "outro") : form.tipo,
       empresaPrincipalId: form.empresaPrincipalId ? Number(form.empresaPrincipalId) : null,
     };
 
@@ -99,13 +103,22 @@ export function EmpreendimentoForm({
             value={form.tipo}
             onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
           >
-            <option value="pedreira">Pedreira</option>
-            <option value="mina">Mina</option>
-            <option value="brita">Britagem</option>
-            <option value="areia">Areia/Cascalho</option>
-            <option value="outro">Outro</option>
+            {TIPOS_EMPREENDIMENTO.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
           </Select>
         </div>
+        {form.tipo === "outro" && (
+          <div>
+            <Label htmlFor="tipoOutro">Tipo (outro)</Label>
+            <Input
+              id="tipoOutro"
+              value={form.tipoOutro}
+              onChange={(e) => setForm((f) => ({ ...f, tipoOutro: e.target.value }))}
+              placeholder="Digite o tipo do empreendimento"
+            />
+          </div>
+        )}
         <div>
           <Label htmlFor="empresaPrincipalId" required>Empresa principal</Label>
           <Select
