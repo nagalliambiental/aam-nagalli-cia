@@ -12,6 +12,15 @@ const FASES_VALIDAS = [
   "Concessão de Lavra",
 ];
 
+/** Máscara de número de processo: 000.000/0000 (digita só números). */
+function mascararNumeroProcesso(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 10);
+  let out = d.slice(0, 3);
+  if (d.length > 3) out += "." + d.slice(3, 6);
+  if (d.length > 6) out += "/" + d.slice(6, 10);
+  return out;
+}
+
 function normalizarFase(fase: string): string | null {
   const f = fase.toLowerCase();
   const mapeia: [RegExp, string][] = [
@@ -508,7 +517,7 @@ export function ProcessoForm({
                 <Input
                   id="numero"
                   value={form.numero}
-                  onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, numero: mascararNumeroProcesso(e.target.value) }))}
                   placeholder="000.000/0000"
                   required
                   className="flex-1"
