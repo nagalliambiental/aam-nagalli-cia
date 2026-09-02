@@ -61,6 +61,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
             empreendimentos={empreendimentos.map((e) => ({
               id: e.id,
               nome: e.nome,
+              apelido: e.apelido,
               processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
             }))}
             initial={{

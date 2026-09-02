@@ -77,7 +77,7 @@ export default async function ProcessoDetalhePage({
                     ["Substâncias", processo.substancias ?? "—"],
                   ]),
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
-              ["Empreendimento", processo.empreendimento?.nome ?? "—"],
+              ["Empreendimento", processo.empreendimento ? (processo.empreendimento.apelido || processo.empreendimento.nome) : "—"],
               ["Responsável", processo.responsavel?.nome ?? "—"],
               ["Status", <StatusBadge key="s" status={processo.status} />],
               ["Abertura", formatDate(processo.dataAbertura)],

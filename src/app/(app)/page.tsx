@@ -263,7 +263,7 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <Link href={`/tarefas/${t.id}`} className="block truncate text-sm font-medium text-navy-900 hover:underline">{t.titulo}</Link>
                     <p className="truncate text-xs text-muted">
-                      {t.empreendimento?.nome ? `${t.empreendimento.nome} · ` : ""}
+                      {t.empreendimento ? `${t.empreendimento.apelido || t.empreendimento.nome} · ` : ""}
                       {t.processo ? `Processo ${t.processo.numero}` : "Sem processo"}
                       {t.responsavel?.nome ? ` · ${t.responsavel.nome}` : ""}
                     </p>

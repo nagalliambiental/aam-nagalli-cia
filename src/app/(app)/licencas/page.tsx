@@ -63,7 +63,7 @@ export default async function LicencasPage({ searchParams }: { searchParams: Sea
                   </p>
                   <p className="text-sm text-muted">
                     {l.tipoLicenca.nome}
-                    {l.empreendimento ? ` · ${l.empreendimento.nome}` : ""}
+                    {l.empreendimento ? ` · ${l.empreendimento.apelido || l.empreendimento.nome}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">

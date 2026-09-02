@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 
-type EmpreendimentoComProcessos = { id: number; nome: string; processos: { id: number; numero: string }[] };
+type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
 
 const PRIORIDADES = [
   { value: "baixa", label: "Baixa" },
@@ -110,7 +110,7 @@ export function TarefaEdicaoForm({
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
           <Select id="empreendimentoId" value={form.empreendimentoId} onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value, processoId: "" }))}>
             <option value="">— sem empreendimento —</option>
-            {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+            {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.apelido || e.nome}</option>)}
           </Select>
         </div>
         {empreendimento && (

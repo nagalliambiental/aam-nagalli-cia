@@ -72,7 +72,7 @@ async function renderReportTable(tipo: ReportSlug) {
                     <td className={TD_CLASSES}>{p.tipoProcesso.nome}</td>
                     <td className={TD_CLASSES}>{p.status}</td>
                     <td className={TD_CLASSES}>{formatDate(p.dataAbertura)}</td>
-                    <td className={TD_CLASSES}>{p.empreendimento?.nome ?? "—"}</td>
+                    <td className={TD_CLASSES}>{p.empreendimento ? (p.empreendimento.apelido || p.empreendimento.nome) : "—"}</td>
                   </tr>
                 ))}
               </tbody>

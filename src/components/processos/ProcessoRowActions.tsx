@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
+export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; empreendimento: { id: number; nome: string; apelido?: string | null } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +37,7 @@ export function ProcessoRowActions({ processo, podeExcluir = false }: { processo
           {processo.empreendimento ? (
             <p className="truncate text-xs">
               <span className="text-muted">Empreendimento:</span>{" "}
-              <span className="font-medium text-navy-700">{processo.empreendimento.nome}</span>
+              <span className="font-medium text-navy-700">{processo.empreendimento.apelido || processo.empreendimento.nome}</span>
             </p>
           ) : (
             <p className="text-xs text-muted">Empreendimento: — sem vínculo —</p>

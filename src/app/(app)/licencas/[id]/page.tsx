@@ -41,7 +41,7 @@ export default async function LicencaDetalhePage({
         {[
           ["Tipo", licenca.tipoLicenca.nome],
           ["Órgão", `${licenca.orgao.sigla} — ${licenca.orgao.nome}`],
-          ["Empreendimento", licenca.empreendimento?.nome ?? "—"],
+          ["Empreendimento", licenca.empreendimento ? (licenca.empreendimento.apelido || licenca.empreendimento.nome) : "—"],
           ["Emissão", licenca.dataEmissao ? formatDate(licenca.dataEmissao) : "—"],
           ["Validade", licenca.dataValidade ? formatDate(licenca.dataValidade) : "—"],
           ["Responsável", licenca.responsavel?.nome ?? "—"],

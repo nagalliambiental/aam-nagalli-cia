@@ -47,6 +47,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const empreendimentosOpt = empreendimentos.map((e) => ({
     id: e.id,
     nome: e.nome,
+    apelido: e.apelido,
     processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
   }));
 
@@ -96,7 +97,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   </p>
                   <p className="truncate text-xs text-muted">
                     {t.responsavel.nome}
-                    {t.empreendimento?.nome ? ` · ${t.empreendimento.nome}` : null}
+                    {t.empreendimento ? ` · ${t.empreendimento.apelido || t.empreendimento.nome}` : null}
                     {t.processo ? (
                       <>
                         {" "}· processo{" "}
