@@ -19,6 +19,14 @@ const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard }
 
 const SECTIONS: NavGroup[] = [
   {
+    label: "Cadastros",
+    icon: Library,
+    items: [
+      { href: "/empresas", label: "Empresas", icon: Building2 },
+      { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
+    ],
+  },
+  {
     label: "Operacional",
     icon: FolderOpen,
     items: [
@@ -28,11 +36,10 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
-    label: "Cadastros",
-    icon: Library,
+    label: "Análises",
+    icon: ChartPie,
     items: [
-      { href: "/empresas", label: "Empresas", icon: Building2 },
-      { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
+      { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
     ],
   },
   {
@@ -41,13 +48,6 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/financeiro", label: "Financeiro", icon: Wallet },
       { href: "/contratos", label: "Contratos", icon: FileSignature },
-    ],
-  },
-  {
-    label: "Análises",
-    icon: ChartPie,
-    items: [
-      { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
     ],
   },
   {

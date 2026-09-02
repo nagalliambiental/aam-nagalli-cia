@@ -4,6 +4,7 @@ import { PageHeader, Card, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
+import { PrazoAlertaEdit } from "@/components/processos/PrazoAlertaEdit";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -84,6 +85,7 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
                     </span>
                   )}
                   <PrazoStatusButton processoId={p.processoId} prazoId={p.id} status={p.status} />
+                  <PrazoAlertaEdit processoId={p.processoId} prazoId={p.id} alertaDias={p.alertaDias} />
                 </div>
               </div>
             </li>

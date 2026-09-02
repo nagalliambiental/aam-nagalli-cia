@@ -20,6 +20,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("status" in body) data.status = body.status;
   if ("dataCalculadaAtual" in body) data.dataCalculadaAtual = body.dataCalculadaAtual ? new Date(body.dataCalculadaAtual) : null;
   if ("dataEfetiva" in body) data.dataEfetiva = body.dataEfetiva ? new Date(body.dataEfetiva) : null;
+  if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
   if ("responsavelPessoaId" in body) data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
 
