@@ -20,8 +20,15 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
-      include: { responsavel: true, processo: { include: { orgao: true } } },
       take: 200,
+      select: {
+        id: true,
+        titulo: true,
+        status: true,
+        prazoData: true,
+        responsavel: { select: { nome: true } },
+        processo: { select: { id: true, numero: true, orgao: { select: { sigla: true } } } },
+      },
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { dataAbertura: "desc" }, select: { id: true, numero: true, nup: true } }),
@@ -81,7 +88,6 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                         </Link>
                       </>
                     ) : null}
-                    {t.alertaDias ? ` · alerta ${t.alertaDias} dias antes` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
