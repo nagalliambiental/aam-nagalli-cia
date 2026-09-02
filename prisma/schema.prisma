@@ -694,6 +694,7 @@ model Exigencia {
   dataRecebimento     DateTime  @default(now())
   descricao           String
   prazoResposta       DateTime?
+  alertaDias          Int?
   status              String    @default("pendente")
   resposta            String?
   observacoes         String?
@@ -878,6 +879,7 @@ model Tarefa {
   prioridade    String    @default("media")
   status        String    @default("pendente")
   prazoData     DateTime?
+  alertaDias    Int?
   dataCriacao   DateTime  @default(now())
   dataConclusao DateTime?
   observacoes   String?

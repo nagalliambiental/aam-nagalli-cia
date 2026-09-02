@@ -30,15 +30,38 @@ export async function POST(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Responsável é obrigatório" }, { status: 400 });
   }
 
+  const processo = await prisma.processo.findUnique({ where: { id: processoId } });
+  if (!processo) return NextResponse.json({ error: "Processo não encontrado" }, { status: 404 });
+
   try {
+    const descricao = (body.descricao as string ?? "").trim();
+    const prazoData = body.prazoData ? new Date(body.prazoData) : null;
+    const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
+
+    // Cria a exigência vinculada ao processo (mesmo prazo e alerta) e a tarefa aponta para ela.
+    const exigencia = await prisma.exigencia.create({
+      data: {
+        processoId,
+        orgaoId: processo.orgaoId,
+        descricao: descricao ? `${titulo}: ${descricao}` : titulo,
+        prazoResposta: prazoData,
+        alertaDias,
+        status: "pendente",
+        responsavelPessoaId,
+      },
+    });
+
     const tarefa = await prisma.tarefa.create({
       data: {
         titulo,
+        descricao,
         processoId,
+        exigenciaId: exigencia.id,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",
         status: body.status ?? "pendente",
-        prazoData: body.prazoData ? new Date(body.prazoData) : null,
+        prazoData,
+        alertaDias,
         criadorUsuarioId: Number(session.user.id),
       },
     });

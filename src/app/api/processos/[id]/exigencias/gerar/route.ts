@@ -57,6 +57,7 @@ export async function POST(req: Request, { params }: Ctx) {
           orgaoId: processo.orgaoId,
           descricao: parte.descricao ? `${parte.nome}: ${parte.descricao}` : parte.nome,
           prazoResposta,
+          alertaDias: 30,
           status: "pendente",
           responsavelPessoaId: bloco.responsavelPessoaId ?? null,
           observacoes: `Gerado automaticamente do bloco "${bloco.nome}" da fase ${faseFinal}`,

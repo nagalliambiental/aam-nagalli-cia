@@ -30,8 +30,10 @@ export function TarefasPanel({
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     titulo: "",
+    descricao: "",
     prioridade: "media",
     prazoData: "",
+    alertaDias: "30",
     responsavelPessoaId: pessoas[0]?.id ?? "",
   });
 
@@ -48,6 +50,7 @@ export function TarefasPanel({
           ? Number(form.responsavelPessoaId)
           : null,
         prazoData: form.prazoData ? new Date(form.prazoData) : null,
+        alertaDias: form.alertaDias !== "" ? Number(form.alertaDias) : 30,
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -56,7 +59,7 @@ export function TarefasPanel({
       setError(d.error ?? "Erro ao adicionar tarefa.");
       return;
     }
-    setForm((f) => ({ ...f, titulo: "" }));
+    setForm((f) => ({ ...f, titulo: "", descricao: "" }));
     setShow(false);
     router.refresh();
   }
@@ -83,7 +86,37 @@ export function TarefasPanel({
               required
             />
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <Label htmlFor="descricao">Descrição</Label>
+            <Textarea
+              id="descricao"
+              value={form.descricao}
+              onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
+              rows={2}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="prazoData">Prazo</Label>
+              <Input
+                id="prazoData"
+                type="date"
+                value={form.prazoData}
+                onChange={(e) => setForm((f) => ({ ...f, prazoData: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="alertaDias">Alerta (dias antes do vencimento)</Label>
+              <Input
+                id="alertaDias"
+                type="number"
+                min="1"
+                value={form.alertaDias}
+                onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="prioridade">Prioridade</Label>
               <Select
@@ -96,15 +129,6 @@ export function TarefasPanel({
                 <option value="alta">Alta</option>
                 <option value="urgente">Urgente</option>
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="prazoData">Prazo</Label>
-              <Input
-                id="prazoData"
-                type="date"
-                value={form.prazoData}
-                onChange={(e) => setForm((f) => ({ ...f, prazoData: e.target.value }))}
-              />
             </div>
             <div>
               <Label htmlFor="responsavelPessoaId">Responsável</Label>

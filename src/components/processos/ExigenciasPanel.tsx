@@ -13,6 +13,7 @@ type ExigenciaItem = {
   descricao: string;
   dataRecebimento: Date;
   prazoResposta: Date | null;
+  alertaDias: number | null;
   status: string;
   orgao: { sigla: string };
   responsavel?: { nome: string } | null;
@@ -54,6 +55,7 @@ export function ExigenciasPanel({
   const [error, setError] = useState<string | null>(null);
   const [descricao, setDescricao] = useState("");
   const [prazoResposta, setPrazoResposta] = useState("");
+  const [alertaDias, setAlertaDias] = useState("30");
   const [responsavelId, setResponsavelId] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export function ExigenciasPanel({
       body: JSON.stringify({
         descricao,
         prazoResposta: prazoResposta ? new Date(prazoResposta) : null,
+        alertaDias: alertaDias !== "" ? Number(alertaDias) : 30,
         responsavelPessoaId: responsavelId ? Number(responsavelId) : null,
       }),
     });
@@ -90,6 +93,7 @@ export function ExigenciasPanel({
     }
     setDescricao("");
     setPrazoResposta("");
+    setAlertaDias("30");
     setResponsavelId("");
     setEditingId(null);
     setShow(false);
@@ -99,6 +103,8 @@ export function ExigenciasPanel({
   function startEdit(ex: ExigenciaItem) {
     setDescricao(ex.descricao);
     setPrazoResposta(ex.prazoResposta ? new Date(ex.prazoResposta).toISOString().slice(0, 10) : "");
+    // @ts-ignore
+    setAlertaDias(ex.alertaDias != null ? String(ex.alertaDias) : "30");
     // @ts-ignore
     setResponsavelId(ex.responsavelPessoaId ? String(ex.responsavelPessoaId) : "");
     setEditingId(ex.id);
@@ -255,6 +261,16 @@ export function ExigenciasPanel({
               />
             </div>
             <div>
+              <Label htmlFor="alertaDias">Alerta (dias antes do vencimento)</Label>
+              <Input
+                id="alertaDias"
+                type="number"
+                min="1"
+                value={alertaDias}
+                onChange={(e) => setAlertaDias(e.target.value)}
+              />
+            </div>
+            <div>
               <Label htmlFor="responsavel">Responsável</Label>
               <Select id="responsavel" value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
                 <option value="">— sem responsável —</option>
@@ -327,6 +343,7 @@ export function ExigenciasPanel({
                 <p className="text-xs text-muted">
                   {ex.orgao.sigla} · recebida {formatDate(ex.dataRecebimento)}
                   {deadline ? ` · até ${formatDate(deadline)}` : ""}
+                  {ex.alertaDias ? ` · alerta ${ex.alertaDias} dias antes` : ""}
                   {ex.responsavel ? ` · resp. ${ex.responsavel.nome}` : ""}
                   {prazo?.dataEfetiva ? ` · efetivo ${formatDate(prazo.dataEfetiva)}` : ""}
                 </p>

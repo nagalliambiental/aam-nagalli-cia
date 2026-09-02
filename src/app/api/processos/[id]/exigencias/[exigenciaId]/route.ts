@@ -16,6 +16,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const data: Record<string, unknown> = {};
   if ("descricao" in body) data.descricao = body.descricao;
   if ("prazoResposta" in body) data.prazoResposta = body.prazoResposta ? new Date(body.prazoResposta) : null;
+  if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("status" in body) data.status = body.status;
   if ("resposta" in body) data.resposta = body.resposta ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
