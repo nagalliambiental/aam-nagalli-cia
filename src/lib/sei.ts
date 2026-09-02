@@ -48,18 +48,38 @@ export function extrairUrlExibirSei(htmlSearch: string): string | null {
   return m ? `${BASE_SEI}/sei/modulos/pesquisa/${m[0]}` : null;
 }
 
-/**
- * Busca a página de exibição do SEI e retorna os andamentos (datas reais).
- * A página usa charset ISO-8859-1 — decodifica para preservar os acentos.
- */
-export async function consultarAndamentosSei(url: string): Promise<AndamentoSei[]> {
+/** Extrai o NUP do processo que a página de exibição representa (ex.: "Processo: 48411.815310/2008-81"). */
+export function extrairNupProcessoSei(html: string): string | null {
+  const m = limparHtml(html).match(/Processo:\s*(\d{5}\.\d{6}\/\d{4}-\d{2})/);
+  return m ? m[1] : null;
+}
+
+function normalizarNup(nup: string): string {
+  return nup.replace(/\D/g, "");
+}
+
+/** Consulta a página do processo e retorna os andamentos + o NUP da página. */
+export async function consultarPaginaSei(url: string): Promise<{ andamentos: AndamentoSei[]; nup: string | null }> {
   const res = await fetch(url, {
     headers: { "User-Agent": UA, "Accept-Language": "pt-BR,pt;q=0.9" },
     cache: "no-store",
     signal: AbortSignal.timeout(20000),
   });
-  if (!res.ok) return [];
-  const buf = await res.arrayBuffer();
-  const html = new TextDecoder("iso-8859-1").decode(buf);
-  return parseAndamentosProcesso(html);
+  if (!res.ok) return { andamentos: [], nup: null };
+  const html = new TextDecoder("iso-8859-1").decode(await res.arrayBuffer());
+  return { andamentos: parseAndamentosProcesso(html), nup: extrairNupProcessoSei(html) };
+}
+
+/**
+ * Busca a página de exibição do SEI e retorna os andamentos (datas reais).
+ * A página usa charset ISO-8859-1 — decodifica para preservar os acentos.
+ */
+export async function consultarAndamentosSei(url: string): Promise<AndamentoSei[]> {
+  return (await consultarPaginaSei(url)).andamentos;
+}
+
+/** Compara um NUP extraído da página com o NUP/número procurado. */
+export function nupConfere(chave: string, nupPagina: string | null): boolean {
+  if (!nupPagina) return true; // não conseguiu extrair: não bloqueia
+  return normalizarNup(nupPagina) === normalizarNup(chave);
 }

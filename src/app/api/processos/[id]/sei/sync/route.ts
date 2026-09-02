@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { consultarAndamentosSei, extrairUrlExibirSei, type AndamentoSei } from "@/lib/sei";
+import { consultarAndamentosSei, consultarPaginaSei, extrairUrlExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -197,14 +197,17 @@ export async function POST(req: Request, { params }: Ctx) {
     // Extrai a URL de exibição (token) do resultado e guarda no processo.
     const tokenUrl = extrairUrlExibirSei(json.html ?? "");
     if (tokenUrl) {
-      await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrl } }).catch(() => {});
-      const andamentos = await consultarAndamentosSei(tokenUrl).catch(() => []);
-      if (andamentos.length > 0) return ok(andamentos);
+      const { andamentos, nup } = await consultarPaginaSei(tokenUrl).catch(() => ({ andamentos: [], nup: null }));
+      // Só confia/guarda o token se a página for do processo procurado (mesmo NUP).
+      if (nupConfere(chave, nup) && andamentos.length > 0) {
+        await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrl } }).catch(() => {});
+        return ok(andamentos);
+      }
     }
 
     // Não usamos o parse da busca (datas incorretas) — melhor informar do que mostrar errado.
     return NextResponse.json(
-      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível ler os andamentos. Tente novamente em instantes.", chave },
+      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível confirmar os andamentos. Tente novamente em instantes.", chave },
       { status: 422 }
     );
   } catch (e) {
