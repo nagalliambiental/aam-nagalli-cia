@@ -42,10 +42,15 @@ export function parseAndamentosProcesso(htmlHtml: string): AndamentoSei[] {
   return out;
 }
 
-/** Extrai a URL de exibição (md_pesq_processo_exibir.php?token) do HTML de resultado. */
-export function extrairUrlExibirSei(htmlSearch: string): string | null {
-  const m = htmlSearch.match(/md_pesq_processo_exibir\.php\?[A-Za-z0-9_-]{20,}/);
-  return m ? `${BASE_SEI}/sei/modulos/pesquisa/${m[0]}` : null;
+/** Extrai TODAS as URLs de exibição (md_pesq_processo_exibir.php?token) do HTML de resultado. */
+export function extrairUrlsExibirSei(htmlSearch: string): string[] {
+  const set = new Set<string>();
+  const re = /md_pesq_processo_exibir\.php\?[A-Za-z0-9_-]{20,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(htmlSearch)) !== null) {
+    set.add(`${BASE_SEI}/sei/modulos/pesquisa/${m[0]}`);
+  }
+  return [...set];
 }
 
 /** Extrai o NUP do processo que a página de exibição representa (ex.: "Processo: 48411.815310/2008-81"). */
@@ -81,5 +86,8 @@ export async function consultarAndamentosSei(url: string): Promise<AndamentoSei[
 /** Compara um NUP extraído da página com o NUP/número procurado. */
 export function nupConfere(chave: string, nupPagina: string | null): boolean {
   if (!nupPagina) return true; // não conseguiu extrair: não bloqueia
-  return normalizarNup(nupPagina) === normalizarNup(chave);
+  const chaveDigits = normalizarNup(chave);
+  // Só cobra a igualdade quando a chave é um NUP (>=17 dígitos). Se for só o número,
+  // aceita (não dá para casar com segurança contra o NUP da página).
+  return chaveDigits.length >= 17 ? chaveDigits === normalizarNup(nupPagina) : true;
 }

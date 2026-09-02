@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { consultarAndamentosSei, consultarPaginaSei, extrairUrlExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
+import { consultarPaginaSei, extrairUrlsExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -134,9 +134,10 @@ export async function POST(req: Request, { params }: Ctx) {
     });
 
   // (A) Direto pelo token (sem captcha), quando não estamos confirmando um código.
+  // Valida se a página é mesmo do processo procurado; senão, cai para recapturar.
   if (seiTokenUrl && !codigoManual) {
-    const andamentos = await consultarAndamentosSei(seiTokenUrl).catch(() => []);
-    if (andamentos.length > 0) return ok(andamentos);
+    const { andamentos, nup } = await consultarPaginaSei(seiTokenUrl).catch(() => ({ andamentos: [], nup: null }));
+    if (nupConfere(chave, nup) && andamentos.length > 0) return ok(andamentos);
   }
 
   // (B) Sem código e sem token: retorna captcha para digitação manual.
@@ -195,12 +196,13 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     // Extrai a URL de exibição (token) do resultado e guarda no processo.
-    const tokenUrl = extrairUrlExibirSei(json.html ?? "");
-    if (tokenUrl) {
-      const { andamentos, nup } = await consultarPaginaSei(tokenUrl).catch(() => ({ andamentos: [], nup: null }));
-      // Só confia/guarda o token se a página for do processo procurado (mesmo NUP).
+    // Testa os vários processos relacionados e usa o primeiro cuja página
+    // confirme o NUP procurado (o SEI retorna vários por pesquisa).
+    const urls = extrairUrlsExibirSei(json.html ?? "");
+    for (const url of urls) {
+      const { andamentos, nup } = await consultarPaginaSei(url).catch(() => ({ andamentos: [], nup: null }));
       if (nupConfere(chave, nup) && andamentos.length > 0) {
-        await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrl } }).catch(() => {});
+        await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: url } }).catch(() => {});
         return ok(andamentos);
       }
     }
