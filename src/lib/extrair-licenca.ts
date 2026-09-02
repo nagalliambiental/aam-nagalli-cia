@@ -2,6 +2,8 @@
 // PDF com texto selecionável usa pdf-parse; imagens/PDFs escaneados usam a API
 // ocr.space (opcional, via OCR_API_KEY — fallback melhor esforço).
 
+import { classificarListaCondicionantes } from "@/lib/condicionantes";
+
 const OCR_API = "https://api.ocr.space/parse/image";
 const MIME: Record<string, string> = {
   png: "image/png",
@@ -24,6 +26,7 @@ export interface CamposLicencaExtraidos {
   orgaoSigla: string | null;
   razaoSocial: string | null;
   condicionantes: string | null;
+  condicionantesItens: { texto: string; tipo: "exigencia" | "informativo" }[];
 }
 
 function limpar(t: string): string {
@@ -233,6 +236,7 @@ function extrairSecaoCondicionantes(texto: string): string | null {
 export async function analisarLicenca(buffer: Buffer, ext: string): Promise<CamposLicencaExtraidos> {
   const texto = await extrairTextoDoArquivo(buffer, ext);
   const orgaoSigla = detectarOrgao(texto);
+  const condicionantes = extrairSecaoCondicionantes(texto);
   return {
     numeroLicenca: extrairNumeroLicenca(texto),
     numeroProtocolo: extrairProtocolo(texto),
@@ -256,6 +260,7 @@ export async function analisarLicenca(buffer: Buffer, ext: string): Promise<Camp
     municipio: extrairMunicipio(texto),
     orgaoSigla,
     razaoSocial: extrairRazaoSocial(texto),
-    condicionantes: extrairSecaoCondicionantes(texto),
+    condicionantes,
+    condicionantesItens: classificarListaCondicionantes(condicionantes),
   };
 }

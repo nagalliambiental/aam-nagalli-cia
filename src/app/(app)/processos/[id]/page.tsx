@@ -2,10 +2,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
-import { Card, CardHeader, PageHeader, Button } from "@/components/ui";
+import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { Tabs } from "@/components/ui/Tabs";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
+import { classificarListaCondicionantes } from "@/lib/condicionantes";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
@@ -126,7 +127,18 @@ export default async function ProcessoDetalhePage({
             content: (
               <Card>
                 <CardHeader title="Condicionantes" />
-                <div className="whitespace-pre-wrap px-5 py-4 text-sm">{processo.condicionantes}</div>
+                <ul className="divide-y divide-slate-100">
+                  {classificarListaCondicionantes(processo.condicionantes).map((item, idx) => (
+                    <li key={idx} className="px-5 py-3">
+                      <div className="flex items-start gap-2">
+                        <Badge tone={item.tipo === "exigencia" ? "amber" : "gray"}>
+                          {item.tipo === "exigencia" ? "Exigência" : "Informativo"}
+                        </Badge>
+                        <p className="whitespace-pre-wrap text-sm">{item.texto}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </Card>
             ),
           },
