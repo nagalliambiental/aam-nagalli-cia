@@ -9,6 +9,7 @@ const FASES_VALIDAS = [
   "Autorização de Pesquisa",
   "Direito de Requerer a Lavra",
   "Requerimento de Lavra",
+  "Licenciamento",
   "Concessão de Lavra",
 ];
 
@@ -152,13 +153,15 @@ export function ProcessoForm({
   processoId?: number;
 }) {
   const router = useRouter();
+  const ehFaseCustom = !!initial?.fase && !FASES_VALIDAS.includes(initial.fase);
   const [form, setForm] = useState({
     numero: initial?.numero ?? "",
     nup: initial?.nup ?? "",
     orgaoId: initial?.orgaoId ?? "",
     empreendimentoId: String(initial?.empreendimentoId ?? ""),
     natureza: initial?.natureza ?? "minerario",
-    fase: initial?.fase ?? "",
+    fase: ehFaseCustom ? "outro" : (initial?.fase ?? ""),
+    faseOutra: ehFaseCustom ? (initial?.fase ?? "") : "",
     status: initial?.status ?? "em_andamento",
     areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
     areaUnidade: initial?.areaUnidade ?? "ha",
@@ -352,6 +355,7 @@ export function ProcessoForm({
       orgaoId: form.orgaoId ? Number(form.orgaoId) : null,
       empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
       natureza: form.natureza,
+      fase: form.fase === "outro" ? (form.faseOutra.trim() || "outro") : form.fase,
       guiaUtilizacao: form.natureza === "minerario" && form.guiaUtilizacao,
       areaValor: form.areaValor !== "" ? Number(String(form.areaValor).replace(",", ".")) : null,
       validade: form.validade ? new Date(form.validade) : null,
@@ -545,13 +549,23 @@ export function ProcessoForm({
               <Label htmlFor="fase">Fase (regime Autorização → Concessão)</Label>
               <Select id="fase" value={form.fase} onChange={set("fase")}>
                 <option value="">— selecione —</option>
-                <option value="Requerimento de Pesquisa">Requerimento de Pesquisa</option>
-                <option value="Autorização de Pesquisa">Autorização de Pesquisa (Alvará)</option>
-                <option value="Direito de Requerer a Lavra">Direito de Requerer a Lavra</option>
-                <option value="Requerimento de Lavra">Requerimento de Lavra</option>
-                <option value="Concessão de Lavra">Concessão de Lavra</option>
+                {FASES_VALIDAS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+                <option value="outro">Outro</option>
               </Select>
             </div>
+            {form.fase === "outro" && (
+              <div>
+                <Label htmlFor="faseOutra">Fase (outra)</Label>
+                <Input
+                  id="faseOutra"
+                  value={form.faseOutra}
+                  onChange={(e) => setForm((f) => ({ ...f, faseOutra: e.target.value }))}
+                  placeholder="Digite a fase do processo"
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="status">Status</Label>
               <Select id="status" value={form.status} onChange={set("status")}>
