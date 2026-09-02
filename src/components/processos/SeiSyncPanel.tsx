@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, Label } from "@/components/ui";
 
 type Mov = { data: string; hora: string; unidade: string; descricao: string };
 
@@ -12,19 +12,22 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
   const [sessao, setSessao] = useState<{ cookies: string; cid: string } | null>(null);
+  const [urlManual, setUrlManual] = useState("");
+  const [showUrl, setShowUrl] = useState(false);
 
-  async function sync(codigoOverride?: string) {
+  async function sync(codigoOverride?: string, tokenUrl?: string) {
     setLoading(true);
     setMsg(null);
     setAndamentos(null);
+    const payload = codigoOverride
+      ? { codigo: codigoOverride, cookies: sessao?.cookies, cid: sessao?.cid }
+      : tokenUrl
+        ? { tokenUrl }
+        : {};
     const res = await fetch(`/api/processos/${processoId}/sei/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        codigoOverride
-          ? { codigo: codigoOverride, cookies: sessao?.cookies, cid: sessao?.cid }
-          : {}
-      ),
+      body: JSON.stringify(payload),
     });
     const d = await res.json().catch(() => ({}));
     setLoading(false);
@@ -35,12 +38,19 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
         setMsg(d.mensagem ?? "Digite o código da imagem.");
         return;
       }
+      if (d.modo === "token_manual") {
+        setShowUrl(true);
+        setMsg(d.mensagem ?? "Cole a URL do processo no SEI.");
+        return;
+      }
       setMsg(d.mensagem ?? d.error ?? "Não foi possível sincronizar automaticamente.");
       return;
     }
     setCaptcha(null);
     setCodigo("");
     setSessao(null);
+    setShowUrl(false);
+    setUrlManual("");
     setAndamentos(d.andamentos ?? []);
     setMsg(d.mensagem ?? (d.andamentos?.length ? "Movimentações encontradas no SEI." : "Nenhuma movimentação nova. Processo em dia no SEI."));
   }
@@ -48,6 +58,11 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
   function confirmarCaptcha() {
     if (!codigo.trim()) { setMsg("Digite o código da imagem."); return; }
     sync(codigo.trim());
+  }
+
+  function usarUrl() {
+    if (!urlManual.trim()) { setMsg("Cole a URL do processo no SEI."); return; }
+    sync(undefined, urlManual.trim());
   }
 
   return (
@@ -70,6 +85,24 @@ export function SeiSyncPanel({ processoId, nup }: { processoId: number; nup: str
           <img src={captcha} alt="captcha" className="h-10 rounded border border-slate-300 bg-white" />
           <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código" className="w-24" maxLength={6} />
           <Button variant="secondary" onClick={confirmarCaptcha} disabled={loading || !codigo}>Confirmar</Button>
+        </div>
+      )}
+
+      {(showUrl || msg?.includes("URL")) && (
+        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+          <Label htmlFor="seiUrl">URL do processo no SEI (md_pesq_processo_exibir.php?token)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="seiUrl"
+              value={urlManual}
+              onChange={(e) => setUrlManual(e.target.value)}
+              placeholder="https://sei.anm.gov.br/sei/modulos/pesquisa/md_pesq_processo_exibir.php?..."
+              className="flex-1"
+            />
+            <Button variant="secondary" onClick={usarUrl} disabled={loading || !urlManual.trim()}>
+              {loading ? "..." : "Usar URL"}
+            </Button>
+          </div>
         </div>
       )}
 

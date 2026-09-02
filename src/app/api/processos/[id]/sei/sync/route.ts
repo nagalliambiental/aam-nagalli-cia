@@ -113,15 +113,6 @@ export async function POST(req: Request, { params }: Ctx) {
   const chave = processo.nup ?? processo.numero;
   if (!chave) return NextResponse.json({ error: "Processo sem NUP ou número" }, { status: 400 });
 
-  const body = await req.json().catch(() => ({}));
-  const codigoManual = (body.codigo as string ?? "").trim();
-  const cookiesIn = (body.cookies as string ?? "").trim();
-  const cidIn = (body.cid as string ?? "").trim();
-
-  // Se já temos a URL de exibição (token), consultamos direto — SEM captcha.
-  const seiUrlRaw = processo.seiUrl ?? "";
-  const seiTokenUrl = seiUrlRaw.includes("md_pesq_processo_exibir") ? seiUrlRaw : null;
-
   const ok = (andamentos: AndamentoSei[]) =>
     NextResponse.json({
       ok: true,
@@ -132,6 +123,29 @@ export async function POST(req: Request, { params }: Ctx) {
         ? "Nenhum andamento encontrado."
         : `${andamentos.length} ${andamentos.length === 1 ? "movimentação" : "movimentações"} no SEI.`,
     });
+
+  const body = await req.json().catch(() => ({}));
+  const codigoManual = (body.codigo as string ?? "").trim();
+  const cookiesIn = (body.cookies as string ?? "").trim();
+  const cidIn = (body.cid as string ?? "").trim();
+  const tokenUrlIn = (body.tokenUrl as string ?? "").trim();
+
+  // URL do token informada manualmente (usuário colou) — usa direto, sem captcha.
+  if (tokenUrlIn.includes("md_pesq_processo_exibir")) {
+    const { andamentos } = await consultarPaginaSei(tokenUrlIn).catch(() => ({ andamentos: [], nup: null }));
+    if (andamentos.length > 0) {
+      await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrlIn } }).catch(() => {});
+      return ok(andamentos);
+    }
+    return NextResponse.json(
+      { ok: false, error: "A URL informada não retornou andamentos. Confira se é a do processo (md_pesq_processo_exibir.php?token)." },
+      { status: 422 }
+    );
+  }
+
+  // Se já temos a URL de exibição (token), consultamos direto — SEM captcha.
+  const seiUrlRaw = processo.seiUrl ?? "";
+  const seiTokenUrl = seiUrlRaw.includes("md_pesq_processo_exibir") ? seiUrlRaw : null;
 
   // (A) Direto pelo token (sem captcha), quando não estamos confirmando um código.
   // Valida se a página é mesmo do processo procurado; senão, cai para recapturar.
@@ -224,9 +238,9 @@ export async function POST(req: Request, { params }: Ctx) {
       return ok(fallback.andamentos);
     }
 
-    // Não usamos o parse da busca (datas incorretas) — melhor informar do que mostrar errado.
+    // Não conseguimos identificar o processo — oferece envio manual da URL do token.
     return NextResponse.json(
-      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível ler os andamentos. Tente novamente em instantes.", chave },
+      { ok: false, modo: "token_manual", mensagem: "Não foi possível identificar o processo automaticamente. Cole abaixo a URL do processo no SEI (md_pesq_processo_exibir.php?<token>) e clique em Usar URL.", chave },
       { status: 422 }
     );
   } catch (e) {
