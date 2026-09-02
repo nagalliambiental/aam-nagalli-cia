@@ -166,40 +166,48 @@ async function main() {
     }
   }
 
-  // ------------------------------------------------------------------
-  // PERFIS INITIAIS: Administrador e Técnico
-  // ------------------------------------------------------------------
-  const adminPermissoes = await prisma.permissao.findMany();
-  const admin = await prisma.perfil.upsert({
-    where: { nome: "Administrador" },
-    update: {},
-    create: { nome: "Administrador", descricao: "Acesso total", sistema: true },
-  });
-  for (const p of adminPermissoes) {
-    await prisma.perfilPermissao.upsert({
-      where: { perfilId_permissaoId: { perfilId: admin.id, permissaoId: p.id } },
-      update: {},
-      create: { perfilId: admin.id, permissaoId: p.id },
-    });
+    // PERFIS: Administrador (total), T?cnico Chefe (gestor operacional),
+  // T?cnico (execu??o). Define o conjunto exato de permiss?es de cada um.
+  const chaves = (modulos: string[], acoes: string[]) => modulos.flatMap((m) => acoes.map((a) => `${m}:${a}`));
+
+  async function definirPermissoes(perfilId: number, chavesList: string[]) {
+    await prisma.perfilPermissao.deleteMany({ where: { perfilId } });
+    for (const chave of chavesList) {
+      const perm = await prisma.permissao.findUnique({ where: { chave } });
+      if (perm) await prisma.perfilPermissao.create({ data: { perfilId, permissaoId: perm.id } });
+    }
   }
 
-  // Técnico: leitura/escrita nos módulos operacionais (sem usuário/config/excluir)
-  const tecnico = await prisma.perfil.upsert({
-    where: { nome: "Técnico" },
+  const OP = ['processo','titulo','licenca','condicionante','exigencia','prazo','tarefa','documento','comunicacao','custo','cadastro'];
+  const SO_LEITURA = ['relatorio','orgao','dashboard'];
+
+  // Administrador: tudo
+  const adminPermissoes = await prisma.permissao.findMany();
+  const admin = await prisma.perfil.upsert({
+    where: { nome: 'Administrador' },
     update: {},
-    create: { nome: "Técnico", descricao: "Operacional (executa tarefas e atualiza processos)" },
+    create: { nome: 'Administrador', descricao: 'Acesso total e administra??o do sistema', sistema: true },
   });
-  const moduloTecnico = ["processo", "titulo", "licenca", "condicionante", "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "cadastro"];
-  const permissoesTecnico = await prisma.permissao.findMany({
-    where: { modulo: { in: moduloTecnico }, acao: { in: ["ler", "criar", "editar"] } },
+  await definirPermissoes(admin.id, adminPermissoes.map((pp) => pp.chave));
+
+  // T?cnico Chefe: gestor operacional ? opera tudo, sem seguran?a/exclus?o
+  const chefe = await prisma.perfil.upsert({
+    where: { nome: 'T?cnico Chefe' },
+    update: {},
+    create: { nome: 'T?cnico Chefe', descricao: 'Gestor operacional (supervis?o dos processos e da equipe)', sistema: true },
   });
-  for (const p of permissoesTecnico) {
-    await prisma.perfilPermissao.upsert({
-      where: { perfilId_permissaoId: { perfilId: tecnico.id, permissaoId: p.id } },
-      update: {},
-      create: { perfilId: tecnico.id, permissaoId: p.id },
-    });
-  }
+  const chefeChaves = [ ...chaves(OP, ['ler','criar','editar']), ...chaves(SO_LEITURA, ['ler']) ];
+  await definirPermissoes(chefe.id, chefeChaves);
+
+  // T?cnico: execu??o ? atualiza opera??o, sem cadastro sens?vel e sem excluir/seguran?a
+  const tecnico = await prisma.perfil.upsert({
+    where: { nome: 'Técnico' },
+    update: {},
+    create: { nome: 'Técnico', descricao: 'Execução operacional (atualiza processos, tarefas, prazos e documentos)', sistema: true },
+  });
+  const OP_EDICAO = OP.filter((m) => m !== 'cadastro');
+  const tecnicoChaves = [ ...chaves(OP, ['ler']), ...chaves(OP_EDICAO, ['criar','editar']), ...chaves(SO_LEITURA, ['ler']) ];
+  await definirPermissoes(tecnico.id, tecnicoChaves);
 
   // ------------------------------------------------------------------
   // USUÁRIO ADMIN INICIAL (opcional — descomente para criar)

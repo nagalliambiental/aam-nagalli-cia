@@ -66,7 +66,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const isAdmin = user.perfilNome === "Administrador";
-  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro");
+  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro" && s.label !== "Administrativo");
   const flatLinks = [DASHBOARD, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
