@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui";
 import { TarefaNovaForm } from "@/components/processos/TarefaNovaForm";
 
@@ -15,11 +15,23 @@ export function NovaTarefaBotao({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen((o) => !o)}>
-        <Plus className="h-4 w-4" /> {open ? "Cancelar" : "Nova tarefa"}
-      </Button>
+      {!open && (
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" /> Nova tarefa
+        </Button>
+      )}
       {open && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+            <h3 className="text-sm font-semibold text-navy-900">Nova tarefa</h3>
+            <button
+              onClick={() => setOpen(false)}
+              title="Fechar"
+              className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
           <TarefaNovaForm pessoas={pessoas} processos={processos} onClose={() => setOpen(false)} />
         </div>
       )}

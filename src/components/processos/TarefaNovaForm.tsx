@@ -96,7 +96,6 @@ export function TarefaNovaForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Criar tarefa"}</Button>
-        <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
       </div>
     </form>
   );
