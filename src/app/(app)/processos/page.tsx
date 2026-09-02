@@ -4,6 +4,7 @@ import { PageHeader, Card, Button } from "@/components/ui";
 import { Search } from "lucide-react";
 import { ProcessoRowActions } from "@/components/processos/ProcessoRowActions";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
+import { usuarioTemPermissao } from "@/lib/perfil";
 
 type SearchParams = Promise<{ q?: string | string[] }>;
 
@@ -11,6 +12,7 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
+  const podeExcluir = await usuarioTemPermissao("processo:excluir");
 
   const processos = await prisma.processo.findMany({
     where: {
@@ -65,7 +67,7 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
         <ul className="divide-y divide-slate-200">
           {processos.map((p) => (
             <li key={p.id}>
-              <ProcessoRowActions processo={p} />
+              <ProcessoRowActions processo={p} podeExcluir={podeExcluir} />
             </li>
           ))}
           {processos.length === 0 && (

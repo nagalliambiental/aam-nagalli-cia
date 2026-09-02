@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; fase: string | null; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } } }) {
+export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; fase: string | null; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -49,9 +49,11 @@ export function ProcessoRowActions({ processo }: { processo: { id: number; numer
           <StatusBadge status={processo.status} />
         </div>
       </Link>
-      <button onClick={handleDelete} disabled={loading} title="Excluir" className="ml-3 rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
-        <Trash2 className="h-4 w-4" />
-      </button>
+      {podeExcluir && (
+        <button onClick={handleDelete} disabled={loading} title="Excluir" className="ml-3 rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { TarefaStatusBotao } from "@/components/processos/TarefaStatusBotao";
+import { usuarioTemPermissao } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
@@ -15,6 +16,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const verConcluidas = typeof sp.status === "string" && sp.status === "concluida";
+  const podeCriar = await usuarioTemPermissao("tarefa:criar");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidas
@@ -51,13 +53,15 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       <PageHeader
         title="Tarefas"
         subtitle="Tarefas e suas exigências vinculadas"
-        actions={<ImportarTarefas />}
+        actions={podeCriar ? <ImportarTarefas /> : undefined}
       />
 
-      <NovaTarefaBotao
-        pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-        empreendimentos={empreendimentosOpt}
-      />
+      {podeCriar && (
+        <NovaTarefaBotao
+          pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+          empreendimentos={empreendimentosOpt}
+        />
+      )}
 
       <Card>
         <div className="flex items-center gap-2 border-b border-slate-200 p-4">

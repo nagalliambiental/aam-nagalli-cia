@@ -206,7 +206,8 @@ async function main() {
     create: { nome: 'Técnico', descricao: 'Execução operacional (atualiza processos, tarefas, prazos e documentos)', sistema: true },
   });
   const OP_EDICAO = OP.filter((m) => m !== 'cadastro');
-  const tecnicoChaves = [ ...chaves(OP, ['ler']), ...chaves(OP_EDICAO, ['criar','editar']), ...chaves(SO_LEITURA, ['ler']) ];
+  const OP_CRIAR = OP_EDICAO.filter((m) => m !== 'tarefa');
+  const tecnicoChaves = [ ...chaves(OP, ['ler']), ...chaves(OP_CRIAR, ['criar']), ...chaves(OP_EDICAO, ['editar']), ...chaves(SO_LEITURA, ['ler']) ];
   await definirPermissoes(tecnico.id, tecnicoChaves);
 
   // ------------------------------------------------------------------

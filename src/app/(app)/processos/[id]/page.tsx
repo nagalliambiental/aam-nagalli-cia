@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button } from "@/components/ui";
 import { Tabs } from "@/components/ui/Tabs";
@@ -20,6 +20,7 @@ export default async function ProcessoDetalhePage({
   const { id } = await params;
   const processoId = Number(id);
   await requirePermissao("processo:ler");
+  const podeExcluir = await usuarioTemPermissao("processo:excluir");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const processo = await prisma.processo.findFirst({
@@ -142,7 +143,7 @@ export default async function ProcessoDetalhePage({
             <Link href={`/processos/${processo.id}/editar`}>
               <Button variant="secondary">Editar</Button>
             </Link>
-            <DeleteProcessoButton id={processo.id} />
+            {podeExcluir && <DeleteProcessoButton id={processo.id} />}
             <Link href="/processos">
               <Button variant="ghost">Voltar</Button>
             </Link>
