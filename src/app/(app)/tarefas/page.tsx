@@ -32,12 +32,11 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       <PageHeader
         title="Tarefas"
         subtitle="Tarefas e suas exigências vinculadas"
-        actions={
-          <NovaTarefaBotao
-            pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-            processos={processos}
-          />
-        }
+      />
+
+      <NovaTarefaBotao
+        pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+        processos={processos}
       />
 
       <Card>

@@ -21,7 +21,7 @@ export function NovaTarefaBotao({
         </Button>
       )}
       {open && (
-        <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
             <h3 className="text-sm font-semibold text-navy-900">Nova tarefa</h3>
             <button
