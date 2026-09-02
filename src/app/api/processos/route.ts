@@ -13,12 +13,20 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const numero = (body.numero as string) ?? "";
+  const natureza = body.natureza === "ambiental" ? "ambiental" : "minerario";
+
+  // Ambiental não exige o número do cadastro minerário: usa protocolo/licença,
+  // senão gera um identificador (AMB-*).
+  let numero = (body.numero as string) ?? "";
+  if (!numero && natureza === "ambiental") {
+    numero = String(body.numeroProtocolo || body.numeroLicenca || "").trim();
+  }
+  if (!numero && natureza === "ambiental") {
+    numero = `AMB-${Date.now()}`;
+  }
   if (!numero) {
     return NextResponse.json({ error: "Número é obrigatório" }, { status: 400 });
   }
-
-  const natureza = body.natureza === "ambiental" ? "ambiental" : "minerario";
 
   const nup = body.nup ? String(body.nup).replace(/\s/g, "").trim() || null : null;
   if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {

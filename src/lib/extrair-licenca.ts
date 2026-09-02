@@ -52,6 +52,9 @@ async function extrairOcr(buffer: Buffer, ext: string): Promise<string> {
   form.append("language", "por");
   form.append("isOverlayRequired", "false");
   form.append("OCREngine", "2");
+  form.append("scale", "true");
+  form.append("detectOrientation", "true");
+  form.append("isTable", "true");
   const res = await fetch(OCR_API, { method: "POST", body: form }).catch(() => null);
   if (!res || !res.ok) return "";
   const json = (await res.json().catch(() => null)) as {
@@ -170,7 +173,9 @@ function extrairRazaoSocial(texto: string): string | null {
 const INICIOS_SECAO = [
   /CONDICIONANTES\s+AMBIENTAIS?\b[^\n]*/i,
   /CONDICIONANTES\s+D[AE]\s+(?:LICEN[ÇC]A|AUTORIZA[ÇC][ÃA]O|OUTORGA)[^\n]*/i,
-  /CONDICIONANTES\b[^\n]*/i,
+  /LISTA\s+DE\s+CONDICIONANTES\b[^\n]*/i,
+  /QUADRO\s+DE\s+CONDICIONANTES\b[^\n]*/i,
+  /CONDICIONANTES?\b[^\n]*/i,
   /CONDI[ÇC][ÕO]ES\s+E\s+RESTRI[ÇC][ÕO]ES\b[^\n]*/i,
   /CONDI[ÇC][ÕO]ES\s+ESPEC[ÍI]FICAS\b[^\n]*/i,
   /CONDI[ÇC][ÕO]ES\s+GERAIS\b[^\n]*/i,
@@ -184,6 +189,7 @@ const FINS_SECAO = [
   /ASSINATURAS?\b[^\n]*/i,
   /LOCAL\s+E\s+DATA\b[^\n]*/i,
   /ASSINADO\b[^\n]*/i,
+  /RESPONS[ÁA]VEL\s+T[ÉE]CNICO\b[^\n]*/i,
   /P[aá]gina\s+\d+/i,
 ];
 
@@ -192,8 +198,8 @@ function extrairSecaoCondicionantes(texto: string): string | null {
   for (const re of INICIOS_SECAO) {
     const m = texto.match(re);
     if (m && m.index !== undefined) {
-      inicio = m.index + m[0].length;
-      break;
+      const pos = m.index + m[0].length;
+      if (inicio === -1 || pos < inicio) inicio = pos;
     }
   }
   if (inicio === -1) return null;
@@ -227,14 +233,18 @@ export async function analisarLicenca(buffer: Buffer, ext: string): Promise<Camp
     numeroLicenca: extrairNumeroLicenca(texto),
     numeroProtocolo: extrairProtocolo(texto),
     dataProtocolo: extrairData(texto, [
-      /data\s+de\s+(?:emiss[aã]o|protocolo|publica[çc][ãa]o)[:\s]*(\d{2})\/(\d{2})\/(\d{4})/i,
-      /protocol(?:o|ado)\s+em[:\s]*(\d{2})\/(\d{2})\/(\d{4})/i,
+      /data\s+de\s+protocolo[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /data\s+do\s+protocolo[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /protocolad[oa]\s+em[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /protocolo\s+em[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /data\s+de\s+(?:emiss[aã]o|entrada|publica[çc][ãa]o)[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /protocol(?:o|ado)\s+em[:\s]*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
     ]),
     validade: extrairData(texto, [
-      /validade[:\s]*(\d{2})\/(\d{2})\/(\d{4})/i,
-      /v[aá]lid[oa] at[eé][:\s]*(\d{2})\/(\d{2})\/(\d{4})/i,
-      /data\s+de\s+validade[:\s]*(\d{2})\/(\d{2})\/(\d{4})/i,
-      /(\d{2})\/(\d{2})\/(\d{4})/,
+      /validad[ea]\s*[:\.]?\s*(?:at[eé])?\s*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /v[aá]lid[oa]\s+(?:at[eé]|ao)\s*[:\.]?\s*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /[sv]alidade\s*[:\.]?\s*(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
+      /at[eé]\s+(\d{2})[\/\.](\d{2})[\/\.](\d{4})/i,
     ]),
     modalidade: extrairModalidade(texto),
     atividade: extrairAtividade(texto),

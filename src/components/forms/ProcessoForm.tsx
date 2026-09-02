@@ -639,10 +639,6 @@ export function ProcessoForm({
         ) : (
           <>
             <div>
-              <Label htmlFor="numero">Número do processo</Label>
-              <Input id="numero" value={form.numero} onChange={set("numero")} placeholder="000.000/0000" />
-            </div>
-            <div>
               <Label htmlFor="status">Status</Label>
               <Select id="status" value={form.status} onChange={set("status")}>
                 <option value="em_andamento">Em andamento</option>

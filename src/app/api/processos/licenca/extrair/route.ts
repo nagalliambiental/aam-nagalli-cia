@@ -22,9 +22,9 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const campos = await analisarLicenca(buffer, ext);
 
-    if (!campos.condicionantes && !campos.numeroLicenca && !campos.validade) {
+    if (!campos.numeroLicenca && !campos.numeroProtocolo && !campos.dataProtocolo && !campos.validade && !campos.atividade && !campos.modalidade && !campos.condicionantes) {
       return NextResponse.json(
-        { error: "Não foi possível extrair dados da licença. Verifique se o arquivo está nítido/legível." },
+        { error: "Não foi possível extrair dados da licença. Verifique se o arquivo está nítido/legível ou se a chave OCR está configurada." },
         { status: 422 }
       );
     }
