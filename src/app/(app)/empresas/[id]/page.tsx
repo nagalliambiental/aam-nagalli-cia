@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { formatCNPJ } from "@/lib/format";
@@ -31,9 +31,8 @@ export default async function EmpresaDetalhePage({
     include: { _count: { select: { processos: { where: { ativo: true, deletedAt: null } } } } },
   });
 
-  const podeEditar = await prisma.permissao.findFirst({
-    where: { chave: "cadastro:editar" },
-  });
+  const podeEditar = await usuarioTemPermissao("cadastro:editar");
+  const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
   return (
     <div>
@@ -53,7 +52,7 @@ export default async function EmpresaDetalhePage({
                 <Button>Editar</Button>
               </Link>
             )}
-            <DeleteEmpresaButton id={empresa.id} />
+            {podeExcluir && <DeleteEmpresaButton id={empresa.id} />}
           </div>
         }
       />
