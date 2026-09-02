@@ -166,8 +166,8 @@ async function main() {
     }
   }
 
-    // PERFIS: Administrador (total), T?cnico Chefe (gestor operacional),
-  // T?cnico (execu??o). Define o conjunto exato de permiss?es de cada um.
+    // PERFIS: Administrador (total), Técnico Chefe (gestor operacional),
+  // Técnico (execução). Define o conjunto exato de permissões de cada um.
   const chaves = (modulos: string[], acoes: string[]) => modulos.flatMap((m) => acoes.map((a) => `${m}:${a}`));
 
   async function definirPermissoes(perfilId: number, chavesList: string[]) {
@@ -186,20 +186,20 @@ async function main() {
   const admin = await prisma.perfil.upsert({
     where: { nome: 'Administrador' },
     update: {},
-    create: { nome: 'Administrador', descricao: 'Acesso total e administra??o do sistema', sistema: true },
+    create: { nome: 'Administrador', descricao: 'Acesso total e administração do sistema', sistema: true },
   });
   await definirPermissoes(admin.id, adminPermissoes.map((pp) => pp.chave));
 
-  // T?cnico Chefe: gestor operacional ? opera tudo, sem seguran?a/exclus?o
+  // Técnico Chefe: gestor operacional — opera tudo, sem segurança/exclusão
   const chefe = await prisma.perfil.upsert({
-    where: { nome: 'T?cnico Chefe' },
+    where: { nome: 'Técnico Chefe' },
     update: {},
-    create: { nome: 'T?cnico Chefe', descricao: 'Gestor operacional (supervis?o dos processos e da equipe)', sistema: true },
+    create: { nome: 'Técnico Chefe', descricao: 'Gestor operacional (supervisão dos processos e da equipe)', sistema: true },
   });
   const chefeChaves = [ ...chaves(OP, ['ler','criar','editar']), ...chaves(SO_LEITURA, ['ler']) ];
   await definirPermissoes(chefe.id, chefeChaves);
 
-  // T?cnico: execu??o ? atualiza opera??o, sem cadastro sens?vel e sem excluir/seguran?a
+  // Técnico: execução — atualiza operação, sem cadastro sensível e sem excluir/segurança
   const tecnico = await prisma.perfil.upsert({
     where: { nome: 'Técnico' },
     update: {},
