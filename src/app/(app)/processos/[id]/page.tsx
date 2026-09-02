@@ -67,7 +67,6 @@ export default async function ProcessoDetalhePage({
               ["Natureza", processo.natureza === "ambiental" ? "Ambiental" : "Minerário"],
               ["NUP (SEI)", processo.nup ?? "—"],
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
-              ["Tipo", processo.tipoProcesso.nome],
               ["Empreendimento", processo.empreendimento?.nome ?? "—"],
               ["Responsável", processo.responsavel?.nome ?? "—"],
               ["Fase", processo.fase ?? "—"],
@@ -137,7 +136,7 @@ export default async function ProcessoDetalhePage({
     <div>
       <PageHeader
         title={`Processo #${processo.numero}`}
-        subtitle={`${processo.orgao.sigla} · ${processo.tipoProcesso.nome}${processo.nup ? ` · NUP ${processo.nup}` : ""}`}
+        subtitle={`${processo.orgao.sigla} · Fase ${processo.fase ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`}
         actions={
           <div className="flex items-center gap-2">
             <Link href={`/processos/${processo.id}/editar`}>

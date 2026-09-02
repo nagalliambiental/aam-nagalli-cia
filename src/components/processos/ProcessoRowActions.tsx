@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; tipoProcesso: { nome: string }; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } } }) {
+export function ProcessoRowActions({ processo }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; fase: string | null; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } } }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +30,7 @@ export function ProcessoRowActions({ processo }: { processo: { id: number; numer
             {processo.nup ? <span className="ml-2 text-xs font-normal text-navy-600">NUP {processo.nup}</span> : null}
           </p>
           <p className="truncate text-sm text-muted">
-            {processo.tipoProcesso.nome}
+            {processo.fase ? `Fase: ${processo.fase}` : "—"}
           </p>
           {processo.empreendimento ? (
             <p className="truncate text-xs">
