@@ -51,19 +51,26 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
       { href: "/indicadores", label: "Indicadores", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Administrativo",
+    icon: Settings2,
+    items: [
+      { href: "/config", label: "Configurações", icon: Settings2 },
       { href: "/backup", label: "Backup", icon: Download },
     ],
   },
 ];
 
-const CONFIG: NavItem = { href: "/config", label: "Configurações", icon: Settings2 };
-
-const FLAT_LINKS = [DASHBOARD, PROCESSOS, ...SECTIONS.flatMap((s) => s.items), CONFIG];
-
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const isAdmin = user.perfilNome === "Administrador";
+  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro");
+  const flatLinks = [DASHBOARD, PROCESSOS, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -96,7 +103,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
       {renderLink(DASHBOARD)}
       {renderLink(PROCESSOS)}
-      {SECTIONS.map((group) => {
+      {sections.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
         const GroupIcon = group.icon;
@@ -122,9 +129,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
           </div>
         );
       })}
-      <div className="pt-1">
-        {renderLink(CONFIG)}
-      </div>
     </nav>
   );
 
@@ -188,7 +192,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
           <img src="/logo.jpg" alt="AAM" className="h-8 w-8 rounded object-contain bg-white" />
         </div>
         <nav className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto py-4">
-          {FLAT_LINKS.map((item) => {
+          {flatLinks.map((item) => {
             const Icon = item.icon;
             const itemActive = isItemActive(item.href);
             return (
