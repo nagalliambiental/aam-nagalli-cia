@@ -13,6 +13,7 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
   const podeExcluir = await usuarioTemPermissao("processo:excluir");
+  const podeCriar = await usuarioTemPermissao("processo:criar");
 
   const processos = await prisma.processo.findMany({
     where: {
@@ -45,9 +46,11 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
         title="Processos"
         subtitle="Hub operacional: processos minerários e ambientais"
         actions={
-          <Link href="/processos/novo">
-            <Button>Novo processo</Button>
-          </Link>
+          podeCriar ? (
+            <Link href="/processos/novo">
+              <Button>Novo processo</Button>
+            </Link>
+          ) : undefined
         }
       />
 

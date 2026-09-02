@@ -34,6 +34,20 @@ export function brDate(dia: number, mes: number, ano: number): Date {
   return new Date(a, m - 1, d, 12, 0, 0);
 }
 
+/**
+ * Converte uma data "yyyy-mm-dd" (vinda de <input type="date">) em uma Date
+ * preservando o dia calendário (âncora de meio-dia local). Evita o deslocamento
+ * de 1 dia causado por new Date("yyyy-mm-dd") (interpretado como UTC) + fuso
+ * América/Sao_Paulo na exibição.
+ */
+export function dataLocal(s?: string | null): Date | null {
+  if (!s) return null;
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return brDate(+m[3], +m[2], +m[1]);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export function formatCNPJ(cnpj?: string | null) {
   if (!cnpj) return "—";
   const c = cnpj.replace(/\D/g, "");

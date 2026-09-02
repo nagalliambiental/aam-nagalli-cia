@@ -20,6 +20,7 @@ export default async function ProcessoDetalhePage({
   const { id } = await params;
   const processoId = Number(id);
   await requirePermissao("processo:ler");
+  const podeEditar = await usuarioTemPermissao("processo:editar");
   const podeExcluir = await usuarioTemPermissao("processo:excluir");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
@@ -63,16 +64,20 @@ export default async function ProcessoDetalhePage({
           <Card>
             <CardHeader title="Informações do processo" />
             <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
-            {[
+            {([
               ["Número", `#${processo.numero}`],
               ["Natureza", processo.natureza === "ambiental" ? "Ambiental" : "Minerário"],
-              ["NUP (SEI)", processo.nup ?? "—"],
+              ...(processo.natureza === "ambiental"
+                ? []
+                : [
+                    ["NUP (SEI)", processo.nup ?? "—"],
+                    ["Fase", processo.fase ?? "—"],
+                    ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
+                    ["Substâncias", processo.substancias ?? "—"],
+                  ]),
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
               ["Empreendimento", processo.empreendimento?.nome ?? "—"],
               ["Responsável", processo.responsavel?.nome ?? "—"],
-              ["Fase", processo.fase ?? "—"],
-              ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
-              ["Substâncias", processo.substancias ?? "—"],
               ["Status", <StatusBadge key="s" status={processo.status} />],
               ["Abertura", formatDate(processo.dataAbertura)],
               ...(processo.natureza === "ambiental"
@@ -87,38 +92,46 @@ export default async function ProcessoDetalhePage({
                     ["Alerta", processo.alertaDias != null ? `${processo.alertaDias} dias` : "—"],
                   ]
                 : [["Guia de Utilização", processo.guiaUtilizacao ? "Sim" : "Não"]]),
-            ].map(([k, v]) => (
+            ] as [string, React.ReactNode][]).map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-muted">{k}</dt>
                 <dd className="mt-0.5 font-medium">{v}</dd>
               </div>
             ))}
           </dl>
-          {processo.condicionantes && (
-            <div className="border-t border-slate-200 px-5 py-4 text-sm">
-              <dt className="font-medium text-muted">Condicionantes</dt>
-              <dd className="mt-1 whitespace-pre-wrap">{processo.condicionantes}</dd>
-            </div>
-          )}
-          {processo.descricao && (
-            <div className="border-t border-slate-200 px-5 py-4 text-sm">
+          {processo.descricao && (<div className="border-t border-slate-200 px-5 py-4 text-sm">
               <dt className="font-medium text-muted">Descrição</dt>
               <dd className="mt-1 whitespace-pre-wrap">{processo.descricao}</dd>
             </div>
           )}
-          {processo.observacoes && (
-            <div className="border-t border-slate-200 px-5 py-4 text-sm">
+          {processo.observacoes && (<div className="border-t border-slate-200 px-5 py-4 text-sm">
               <dt className="font-medium text-muted">Observações</dt>
               <dd className="mt-1 whitespace-pre-wrap">{processo.observacoes}</dd>
             </div>
           )}
           </Card>
-          <div className="mt-6">
-            <SeiSyncPanel processoId={processo.id} nup={processo.nup} />
-          </div>
+          {processo.natureza !== "ambiental" && (
+            <div className="mt-6">
+              <SeiSyncPanel processoId={processo.id} nup={processo.nup} />
+            </div>
+          )}
         </>
       ),
     },
+    ...(processo.natureza === "ambiental" && processo.condicionantes
+      ? [
+          {
+            id: "condicionantes",
+            label: "Condicionantes",
+            content: (
+              <Card>
+                <CardHeader title="Condicionantes" />
+                <div className="whitespace-pre-wrap px-5 py-4 text-sm">{processo.condicionantes}</div>
+              </Card>
+            ),
+          },
+        ]
+      : []),
     {
       id: "tarefas",
       label: "Tarefas",
@@ -140,9 +153,11 @@ export default async function ProcessoDetalhePage({
         subtitle={`${processo.orgao.sigla} · Fase ${processo.fase ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`}
         actions={
           <div className="flex items-center gap-2">
-            <Link href={`/processos/${processo.id}/editar`}>
-              <Button variant="secondary">Editar</Button>
-            </Link>
+            {podeEditar && (
+              <Link href={`/processos/${processo.id}/editar`}>
+                <Button variant="secondary">Editar</Button>
+              </Link>
+            )}
             {podeExcluir && <DeleteProcessoButton id={processo.id} />}
             <Link href="/processos">
               <Button variant="ghost">Voltar</Button>

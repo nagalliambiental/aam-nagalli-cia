@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -59,11 +60,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("modalidadeOutra" in body) data.modalidadeOutra = body.modalidadeOutra ?? null;
   if ("orgaoAmbiental" in body) data.orgaoAmbiental = body.orgaoAmbiental ?? null;
   if ("orgaoAmbientalOutro" in body) data.orgaoAmbientalOutro = body.orgaoAmbientalOutro ?? null;
-  if ("validade" in body) data.validade = body.validade ? new Date(body.validade) : null;
-  if ("dataProtocolo" in body) data.dataProtocolo = body.dataProtocolo ? new Date(body.dataProtocolo) : null;
+  if ("validade" in body) data.validade = dataLocal(body.validade);
+  if ("dataProtocolo" in body) data.dataProtocolo = dataLocal(body.dataProtocolo);
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("condicionantes" in body) data.condicionantes = body.condicionantes ?? null;
-  if ("dataAbertura" in body) data.dataAbertura = body.dataAbertura ? new Date(body.dataAbertura) : null;
+  if ("dataAbertura" in body) data.dataAbertura = dataLocal(body.dataAbertura);
   if ("descricao" in body) data.descricao = body.descricao ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
 
