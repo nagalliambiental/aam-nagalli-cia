@@ -30,6 +30,7 @@ export default async function DashboardPage() {
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
   const segProcesso = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
+  const segTarefa = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
     alertasNaoLidas,
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluida"] },
-        processo: segProcesso,
+        ...segTarefa,
         OR: [
           { prazoData: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
           { prazoData: null },
@@ -82,7 +83,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluida"] },
-        processo: segProcesso,
+        ...segTarefa,
       },
     }),
     prisma.custo.aggregate({ _sum: { valor: true }, where: { ativo: true, deletedAt: null, status: { notIn: ["pago", "cancelado"] } } }),
