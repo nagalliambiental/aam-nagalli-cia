@@ -53,10 +53,10 @@ export function extrairUrlsExibirSei(htmlSearch: string): string[] {
   return [...set];
 }
 
-/** Extrai o NUP do processo que a página de exibição representa (ex.: "Processo: 48411.815310/2008-81"). */
+/** Extrai os DÍGITOS do NUP do processo que a página de exibição representa (ex.: "Processo: 48411.815240/2017-52"). */
 export function extrairNupProcessoSei(html: string): string | null {
-  const m = limparHtml(html).match(/Processo:\s*(\d{5}\.\d{6}\/\d{4}-\d{2})/);
-  return m ? m[1] : null;
+  const m = limparHtml(html).match(/Processo:\s*([0-9][0-9\.\/\-]{10,})/);
+  return m ? m[1].replace(/\D/g, "") : null;
 }
 
 function normalizarNup(nup: string): string {
@@ -83,11 +83,11 @@ export async function consultarAndamentosSei(url: string): Promise<AndamentoSei[
   return (await consultarPaginaSei(url)).andamentos;
 }
 
-/** Compara um NUP extraído da página com o NUP/número procurado. */
-export function nupConfere(chave: string, nupPagina: string | null): boolean {
-  if (!nupPagina) return true; // não conseguiu extrair: não bloqueia
+/** Confere se o NUP (dígitos) da página bate com a chave procurada. Sem extração => não confirma. */
+export function nupConfere(chave: string, nupPaginaDigitos: string | null): boolean {
+  if (!nupPaginaDigitos) return false; // não conseguiu extrair → não aceita como confirmado
   const chaveDigits = normalizarNup(chave);
-  // Só cobra a igualdade quando a chave é um NUP (>=17 dígitos). Se for só o número,
-  // aceita (não dá para casar com segurança contra o NUP da página).
-  return chaveDigits.length >= 17 ? chaveDigits === normalizarNup(nupPagina) : true;
+  // Se a chave for um NUP completo, exige igualdade (tolerante a formatação).
+  // Se for só o número curto, não dá para casar; aceita (usa o primeiro com andamentos).
+  return chaveDigits.length >= 17 ? chaveDigits === nupPaginaDigitos : true;
 }
