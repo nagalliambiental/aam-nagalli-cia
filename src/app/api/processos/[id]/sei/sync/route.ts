@@ -197,19 +197,27 @@ export async function POST(req: Request, { params }: Ctx) {
 
     // Extrai a URL de exibição (token) do resultado e guarda no processo.
     // Testa os vários processos relacionados e usa o primeiro cuja página
-    // confirme o NUP procurado (o SEI retorna vários por pesquisa).
+    // confirme o NUP procurado (o SEI retorna vários por pesquisa). Se nenhum
+    // confirmar, usa o primeiro que tenha andamentos reais (fallback).
     const urls = extrairUrlsExibirSei(json.html ?? "");
+    let fallback: { url: string; andamentos: AndamentoSei[] } | null = null;
     for (const url of urls) {
       const { andamentos, nup } = await consultarPaginaSei(url).catch(() => ({ andamentos: [], nup: null }));
-      if (nupConfere(chave, nup) && andamentos.length > 0) {
+      if (andamentos.length === 0) continue;
+      if (nupConfere(chave, nup)) {
         await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: url } }).catch(() => {});
         return ok(andamentos);
       }
+      if (!fallback) fallback = { url, andamentos };
+    }
+    if (fallback) {
+      await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: fallback.url } }).catch(() => {});
+      return ok(fallback.andamentos);
     }
 
     // Não usamos o parse da busca (datas incorretas) — melhor informar do que mostrar errado.
     return NextResponse.json(
-      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível confirmar os andamentos. Tente novamente em instantes.", chave },
+      { ok: false, modo: "sem_resultados", mensagem: "Processo encontrado, mas não foi possível ler os andamentos. Tente novamente em instantes.", chave },
       { status: 422 }
     );
   } catch (e) {
