@@ -285,6 +285,7 @@ model Empreendimento {
   tipo               String  @default("pedreira")
   municipio          String?
   uf                 String?
+  cep                String?
   endereco           String?
   status             String  @default("ativo")
   observacoes        String?

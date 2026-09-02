@@ -17,6 +17,7 @@ export function EmpreendimentoForm({
     tipo?: string;
     municipio?: string;
     uf?: string;
+    cep?: string;
     endereco?: string;
     status?: string;
     descricao?: string;
@@ -34,6 +35,7 @@ export function EmpreendimentoForm({
     tipoOutro: ehTipoCustom ? (initial?.tipo ?? "") : "",
     municipio: initial?.municipio ?? "",
     uf: initial?.uf ?? "",
+    cep: initial?.cep ?? "",
     endereco: initial?.endereco ?? "",
     status: initial?.status ?? "ativo",
     descricao: initial?.descricao ?? "",
@@ -42,6 +44,33 @@ export function EmpreendimentoForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
+
+  // Busca automática de endereço pelo CEP (ViaCEP)
+  async function buscarCep() {
+    const cep = form.cep.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await res.json();
+      if (d && !d.erro) {
+        setForm((f) => ({
+          ...f,
+          endereco: d.logradouro || f.endereco,
+          municipio: d.localidade || f.municipio,
+          uf: d.uf || f.uf,
+          cep: d.cep || f.cep,
+        }));
+      } else {
+        setError("CEP não encontrado.");
+      }
+    } catch {
+      setError("Falha ao buscar o CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,13 +173,26 @@ export function EmpreendimentoForm({
             <option value="fechado">Fechado</option>
           </Select>
         </div>
-        <div className={grid}>
-          <div>
+        <div>
+          <Label htmlFor="cep">CEP</Label>
+          <Input
+            id="cep"
+            value={form.cep}
+            onChange={(e) => {
+              const d = e.target.value.replace(/\D/g, "").slice(0, 8);
+              setForm((f) => ({ ...f, cep: d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d }));
+            }}
+            onBlur={buscarCep}
+            placeholder="00000-000"
+          />
+        </div>
+        <div>
             <Label htmlFor="municipio">Município</Label>
             <Input
               id="municipio"
               value={form.municipio}
               onChange={(e) => setForm((f) => ({ ...f, municipio: e.target.value }))}
+              disabled={cepLoading}
             />
           </div>
           <div>
@@ -160,16 +202,19 @@ export function EmpreendimentoForm({
               value={form.uf}
               onChange={(e) => setForm((f) => ({ ...f, uf: e.target.value }))}
               maxLength={2}
+              disabled={cepLoading}
             />
           </div>
-        </div>
+
         <div className="md:col-span-2">
           <Label htmlFor="endereco">Endereço</Label>
           <Input
             id="endereco"
             value={form.endereco}
             onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
+            disabled={cepLoading}
           />
+          {cepLoading && <p className="mt-1 text-xs text-muted">Buscando endereço pelo CEP...</p>}
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="descricao">Descrição</Label>

@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         tipo: body.tipo ?? "pedreira",
         municipio: body.municipio ?? null,
         uf: body.uf ?? null,
+        cep: body.cep ?? null,
         endereco: body.endereco ?? null,
         status: body.status ?? "ativo",
         descricao: body.descricao ?? null,
