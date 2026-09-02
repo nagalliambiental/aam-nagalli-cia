@@ -27,7 +27,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
     orderBy: { nome: "asc" },
     include: {
       empresaPrincipal: true,
-      _count: { select: { areas: true, processos: true, licencas: true } },
+      _count: { select: { areas: true, processos: { where: { ativo: true, deletedAt: null } }, licencas: true } },
     },
   });
 

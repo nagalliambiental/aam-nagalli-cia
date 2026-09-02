@@ -28,7 +28,7 @@ export default async function EmpresaDetalhePage({
   const empreendimentos = await prisma.empreendimento.findMany({
     where: { empresaPrincipalId: empresaId, ativo: true, deletedAt: null },
     orderBy: { nome: "asc" },
-    include: { _count: { select: { processos: true } } },
+    include: { _count: { select: { processos: { where: { ativo: true, deletedAt: null } } } } },
   });
 
   const podeEditar = await prisma.permissao.findFirst({
