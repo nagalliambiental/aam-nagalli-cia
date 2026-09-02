@@ -40,3 +40,31 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Erro ao atualizar tarefa." }, { status: 500 });
   }
 }
+
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session.user.permissoes?.includes("tarefa:excluir")) {
+    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const tarefaId = Number(id);
+
+  try {
+    const tarefa = await prisma.tarefa.findUnique({ where: { id: tarefaId }, select: { id: true, exigenciaId: true } });
+    if (!tarefa) return NextResponse.json({ error: "Tarefa não encontrada" }, { status: 404 });
+
+    await prisma.$transaction([
+      prisma.tarefa.update({ where: { id: tarefaId }, data: { ativo: false, deletedAt: new Date() } }),
+      ...(tarefa.exigenciaId
+        ? [prisma.exigencia.update({ where: { id: tarefa.exigenciaId }, data: { ativo: false, deletedAt: new Date() } })]
+        : []),
+    ]);
+
+    await audit({ tipoEntidade: "tarefa", entidadeId: tarefa.id, acao: "excluir", usuarioId: Number(session.user.id) });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Erro ao excluir tarefa." }, { status: 500 });
+  }
+}

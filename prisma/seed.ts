@@ -196,7 +196,7 @@ async function main() {
     update: {},
     create: { nome: 'Técnico Chefe', descricao: 'Gestor operacional (supervisão dos processos e da equipe)', sistema: true },
   });
-  const chefeChaves = [ ...chaves(OP, ['ler','criar','editar']), ...chaves(SO_LEITURA, ['ler']) ];
+  const chefeChaves = [ ...chaves(OP, ['ler','criar','editar']), ...chaves(['tarefa'], ['excluir']), ...chaves(SO_LEITURA, ['ler']) ];
   await definirPermissoes(chefe.id, chefeChaves);
 
   // Técnico: execução — atualiza operação, sem cadastro sensível e sem excluir/segurança

@@ -7,6 +7,7 @@ import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { TarefaStatusBotao } from "@/components/processos/TarefaStatusBotao";
+import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
@@ -17,6 +18,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const verConcluidas = typeof sp.status === "string" && sp.status === "concluida";
   const podeCriar = await usuarioTemPermissao("tarefa:criar");
+  const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidas
@@ -112,6 +114,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                     {t.status}
                   </Badge>
                   <TarefaStatusBotao tarefaId={t.id} status={t.status} />
+                  {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
                 </div>
               </div>
               <div className="mt-2">

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Badge } from "@/components/ui";
 import { TarefaEdicaoForm } from "@/components/processos/TarefaEdicaoForm";
+import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
 import { formatDate } from "@/lib/format";
 
 const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" }> = {
@@ -16,6 +17,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
   const { id } = await params;
   const tarefaId = Number(id);
   await requirePermissao("tarefa:editar");
+  const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
 
   const [tarefa, pessoas, empreendimentos] = await Promise.all([
     prisma.tarefa.findFirst({
@@ -42,6 +44,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
         actions={
           <div className="flex items-center gap-2">
             <Badge tone={st.tone}>{st.label}</Badge>
+            {podeExcluir && <TarefaExcluirBotao tarefaId={tarefa.id} />}
             <Link href="/tarefas">
               <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-navy-600 ring-1 ring-slate-200 hover:bg-slate-100">Voltar</span>
             </Link>
