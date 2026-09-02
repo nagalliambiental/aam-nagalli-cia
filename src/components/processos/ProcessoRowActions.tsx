@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; tipoProcesso: { nome: string }; empreendimento: { nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } } }) {
+export function ProcessoRowActions({ processo }: { processo: { id: number; numero: string; nup: string | null; orgao: { sigla: string }; tipoProcesso: { nome: string }; empreendimento: { id: number; nome: string } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } } }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -31,8 +31,15 @@ export function ProcessoRowActions({ processo }: { processo: { id: number; numer
           </p>
           <p className="truncate text-sm text-muted">
             {processo.tipoProcesso.nome}
-            {processo.empreendimento ? ` · ${processo.empreendimento.nome}` : ""}
           </p>
+          {processo.empreendimento ? (
+            <p className="truncate text-xs">
+              <span className="text-muted">Empreendimento:</span>{" "}
+              <span className="font-medium text-navy-700">{processo.empreendimento.nome}</span>
+            </p>
+          ) : (
+            <p className="text-xs text-muted">Empreendimento: — sem vínculo —</p>
+          )}
         </div>
         <div className="hidden items-center gap-4 sm:flex">
           <div className="text-right text-sm text-muted">
