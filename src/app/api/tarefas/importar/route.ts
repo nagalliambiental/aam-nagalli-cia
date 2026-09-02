@@ -19,8 +19,9 @@ export async function POST(req: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { criadas, erros } = await importarTarefasXlsx(buffer);
-    return NextResponse.json({ criadas, erros, fileName: file.name });
+    const importId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const { criadas, erros } = await importarTarefasXlsx(buffer, importId);
+    return NextResponse.json({ criadas, erros, importId, fileName: file.name });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao processar";
     return NextResponse.json({ error: `Erro ao importar: ${msg}` }, { status: 500 });

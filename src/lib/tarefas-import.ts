@@ -32,6 +32,16 @@ function normalizar(txt: unknown): string {
   return txt == null ? "" : String(txt).trim();
 }
 
+/** Normaliza para comparação: minúsculas, sem acentos e com espaços colapsados. */
+function comparar(txt: string): string {
+  return txt
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function parseData(valor: unknown): Date | null {
   if (valor instanceof Date && !isNaN(valor.getTime())) return valor;
   const s = normalizar(valor);
@@ -43,7 +53,7 @@ function parseData(valor: unknown): Date | null {
 }
 
 /** Importa tarefas de um XLSX, resolvendo empreendimento/processo/responsável pelas chaves. */
-export async function importarTarefasXlsx(buffer: Buffer) {
+export async function importarTarefasXlsx(buffer: Buffer, importId: string) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
   const ws = wb.worksheets[0];
@@ -51,6 +61,10 @@ export async function importarTarefasXlsx(buffer: Buffer) {
 
   let criadas = 0;
   const erros: string[] = [];
+
+  // Cache dos catálogos para comparação normalizada (acento/tamanho/espacos).
+  const pessoas = await prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, nome: true } });
+  const empreendimentos = await prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, nome: true, apelido: true } });
 
   // iteração simples por índice (linha 1 = cabeçalho)
   for (let i = 2; i <= ws.rowCount; i++) {
@@ -67,13 +81,16 @@ export async function importarTarefasXlsx(buffer: Buffer) {
     if (!titulo) continue; // linha em branco
     if (!responsavelNome) { erros.push(`Linha ${i}: título "${titulo}" sem Responsável.`); continue; }
 
-    const pessoa = await prisma.pessoa.findFirst({ where: { nome: responsavelNome, ativo: true, deletedAt: null } });
+    const pessoa = pessoas.find((p) => comparar(p.nome) === comparar(responsavelNome));
     if (!pessoa) { erros.push(`Linha ${i}: Responsável "${responsavelNome}" não encontrado.`); continue; }
 
     // Empreendimento
     let empreendimentoId: number | null = null;
     if (empreendimentoNome) {
-      const emp = await prisma.empreendimento.findFirst({ where: { OR: [{ nome: empreendimentoNome }, { apelido: empreendimentoNome }], ativo: true, deletedAt: null } });
+      const ne = comparar(empreendimentoNome);
+      const emp =
+        empreendimentos.find((x) => x.apelido && comparar(x.apelido) === ne) ||
+        empreendimentos.find((x) => comparar(x.nome) === ne);
       if (!emp) { erros.push(`Linha ${i}: Empreendimento "${empreendimentoNome}" não encontrado.`); continue; }
       empreendimentoId = emp.id;
     }
@@ -119,6 +136,7 @@ export async function importarTarefasXlsx(buffer: Buffer) {
         status: "pendente",
         prazoData: prazo,
         alertaDias: isNaN(alerta) ? 30 : alerta,
+        importId,
       },
     });
     criadas++;

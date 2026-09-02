@@ -888,6 +888,7 @@ model Tarefa {
   dataCriacao   DateTime  @default(now())
   dataConclusao DateTime?
   observacoes   String?
+  importId      String?
 
   responsavelPessoaId Int
   criadorUsuarioId    Int?
