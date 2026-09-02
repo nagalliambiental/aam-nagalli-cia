@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       include: { processo: true, responsavel: true },
     }),
     prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] } } }),
-    prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] } } }),
+    prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: { ativo: true, deletedAt: null } } }),
     prisma.tarefa.count({
       where: {
         ativo: true,
