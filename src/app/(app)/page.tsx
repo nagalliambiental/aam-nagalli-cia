@@ -174,7 +174,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Cards de métricas */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className={`grid grid-cols-2 gap-4 ${cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
         {cards.map((c) => {
           const Icon = c.icon;
           return (
