@@ -35,6 +35,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: usuario.email,
           nome: usuario.pessoa?.nome ?? usuario.email,
           perfilNome: usuario.perfil.nome,
+          pessoaId: usuario.pessoaId,
           permissoes: usuario.perfil.permissoes.map((p) => p.permissao.chave),
         };
       },
@@ -45,6 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.perfilNome = (user as { perfilNome?: string }).perfilNome;
+        token.pessoaId = (user as { pessoaId?: number }).pessoaId;
         token.permissoes = (user as { permissoes?: string[] }).permissoes;
       }
       return token;
@@ -53,6 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = (token.id as string) ?? "";
         session.user.perfilNome = (token.perfilNome as string) ?? "";
+        session.user.pessoaId = (token.pessoaId as number) ?? null;
         session.user.permissoes = (token.permissoes as string[]) ?? [];
       }
       return session;

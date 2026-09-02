@@ -10,6 +10,7 @@ import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
+import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 export default async function ProcessoDetalhePage({
   params,
@@ -19,13 +20,15 @@ export default async function ProcessoDetalhePage({
   const { id } = await params;
   const processoId = Number(id);
   await requirePermissao("processo:ler");
+  const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const processo = await prisma.processo.findFirst({
-    where: { id: processoId, ativo: true, deletedAt: null },
+    where: { id: processoId, ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) },
     include: {
       orgao: true,
       tipoProcesso: true,
       empreendimento: true,
+      responsavel: true,
     },
   });
 
@@ -66,6 +69,7 @@ export default async function ProcessoDetalhePage({
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
               ["Tipo", processo.tipoProcesso.nome],
               ["Empreendimento", processo.empreendimento?.nome ?? "—"],
+              ["Responsável", processo.responsavel?.nome ?? "—"],
               ["Fase", processo.fase ?? "—"],
               ["Área", processo.areaValor != null ? `${processo.areaValor} ${processo.areaUnidade}` : "—"],
               ["Substâncias", processo.substancias ?? "—"],

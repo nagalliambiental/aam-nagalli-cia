@@ -29,6 +29,7 @@ export default async function DashboardPage() {
 
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
+  const segProcesso = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
     alertasNaoLidas,
@@ -53,7 +54,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluido", "cancelado"] },
-        processo: { ativo: true, deletedAt: null },
+        processo: { ativo: true, deletedAt: null, ...segProcesso },
       },
       orderBy: { dataCalculadaAtual: "asc" },
       take: 200,
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluida"] },
+        processo: segProcesso,
         OR: [
           { prazoData: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
           { prazoData: null },
@@ -73,13 +75,14 @@ export default async function DashboardPage() {
       take: 12,
       include: { processo: true, responsavel: true },
     }),
-    prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] } } }),
-    prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: { ativo: true, deletedAt: null } } }),
+    prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] }, ...segProcesso } }),
+    prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: { ativo: true, deletedAt: null, ...segProcesso } } }),
     prisma.tarefa.count({
       where: {
         ativo: true,
         deletedAt: null,
         status: { notIn: ["concluida"] },
+        processo: segProcesso,
       },
     }),
     prisma.custo.aggregate({ _sum: { valor: true }, where: { ativo: true, deletedAt: null, status: { notIn: ["pago", "cancelado"] } } }),

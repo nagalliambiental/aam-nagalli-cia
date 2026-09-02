@@ -88,6 +88,7 @@ model Pessoa {
   usuario            Usuario?
   empresas           PessoaEmpresa[]
   processosResp      ProcessoResponsavel[]
+  processos          Processo[]
   titulosResp        TituloMinerario[]
   licencasResp       Licenca[]
   tarefasResp        Tarefa[]
@@ -388,6 +389,7 @@ model Processo {
   tipoProcessoId   Int
   assunto          String?
   empreendimentoId Int?
+  responsavelPessoaId Int?
   natureza         String    @default("minerario") // minerario | ambiental
   fase             String?
   status           String    @default("em_andamento")
@@ -425,6 +427,7 @@ model Processo {
   orgao          Orgao           @relation(fields: [orgaoId], references: [id])
   tipoProcesso   TipoProcesso    @relation(fields: [tipoProcessoId], references: [id])
   empreendimento Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  responsavel    Pessoa?         @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
 
   empresas          ProcessoEmpresa[]
   areas             AreaProcesso[]

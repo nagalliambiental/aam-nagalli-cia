@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
+import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -13,14 +14,19 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const verConcluidas = typeof sp.status === "string" && sp.status === "concluida";
+  const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidas
     ? { status: "concluida" as const }
     : { status: { notIn: ["concluida"] as string[] } };
 
+  const escopoTarefa = scoped && responsavelPessoaId
+    ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }] }
+    : {};
+
   const [tarefas, pessoas, empreendimentos] = await Promise.all([
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
+      where: { ativo: true, deletedAt: null, ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: { responsavel: true, processo: { include: { orgao: true } } },
       take: 200,
@@ -29,7 +35,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     prisma.empreendimento.findMany({
       where: { ativo: true, deletedAt: null },
       orderBy: { nome: "asc" },
-      include: { processos: { where: { ativo: true, deletedAt: null }, select: { id: true, numero: true } } },
+      include: { processos: { where: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) }, select: { id: true, numero: true } } },
     }),
   ]);
 

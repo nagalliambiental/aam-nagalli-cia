@@ -110,23 +110,27 @@ async function consultaSigmineBrowser(numero: string): Promise<{
 export type OrgaoOpt = { id: number; sigla: string; nome: string };
 export type TipoOpt = { id: number; nome: string };
 export type EmpOpt = { id: number; nome: string };
+export type PessoaOpt = { id: number; nome: string };
 
 export function ProcessoForm({
   orgaos,
   tipos,
   empreendimentos,
+  pessoas = [],
   initial,
   processoId,
 }: {
   orgaos: OrgaoOpt[];
   tipos: TipoOpt[];
   empreendimentos: EmpOpt[];
+  pessoas?: PessoaOpt[];
   initial?: {
     numero?: string;
     nup?: string;
     orgaoId?: number;
     tipoProcessoId?: number;
     empreendimentoId?: number | null;
+    responsavelPessoaId?: number;
     natureza?: string;
     assunto?: string;
     fase?: string;
@@ -159,6 +163,7 @@ export function ProcessoForm({
     nup: initial?.nup ?? "",
     orgaoId: initial?.orgaoId ?? "",
     empreendimentoId: String(initial?.empreendimentoId ?? ""),
+    responsavelPessoaId: initial?.responsavelPessoaId != null ? String(initial.responsavelPessoaId) : "",
     natureza: initial?.natureza ?? "minerario",
     fase: ehFaseCustom ? "outro" : (initial?.fase ?? ""),
     faseOutra: ehFaseCustom ? (initial?.fase ?? "") : "",
@@ -354,6 +359,7 @@ export function ProcessoForm({
       ...form,
       orgaoId: form.orgaoId ? Number(form.orgaoId) : null,
       empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
+      responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
       natureza: form.natureza,
       fase: form.fase === "outro" ? (form.faseOutra.trim() || "outro") : form.fase,
       guiaUtilizacao: form.natureza === "minerario" && form.guiaUtilizacao,
@@ -511,6 +517,19 @@ export function ProcessoForm({
               </button>
             ))}
           </div>
+        </div>
+        <div>
+          <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
+          <Select
+            id="responsavelPessoaId"
+            value={String(form.responsavelPessoaId)}
+            onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}
+          >
+            <option value="">— sem responsável —</option>
+            {pessoas.map((p) => (
+              <option key={p.id} value={p.id}>{p.nome}</option>
+            ))}
+          </Select>
         </div>
 
         {form.natureza === "minerario" ? (

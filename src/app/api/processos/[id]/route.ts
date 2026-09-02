@@ -42,6 +42,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("orgaoId" in body) data.orgaoId = Number(body.orgaoId);
   if ("tipoProcessoId" in body) data.tipoProcessoId = Number(body.tipoProcessoId);
   if ("empreendimentoId" in body) data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
+  if ("responsavelPessoaId" in body) data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
   if ("natureza" in body) data.natureza = body.natureza === "ambiental" ? "ambiental" : "minerario";
   if ("assunto" in body) data.assunto = body.assunto ?? null;
   if ("fase" in body) data.fase = body.fase ?? null;

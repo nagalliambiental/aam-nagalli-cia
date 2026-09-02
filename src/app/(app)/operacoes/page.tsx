@@ -2,13 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { PageHeader } from "@/components/ui";
 import { OperacoesView } from "@/components/processos/OperacoesView";
+import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 export default async function OperacoesPage() {
   await requirePermissao("processo:ler");
+  const { scoped, responsavelPessoaId } = await filtroSegregacao();
+  const procWhere = { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) };
 
   const [prazos, tarefas, pessoas] = await Promise.all([
     prisma.prazo.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] } },
+      where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: procWhere },
       orderBy: { dataCalculadaAtual: "asc" },
       select: {
         id: true, descricao: true, status: true, dataInicial: true, dataCalculadaAtual: true, alertaDias: true,
@@ -16,7 +19,7 @@ export default async function OperacoesPage() {
       },
     }),
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] } },
+      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] }, processo: procWhere },
       orderBy: { prazoData: "asc" },
       select: { id: true, titulo: true, status: true, prazoData: true, responsavel: { select: { nome: true } } },
     }),

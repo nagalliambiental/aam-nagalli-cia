@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/format";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
 import { PrazoAlertaEdit } from "@/components/processos/PrazoAlertaEdit";
+import { filtroSegregacao, filtroProcesso, filtroPorProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -12,6 +13,7 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const verConcluidos = typeof sp.status === "string" && sp.status === "concluido";
+  const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidos
     ? { status: "concluido" as const }
@@ -21,7 +23,7 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
     where: {
       ativo: true,
       deletedAt: null,
-      processo: { ativo: true, deletedAt: null },
+      processo: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) },
       ...statusFilter,
       ...(q ? { descricao: { contains: q, mode: "insensitive" as const } } : {}),
     },

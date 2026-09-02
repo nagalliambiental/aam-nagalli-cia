@@ -9,11 +9,12 @@ export default async function EditarProcessoPage({ params }: { params: Promise<{
   const processoId = Number(id);
   await requirePermissao("processo:editar");
 
-  const [processo, orgaos, tipos, empreendimentos] = await Promise.all([
+  const [processo, orgaos, tipos, empreendimentos, pessoas] = await Promise.all([
     prisma.processo.findFirst({ where: { id: processoId, ativo: true, deletedAt: null } }),
     prisma.orgao.findMany({ where: { ativo: true }, orderBy: { sigla: "asc" } }),
     prisma.tipoProcesso.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
+    prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
   ]);
 
   if (!processo) notFound();
@@ -29,10 +30,12 @@ export default async function EditarProcessoPage({ params }: { params: Promise<{
             orgaos={orgaos.map((o) => ({ id: o.id, sigla: o.sigla, nome: o.nome }))}
             tipos={tipos.map((t) => ({ id: t.id, nome: t.nome }))}
             empreendimentos={empreendimentos.map((x) => ({ id: x.id, nome: x.nome }))}
+            pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
             initial={{
               numero: processo.numero,
               nup: processo.nup ?? undefined,
               orgaoId: processo.orgaoId,
+              responsavelPessoaId: processo.responsavelPessoaId ?? undefined,
               empreendimentoId: processo.empreendimentoId,
               natureza: processo.natureza,
               fase: processo.fase ?? undefined,

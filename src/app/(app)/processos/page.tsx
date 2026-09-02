@@ -3,17 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, Card, Button } from "@/components/ui";
 import { Search } from "lucide-react";
 import { ProcessoRowActions } from "@/components/processos/ProcessoRowActions";
+import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[] }>;
 
 export default async function ProcessosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const processos = await prisma.processo.findMany({
     where: {
       ativo: true,
       deletedAt: null,
+      ...filtroProcesso(scoped, responsavelPessoaId),
       ...(q
           ? {
             OR: [

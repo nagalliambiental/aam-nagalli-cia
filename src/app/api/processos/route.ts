@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         orgaoId: body.orgaoId ?? orgao?.id,
         tipoProcessoId: body.tipoProcessoId ?? tipoProcesso?.id,
         empreendimentoId: body.empreendimentoId ?? null,
+        responsavelPessoaId: body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null,
         natureza,
         fase: body.fase ?? null,
         status: body.status ?? "em_andamento",
