@@ -657,6 +657,9 @@ export function ProcessoForm({
                   {buscaLicLoading ? "Buscando..." : "Buscar"}
                 </Button>
               </div>
+              <p className="mt-1 text-xs text-muted">
+                A busca automática é feita apenas no SGA (IAT) e no IMA. Para documentos do <span className="font-medium">E-protocolo</span>, use o botão <span className="font-medium">Importar PDF</span> (Condicionantes) para extrair os campos.
+              </p>
               {buscaLicMsg && <p className="mt-1 text-xs text-muted">{buscaLicMsg}</p>}
             </div>
             <div>
