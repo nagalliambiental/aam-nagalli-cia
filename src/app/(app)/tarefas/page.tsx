@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/format";
 import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
+import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
 
@@ -43,6 +44,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       <PageHeader
         title="Tarefas"
         subtitle="Tarefas e suas exigências vinculadas"
+        actions={<ImportarTarefas />}
       />
 
       <NovaTarefaBotao
