@@ -29,7 +29,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
     },
     orderBy: { razaoSocial: "asc" },
     include: {
-      _count: { select: { processos: true, empreendimentosPrincipais: true } },
+      _count: { select: { empreendimentosPrincipais: true } },
     },
   });
 
@@ -77,7 +77,6 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right text-sm text-muted">
-                    <p>{e._count.processos} processos</p>
                     <p>{e._count.empreendimentosPrincipais} empreend.</p>
                   </div>
                   <Badge tone={e.ativo ? "green" : "gray"}>
