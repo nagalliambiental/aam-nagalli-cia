@@ -14,7 +14,7 @@ export function NovaTarefaBotao({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <>
+    <div className={open ? "mb-6" : "mb-4"}>
       {!open && (
         <Button variant="secondary" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" /> Nova tarefa
@@ -35,6 +35,6 @@ export function NovaTarefaBotao({
           <TarefaNovaForm pessoas={pessoas} processos={processos} onClose={() => setOpen(false)} />
         </div>
       )}
-    </>
+    </div>
   );
 }
