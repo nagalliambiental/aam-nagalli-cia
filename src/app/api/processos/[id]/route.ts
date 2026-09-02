@@ -69,53 +69,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   try {
     const processo = await prisma.processo.update({ where: { id: processoId }, data: data as never });
 
-    // Geração automática de exigências + prazos ao mudar de fase (sem RegraPrazo)
-    const faseAntiga = existing.fase as string | null;
-    const faseNova = (body.fase as string | null) ?? (existing.fase as string | null);
-    if (faseNova && faseNova !== faseAntiga) {
-      const blocos = await prisma.blocoExigenciaTemplate.findMany({
-        where: { fase: faseNova, ativo: true },
-        orderBy: { ordem: "asc" },
-      });
-      for (const bloco of blocos) {
-        // evita duplicar bloco já gerado para este processo
-        const jaExiste = await prisma.exigencia.findFirst({
-          where: { processoId, descricao: { contains: bloco.nome, mode: "insensitive" } },
-        });
-        if (jaExiste) continue;
-
-        const prazoResposta = new Date();
-        prazoResposta.setDate(prazoResposta.getDate() + bloco.prazoDias);
-
-        const exigencia = await prisma.exigencia.create({
-          data: {
-            processoId,
-            orgaoId: processo.orgaoId,
-            descricao: `${bloco.nome}: ${bloco.descricao}`,
-            prazoResposta,
-            status: "pendente",
-            responsavelPessoaId: bloco.responsavelPessoaId ?? null,
-            observacoes: `Gerado automaticamente do bloco "${bloco.nome}" da fase ${faseNova}`,
-          },
-        });
-
-        await prisma.prazo.create({
-          data: {
-            processoId,
-            exigenciaId: exigencia.id,
-            descricao: bloco.nome,
-            quantidade: bloco.prazoDias,
-            unidade: bloco.unidade,
-            dataInicial: new Date(),
-            dataCalculadaOriginal: prazoResposta,
-            dataCalculadaAtual: prazoResposta,
-            status: "futuro",
-            responsavelPessoaId: bloco.responsavelPessoaId ?? null,
-          },
-        });
-      }
-    }
-
     await audit({ tipoEntidade: "processo", entidadeId: processo.id, acao: "editar", usuarioId: Number(session.user.id) });
     return NextResponse.json({ id: processo.id });
   } catch (e) {

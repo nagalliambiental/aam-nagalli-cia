@@ -27,16 +27,26 @@ type PrazoItem = {
   status: string;
 };
 
+const FASES = [
+  "Requerimento de Pesquisa",
+  "Autorização de Pesquisa",
+  "Direito de Requerer a Lavra",
+  "Requerimento de Lavra",
+  "Concessão de Lavra",
+];
+
 export function ExigenciasPanel({
   processoId,
   exigencias,
   pessoas = [],
   prazos = [],
+  fase,
 }: {
   processoId: number;
   exigencias: ExigenciaItem[];
   pessoas?: { id: number; nome: string }[];
   prazos?: PrazoItem[];
+  fase?: string | null;
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -128,6 +138,34 @@ export function ExigenciasPanel({
     }
   }
 
+  const [gerarLoading, setGerarLoading] = useState(false);
+  const [gerarMsg, setGerarMsg] = useState<string | null>(null);
+  const idxFase = fase ? FASES.indexOf(fase) : -1;
+  const proximaFase = idxFase >= 0 && idxFase < FASES.length - 1 ? FASES[idxFase + 1] : null;
+
+  async function gerarExigencias(avancarFase: boolean) {
+    setGerarLoading(true);
+    setGerarMsg(null);
+    try {
+      const res = await fetch(`/api/processos/${processoId}/exigencias/gerar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(avancarFase && proximaFase ? { fase: proximaFase } : {}),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setGerarMsg(d.criados > 0 ? `${d.criados} exigência(s) gerada(s) para a fase "${d.fase}".` : "Nenhuma exigência nova (fase já gerada ou sem blocos).");
+      } else {
+        setGerarMsg(d.error ?? "Erro ao gerar exigências.");
+      }
+      router.refresh();
+    } catch {
+      setGerarMsg("Erro ao gerar exigências.");
+    } finally {
+      setGerarLoading(false);
+    }
+  }
+
   async function handlePdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -171,7 +209,16 @@ export function ExigenciasPanel({
       <CardHeader
         title="Exigências &amp; Prazos"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted">{fase ? `Fase: ${fase}` : "Sem fase"}</span>
+            <Button variant="secondary" onClick={() => gerarExigencias(false)} disabled={gerarLoading || !fase}>
+              {gerarLoading ? "Gerando..." : "Gerar exigências"}
+            </Button>
+            {proximaFase && (
+              <Button variant="secondary" onClick={() => gerarExigencias(true)} disabled={gerarLoading}>
+                Avançar fase ({proximaFase})
+              </Button>
+            )}
             <label className="cursor-pointer rounded-md bg-white px-3 py-1.5 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
               {pdfLoading ? "Importando..." : "Importar PDF"}
               <input type="file" accept=".pdf" className="hidden" onChange={handlePdf} disabled={pdfLoading} />
@@ -182,6 +229,8 @@ export function ExigenciasPanel({
           </div>
         }
       />
+
+      {gerarMsg && <p className="border-b border-slate-200 bg-emerald-50 px-5 py-2 text-sm text-emerald-800">{gerarMsg}</p>}
 
       {show && (
         <form onSubmit={handleSubmit} className="space-y-3 border-b border-slate-200 p-5">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { separarExigencias } from "@/lib/exigencias";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -35,33 +36,35 @@ export async function POST(req: Request, { params }: Ctx) {
     const prazoResposta = new Date();
     prazoResposta.setDate(prazoResposta.getDate() + prazoDias);
 
-    const exigencia = await prisma.exigencia.create({
-      data: {
-        processoId,
-        orgaoId: processo.orgaoId,
-        descricao: nome ? `${nome}: ${descricao}`.slice(0, 2000) : descricao,
-        prazoResposta,
-        status: "pendente",
-        responsavelPessoaId: d.responsavelPessoaId ? Number(d.responsavelPessoaId) : null,
-        observacoes: "Gerado via PDF - revisado antes de criar",
-      },
-    });
-    await prisma.prazo.create({
-      data: {
-        processoId,
-        exigenciaId: exigencia.id,
-        descricao: nome.slice(0, 200),
-        quantidade: prazoDias,
-        unidade,
-        dataInicial: new Date(),
-        dataCalculadaOriginal: prazoResposta,
-        dataCalculadaAtual: prazoResposta,
-        status: "futuro",
-        responsavelPessoaId: d.responsavelPessoaId ? Number(d.responsavelPessoaId) : null,
-      },
-    });
-    await audit({ tipoEntidade: "exigencia", entidadeId: exigencia.id, acao: "criar", usuarioId: Number(session.user.id), valorNovo: nome });
-    created.push(exigencia.id);
+    for (const parte of separarExigencias(nome, descricao)) {
+      const exigencia = await prisma.exigencia.create({
+        data: {
+          processoId,
+          orgaoId: processo.orgaoId,
+          descricao: `${parte.nome}: ${parte.descricao}`.slice(0, 2000),
+          prazoResposta,
+          status: "pendente",
+          responsavelPessoaId: d.responsavelPessoaId ? Number(d.responsavelPessoaId) : null,
+          observacoes: "Gerado via PDF - revisado antes de criar",
+        },
+      });
+      await prisma.prazo.create({
+        data: {
+          processoId,
+          exigenciaId: exigencia.id,
+          descricao: parte.nome.slice(0, 200),
+          quantidade: prazoDias,
+          unidade,
+          dataInicial: new Date(),
+          dataCalculadaOriginal: prazoResposta,
+          dataCalculadaAtual: prazoResposta,
+          status: "futuro",
+          responsavelPessoaId: d.responsavelPessoaId ? Number(d.responsavelPessoaId) : null,
+        },
+      });
+      await audit({ tipoEntidade: "exigencia", entidadeId: exigencia.id, acao: "criar", usuarioId: Number(session.user.id), valorNovo: parte.nome });
+      created.push(exigencia.id);
+    }
   }
 
   return NextResponse.json({ created }, { status: 201 });

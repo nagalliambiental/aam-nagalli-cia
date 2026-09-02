@@ -125,7 +125,7 @@ export default async function ProcessoDetalhePage({
       id: "exigencias",
       label: "Exigências & Prazos",
       count: exigencias.length,
-      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} prazos={prazos} />,
+      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} prazos={prazos} fase={processo.fase} />,
     },
   ];
 
