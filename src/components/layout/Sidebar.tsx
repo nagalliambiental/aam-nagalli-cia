@@ -16,25 +16,23 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
-const PROCESSOS: NavItem = { href: "/processos", label: "Processos", icon: FolderOpen };
 
 const SECTIONS: NavGroup[] = [
+  {
+    label: "Operacional",
+    icon: FolderOpen,
+    items: [
+      { href: "/processos", label: "Processos", icon: FolderOpen },
+      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
+      { href: "/operacoes", label: "Prazos & Calendário", icon: CalendarClock },
+    ],
+  },
   {
     label: "Cadastros",
     icon: Library,
     items: [
       { href: "/empresas", label: "Empresas", icon: Building2 },
       { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
-    ],
-  },
-  {
-    label: "Acompanhamento",
-    icon: Radar,
-    items: [
-      { href: "/alertas", label: "Alertas", icon: BellRing },
-      { href: "/calendario", label: "Calendário", icon: CalendarDays },
-      { href: "/prazos", label: "Prazos", icon: CalendarClock },
-      { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
     ],
   },
   {
@@ -69,7 +67,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
 
   const isAdmin = user.perfilNome === "Administrador";
   const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro");
-  const flatLinks = [DASHBOARD, PROCESSOS, ...sections.flatMap((s) => s.items)];
+  const flatLinks = [DASHBOARD, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -101,7 +99,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const nav = (
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
       {renderLink(DASHBOARD)}
-      {renderLink(PROCESSOS)}
       {sections.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
