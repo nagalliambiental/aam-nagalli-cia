@@ -109,7 +109,7 @@ async function consultaSigmineBrowser(numero: string): Promise<{
 
 export type OrgaoOpt = { id: number; sigla: string; nome: string };
 export type TipoOpt = { id: number; nome: string };
-export type EmpOpt = { id: number; nome: string };
+export type EmpOpt = { id: number; nome: string; apelido?: string | null };
 export type PessoaOpt = { id: number; nome: string };
 
 export function ProcessoForm({
@@ -493,7 +493,7 @@ export function ProcessoForm({
           >
             <option value="">— sem vínculo —</option>
             {empreendimentos.map((x) => (
-              <option key={x.id} value={x.id}>{x.nome}</option>
+              <option key={x.id} value={x.id}>{x.nome}{x.apelido ? ` (${x.apelido})` : ""}</option>
             ))}
           </Select>
         </div>

@@ -29,7 +29,7 @@ export default async function EditarProcessoPage({ params }: { params: Promise<{
             processoId={processo.id}
             orgaos={orgaos.map((o) => ({ id: o.id, sigla: o.sigla, nome: o.nome }))}
             tipos={tipos.map((t) => ({ id: t.id, nome: t.nome }))}
-            empreendimentos={empreendimentos.map((x) => ({ id: x.id, nome: x.nome }))}
+            empreendimentos={empreendimentos.map((x) => ({ id: x.id, nome: x.nome, apelido: x.apelido }))}
             pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
             initial={{
               numero: processo.numero,
