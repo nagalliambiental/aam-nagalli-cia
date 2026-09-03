@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 import { dataLocal } from "@/lib/format";
+import { consultarAndamentosSei } from "@/lib/sei";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -120,6 +121,21 @@ export async function POST(req: Request) {
       await prisma.processoVinculo.createMany({ data: dataVinculo, skipDuplicates: true });
     }
 
+    // Leitura prévia do SEI (quando há token): valida a URL e já registra a
+    // última movimentação como base (o cron diário só alerta o que for novo).
+    let sei: { ok: boolean; total?: number; ultima?: string } = { ok: false };
+    if (processo.seiUrl && processo.seiUrl.includes("md_pesq_processo_exibir")) {
+      const ands = await consultarAndamentosSei(processo.seiUrl).catch(() => []);
+      if (ands.length > 0) {
+        const [d, mo, y] = ands[0].data.split("/");
+        await prisma.processo.update({
+          where: { id: processo.id },
+          data: { ultimoEventoSigmine: ands[0].descricao, ultimoEventoData: new Date(+y, +mo - 1, +d) },
+        }).catch(() => {});
+        sei = { ok: true, total: ands.length, ultima: ands[0].descricao };
+      }
+    }
+
     await audit({
       tipoEntidade: "processo",
       entidadeId: processo.id,
@@ -128,7 +144,7 @@ export async function POST(req: Request) {
       valorNovo: processo.numero,
     });
 
-    return NextResponse.json({ id: processo.id }, { status: 201 });
+    return NextResponse.json({ id: processo.id, sei }, { status: 201 });
   } catch (e) {
     console.error("Erro ao criar processo:", e);
     const msg = e instanceof Error ? e.message : "Erro ao criar processo.";

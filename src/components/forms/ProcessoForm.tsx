@@ -186,6 +186,13 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
       setError(data?.detail ? `${data?.error ?? "Erro ao salvar."} (${data.detail})` : data?.error ?? "Erro ao salvar.");
       return;
     }
+    if (form.seiUrl.trim()) {
+      if (data.sei?.ok) {
+        alert(`SEI verificado: ${data.sei.total} movimentação(ões) encontrada(s).\nÚltima: ${data.sei.ultima ?? "—"}`);
+      } else {
+        alert("A URL do SEI não retornou movimentações. Confira o token (URL de exibição) e consulte manualmente na aba Movimentações SEI.");
+      }
+    }
     router.push(`/processos/${data.id}`);
     router.refresh();
   }
