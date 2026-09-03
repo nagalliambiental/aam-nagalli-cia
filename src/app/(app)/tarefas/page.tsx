@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PageHeader, Card, Badge, Button } from "@/components/ui";
-import { formatDate } from "@/lib/format";
+import { PageHeader, Card, Button } from "@/components/ui";
 import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
-import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
-import { TarefaStatusBotao } from "@/components/processos/TarefaStatusBotao";
-import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
+import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
@@ -93,45 +90,28 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         </div>
         <ul className="divide-y divide-slate-100">
           {tarefas.map((t) => (
-            <li key={t.id} className="px-5 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="font-medium text-navy-900">
-                    <Link href={`/tarefas/${t.id}`} className="hover:underline">{t.titulo}</Link>
-                    <span className="text-muted font-normal"> · {t.responsavel.nome}</span>
-                  </p>
-                  <p className="truncate text-xs text-muted">
-                    {t.dataLimite ? `Data Limite ${formatDate(t.dataLimite)}` : ""}
-                    {t.dataLimite && t.prazoData ? " · " : ""}
-                    {t.prazoData ? `Prazo ${formatDate(t.prazoData)}` : ""}
-                    {!t.dataLimite && !t.prazoData ? "—" : ""}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
-                    {t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}
-                  </Badge>
-                  <EdicaoRapidaTarefa
-                    tarefa={{
-                      id: t.id,
-                      titulo: t.titulo,
-                      descricao: t.descricao,
-                      prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
-                      alertaDias: t.alertaDias,
-                      dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
-                      alertaDataLimite: t.alertaDataLimite,
-                      prioridade: t.prioridade,
-                      status: t.status,
-                      responsavelPessoaId: t.responsavelPessoaId,
-                      visibilidade: t.visibilidade,
-                    }}
-                    pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-                    isAdmin={isAdmin}
-                    podeEditarTudo={podeEditarTudo}
-                  />
-                  {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
-                </div>
-              </div>
+            <li key={t.id}>
+              <LinhaTarefa
+                tarefa={{
+                  id: t.id,
+                  titulo: t.titulo,
+                  descricao: t.descricao,
+                  prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
+                  dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
+                  alertaDias: t.alertaDias,
+                  alertaDataLimite: t.alertaDataLimite,
+                  prioridade: t.prioridade,
+                  status: t.status,
+                  responsavelPessoaId: t.responsavelPessoaId,
+                  visibilidade: t.visibilidade,
+                  responsavelNome: t.responsavel.nome,
+                  processoLabel: t.processo ? `Processo: #${t.processo.numero} (${t.processo.orgao.sigla})` : "Processo: — sem vínculo —",
+                }}
+                pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+                isAdmin={isAdmin}
+                podeEditarTudo={podeEditarTudo}
+                podeExcluir={podeExcluir}
+              />
             </li>
           ))}
           {tarefas.length === 0 && (

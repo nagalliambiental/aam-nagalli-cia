@@ -156,7 +156,7 @@ export default async function ProcessoDetalhePage({
       id: "tarefas",
       label: "Tarefas e Prazos",
       count: tarefas.length,
-      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} podeEditarTudo={podeEditarTudo} podeExcluir={podeExcluirTarefa} />,
+      content: <TarefasPanel processoId={processo.id} processoNumero={processo.numero} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} podeEditarTudo={podeEditarTudo} podeExcluir={podeExcluirTarefa} />,
     },
   ];
 

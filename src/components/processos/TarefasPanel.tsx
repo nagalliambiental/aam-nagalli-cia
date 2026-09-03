@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, Button, Input, Label, Select, Textarea, Badge } from "@/components/ui";
+import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { ImportarTarefasPdf } from "@/components/processos/ImportarTarefasPdf";
-import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
-import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
+import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
 
 type TarefaItem = {
   id: number;
@@ -29,6 +28,7 @@ export function TarefasPanel({
   tarefas,
   prazos = [],
   pessoas,
+  processoNumero,
   isAdmin = false,
   podeEditarTudo = false,
   podeExcluir = false,
@@ -37,6 +37,7 @@ export function TarefasPanel({
   tarefas: TarefaItem[];
   prazos?: PrazoItem[];
   pessoas: { id: number; nome: string }[];
+  processoNumero?: string;
   isAdmin?: boolean;
   podeEditarTudo?: boolean;
   podeExcluir?: boolean;
@@ -163,42 +164,28 @@ export function TarefasPanel({
 
       <ul className="divide-y divide-slate-100">
         {tarefas.map((t) => (
-          <li key={t.id} className="px-5 py-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="font-medium text-navy-900">{t.titulo} <span className="text-muted font-normal">· {t.responsavel.nome}</span></p>
-                <p className="truncate text-xs text-muted">
-                  {t.dataLimite ? `Data Limite ${formatDate(t.dataLimite)}` : ""}
-                  {t.dataLimite && t.prazoData ? " · " : ""}
-                  {t.prazoData ? `Prazo ${formatDate(t.prazoData)}` : ""}
-                  {!t.dataLimite && !t.prazoData ? "—" : ""}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
-                  {t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}
-                </Badge>
-                <EdicaoRapidaTarefa
-                  tarefa={{
-                    id: t.id,
-                    titulo: t.titulo,
-                    descricao: t.descricao,
-                    prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
-                    alertaDias: t.alertaDias,
-                    dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
-                    alertaDataLimite: t.alertaDataLimite,
-                    prioridade: t.prioridade,
-                    status: t.status,
-                    responsavelPessoaId: t.responsavelPessoaId,
-                    visibilidade: t.visibilidade,
-                  }}
-                  pessoas={pessoas}
-                  isAdmin={isAdmin}
-                  podeEditarTudo={podeEditarTudo}
-                />
-                {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
-              </div>
-            </div>
+          <li key={t.id}>
+            <LinhaTarefa
+              tarefa={{
+                id: t.id,
+                titulo: t.titulo,
+                descricao: t.descricao,
+                prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
+                dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
+                alertaDias: t.alertaDias,
+                alertaDataLimite: t.alertaDataLimite,
+                prioridade: t.prioridade,
+                status: t.status,
+                responsavelPessoaId: t.responsavelPessoaId,
+                visibilidade: t.visibilidade,
+                responsavelNome: t.responsavel.nome,
+                processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
+              }}
+              pessoas={pessoas}
+              isAdmin={isAdmin}
+              podeEditarTudo={podeEditarTudo}
+              podeExcluir={podeExcluir}
+            />
           </li>
         ))}
         {tarefas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa.</li>}
