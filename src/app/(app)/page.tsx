@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const [
     alertasNaoLidas,
     alertas,
-    prazosAtencao,
+    tarefasAlertas,
     tarefasAtencao,
     processosAtivos,
     prazosAbertos,
@@ -50,22 +50,24 @@ export default async function DashboardPage() {
       take: 8,
       select: { id: true, mensagem: true, processo: { select: { id: true, numero: true } } },
     }),
-    prisma.prazo.findMany({
+    prisma.tarefa.findMany({
       where: {
         ativo: true,
         deletedAt: null,
-        status: { notIn: ["concluido", "cancelado"] },
-        processo: { ativo: true, deletedAt: null, ...segProcesso },
+        status: { notIn: ["concluida"] },
+        ...segTarefa,
+        ...(isAdmin ? {} : { visibilidade: "publico" }),
+        OR: [
+          { dataLimite: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
+          { prazoData: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
+        ],
       },
-      orderBy: { dataCalculadaAtual: "asc" },
-      take: 200,
+      orderBy: [{ dataLimite: "asc" }, { prazoData: "asc" }],
+      take: 50,
       select: {
-        id: true,
-        descricao: true,
-        alertaDias: true,
-        dataCalculadaAtual: true,
-        processoId: true,
-        processo: { select: { numero: true, orgao: { select: { sigla: true, nome: true } } } },
+        id: true, titulo: true, status: true, prazoData: true, dataLimite: true,
+        alertaDias: true, alertaDataLimite: true, processoId: true,
+        processo: { select: { numero: true } },
       },
     }),
     prisma.tarefa.findMany({
@@ -153,14 +155,14 @@ export default async function DashboardPage() {
   ];
   const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Custos pendentes" && c.label !== "Contratos");
 
-  // Prazo entra em atenção quando está a ≤ seu alertaDias do vencimento (ou já vencido).
-  const dentroAlerta = (p: (typeof prazosAtencao)[number]) => {
-    if (!p.dataCalculadaAtual) return false;
-    const dias = p.alertaDias ?? 30;
-    const alvo = p.dataCalculadaAtual.getTime() - dias * 24 * 60 * 60 * 1000;
-    return alvo <= AGORA.getTime();
-  };
-  const prazosAlertas = prazosAtencao.filter(dentroAlerta).slice(0, 10);
+  // Tarefa entra em atenção quando (dataLimite ou prazoData) está vencida ou a ≤ 60 dias.
+  const fimDe = (t: { dataLimite: Date | null; prazoData: Date | null }) =>
+    t.dataLimite ?? t.prazoData ?? null;
+  const prazosAlertas = tarefasAlertas
+    .map((t) => ({ ...t, fim: fimDe(t) }))
+    .filter((t) => t.fim != null)
+    .sort((a, b) => new Date(a.fim!).getTime() - new Date(b.fim!).getTime())
+    .slice(0, 10);
   const totalAtencao = prazosAlertas.length + tarefasAtencao.length;
 
   return (
@@ -232,19 +234,19 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
-            {prazosAlertas.map((p) => {
-              const rel = formatRelative(p.dataCalculadaAtual);
+            {prazosAlertas.map((t) => {
+              const rel = formatRelative(t.fim);
               return (
-                <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                  <Link href={`/processos/${p.processoId}`} className="min-w-0">
-                    <p className="truncate text-sm font-medium text-navy-900">{p.descricao}</p>
+                <li key={t.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <Link href={`/tarefas/${t.id}`} className="min-w-0">
+                    <p className="truncate text-sm font-medium text-navy-900">{t.titulo}</p>
                     <p className="truncate text-xs text-muted">
-                      {p.processo.numero} · {p.processo.orgao?.sigla ?? p.processo.orgao?.nome}
+                      {t.processo ? `Processo ${t.processo.numero}` : "Sem processo"}
                     </p>
                   </Link>
                   <div className="shrink-0 text-right">
                     <Badge tone={rel.tone}>{rel.label}</Badge>
-                    <p className="mt-0.5 text-xs text-muted">{formatDate(p.dataCalculadaAtual)}</p>
+                    <p className="mt-0.5 text-xs text-muted">{formatDate(t.fim)}</p>
                   </div>
                 </li>
               );

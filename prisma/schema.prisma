@@ -67,6 +67,7 @@ model Empresa {
   projetos                  Projeto[]
   pedidos                   Pedido[]
   contatos                  ContatoCliente[]
+  faturas                   Fatura[]
 
   @@index([razaoSocial])
   @@index([municipio, uf])
@@ -322,6 +323,7 @@ model Empreendimento {
   processos         Processo[]
   tarefas           Tarefa[]
   licencas          Licenca[]
+  faturas           Fatura[]
 
   @@index([empresaPrincipalId])
   @@index([tipo, status])
@@ -1153,6 +1155,49 @@ model ProcessoVinculo {
   @@unique([processoAmbientalId, processoMinerarioId])
   @@index([processoMinerarioId])
   @@index([processoAmbientalId])
+}
+
+model Fatura {
+  id              Int       @id @default(autoincrement())
+  numero          String
+  ano             Int
+  empresaId       Int
+  empreendimentoId Int?
+  referencia      String?
+  periodo         String?
+  vencimento      DateTime?
+  status          String    @default("aberta") // aberta | enviada | paga | cancelada
+  observacoes     String?
+  criadoPor       Int?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresa        Empresa            @relation(fields: [empresaId], references: [id], onDelete: Restrict)
+  empreendimento Empreendimento?   @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  itens          FaturaItem[]
+
+  @@index([empresaId])
+  @@index([status])
+}
+
+model FaturaItem {
+  id            Int    @id @default(autoincrement())
+  faturaId      Int
+  data          DateTime?
+  identificacao String
+  descricao     String?
+  qtde          Decimal @db.Decimal(12, 2)
+  horaTecnica   Decimal @db.Decimal(12, 2)
+  descontoPct   Decimal? @db.Decimal(5, 2)
+  descontoValor Decimal @db.Decimal(12, 2)
+  outrosCustos  Decimal @db.Decimal(12, 2)
+  custosAdmFiscais Decimal @db.Decimal(12, 2)
+  total         Decimal @db.Decimal(12, 2)
+
+  fatura Fatura @relation(fields: [faturaId], references: [id], onDelete: Cascade)
 }
 
 // =====================================================================

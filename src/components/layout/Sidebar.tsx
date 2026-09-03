@@ -47,8 +47,8 @@ const SECTIONS: NavGroup[] = [
     icon: HandCoins,
     items: [
       { href: "/financeiro", label: "Financeiro", icon: Wallet },
+      { href: "/faturas", label: "Faturas", icon: FileSignature },
       { href: "/pedidos", label: "Pedidos", icon: FileSignature },
-      { href: "/servicos", label: "Serviços", icon: HandCoins },
       { href: "/contratos", label: "Contratos", icon: FileSignature },
     ],
   },
