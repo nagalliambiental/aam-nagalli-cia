@@ -1029,7 +1029,7 @@ model Comunicacao {
 
 model Custo {
   id                  Int      @id @default(autoincrement())
-  processoId          Int
+  processoId          Int?
   tipo                String   @default("outro")
   descricao           String
   valor               Decimal  @db.Decimal(12, 2)
@@ -1045,8 +1045,8 @@ model Custo {
   criadoEm     DateTime  @default(now())
   atualizadoEm DateTime  @updatedAt
 
-  processo    Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  responsavel Pessoa?  @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
+  processo    Processo? @relation(fields: [processoId], references: [id], onDelete: SetNull)
+  responsavel Pessoa?   @relation(fields: [responsavelPessoaId], references: [id], onDelete: SetNull)
 
   @@index([processoId, data])
   @@index([tipo, status])

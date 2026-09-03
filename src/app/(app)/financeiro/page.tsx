@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { Card, CardHeader, PageHeader, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
+import { NovoCustoForm } from "@/components/financeiro/NovoCustoForm";
 
 export default async function FinanceiroPage() {
   await requirePermissao("relatorio:ler");
@@ -22,6 +23,12 @@ export default async function FinanceiroPage() {
     include: { empresa: true },
   });
 
+  const processos = await prisma.processo.findMany({
+    where: { ativo: true, deletedAt: null },
+    orderBy: { dataAbertura: "desc" },
+    select: { id: true, numero: true, orgao: { select: { sigla: true } } },
+  });
+
   const total = custos.reduce((a, c) => a + c.valor.toNumber(), 0);
   const totalPago = custos
     .filter((c) => c.status === "pago")
@@ -33,7 +40,7 @@ export default async function FinanceiroPage() {
   // por empreendimento
   const porEmpreendimento = new Map<number, { nome: string; total: number }>();
   for (const c of custos) {
-    const emp = c.processo.empreendimento;
+    const emp = c.processo?.empreendimento;
     if (emp) {
       porEmpreendimento.set(emp.id, {
         nome: emp.nome,
@@ -77,6 +84,10 @@ export default async function FinanceiroPage() {
           </Link>
         }
       />
+
+      <div className="mb-6">
+        <NovoCustoForm processos={processos.map((p) => ({ id: p.id, numero: p.numero, orgao: p.orgao.sigla }))} />
+      </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[

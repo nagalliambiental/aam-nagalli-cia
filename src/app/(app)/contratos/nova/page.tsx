@@ -18,7 +18,7 @@ export default async function NovoContratoPage() {
         <CardHeader title="Dados do contrato" />
         <div className="p-5">
           <ContratoForm
-            empresas={empresas.map((x) => ({ id: x.id, nome: x.nomeFantasia ?? x.razaoSocial }))}
+            empresas={empresas.map((x) => ({ id: x.id, nome: x.nomeFantasia || x.apelido || x.razaoSocial }))}
           />
         </div>
       </Card>

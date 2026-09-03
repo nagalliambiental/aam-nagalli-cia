@@ -27,7 +27,7 @@ export default async function EditarContratoPage({
         <div className="p-5">
           <ContratoForm
             contratoId={contrato.id}
-            empresas={empresas.map((x) => ({ id: x.id, nome: x.nomeFantasia ?? x.razaoSocial }))}
+            empresas={empresas.map((x) => ({ id: x.id, nome: x.nomeFantasia || x.apelido || x.razaoSocial }))}
             initial={{
               empresaId: contrato.empresaId,
               numero: contrato.numero ?? undefined,
