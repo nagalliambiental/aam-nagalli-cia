@@ -155,7 +155,7 @@ async function main() {
   // PERMISSÕES
   // ------------------------------------------------------------------
   const modulos = ["dashboard", "cadastro", "processo", "titulo", "licenca", "condicionante",
-    "exigencia", "prazo", "tarefa", "documento", "comunicacao", "custo", "orgao", "relatorio", "usuario", "config", "automacao"];
+    "exigencia", "prazo", "tarefa", "documento", "comunicacao", "orgao", "relatorio", "usuario", "config", "automacao"];
   const acoes = ["ler", "criar", "editar", "excluir"];
   for (const m of modulos) {
     for (const a of acoes) {
@@ -179,7 +179,7 @@ async function main() {
     }
   }
 
-  const OP = ['processo','titulo','licenca','condicionante','exigencia','prazo','tarefa','documento','comunicacao','custo','cadastro'];
+  const OP = ['processo','titulo','licenca','condicionante','exigencia','prazo','tarefa','documento','comunicacao','cadastro'];
   const SO_LEITURA = ['relatorio','orgao','dashboard'];
 
   // Administrador: tudo

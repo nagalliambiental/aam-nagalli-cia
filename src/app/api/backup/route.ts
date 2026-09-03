@@ -7,7 +7,7 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const [empresas, empreendimentos, processos, titulos, licencas, prazos, tarefas, exigencias, custos, contratos] = await Promise.all([
+  const [empresas, empreendimentos, processos, titulos, licencas, prazos, tarefas, exigencias, contratos] = await Promise.all([
     prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { razaoSocial: "asc" } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, include: { empresaPrincipal: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { orgao: true, tipoProcesso: true, empreendimento: true } }),
@@ -16,7 +16,6 @@ export async function GET() {
     prisma.prazo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { dataCalculadaAtual: "asc" }, include: { processo: true } }),
     prisma.tarefa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { titulo: "asc" }, include: { responsavel: true, processo: true } }),
     prisma.exigencia.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { descricao: "asc" }, include: { processo: true, orgao: true, responsavel: true } }),
-    prisma.custo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { data: "desc" }, include: { processo: true, responsavel: true } }),
     prisma.contrato.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { empresa: true } }),
   ]);
 
@@ -113,14 +112,6 @@ export async function GET() {
     { header: "Prazo", key: "prazo", width: 14 },
     { header: "Status", key: "status", width: 12 },
   ], exigencias.map((e) => ({ id: e.id, descricao: e.descricao.slice(0, 80), processo: e.processo?.numero, orgao: e.orgao.sigla, responsavel: e.responsavel?.nome, prazo: e.prazoResposta ? new Date(e.prazoResposta).toLocaleDateString("pt-BR") : "", status: e.status })));
-
-  addSheet("Custos", [
-    { header: "ID", key: "id", width: 8 },
-    { header: "Descrição", key: "descricao", width: 35 },
-    { header: "Valor", key: "valor", width: 14 },
-    { header: "Processo", key: "processo", width: 18 },
-    { header: "Status", key: "status", width: 12 },
-  ], custos.map((c) => ({ id: c.id, descricao: c.descricao, valor: Number(c.valor), processo: c.processo?.numero, status: c.status })));
 
   addSheet("Contratos", [
     { header: "ID", key: "id", width: 8 },

@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader, Badge } from "@/components/ui";
 import { formatDate, formatMoney, formatCNPJ } from "@/lib/format";
-import { PedidoImprimir } from "@/components/comercial/PedidoActions";
+import { ImprimirBotao } from "@/components/ImprimirBotao";
 
 const STATUS: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   aberta: { label: "Aberta", tone: "blue" },
@@ -36,7 +36,7 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
         actions={
           <div className="flex items-center gap-2 print:hidden">
             <Badge tone={st.tone}>{st.label}</Badge>
-            <PedidoImprimir />
+            <ImprimirBotao />
             <Link href="/faturas">
               <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-navy-600 ring-1 ring-slate-200 hover:bg-slate-100">Voltar</span>
             </Link>

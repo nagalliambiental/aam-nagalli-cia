@@ -20,15 +20,6 @@ export default async function ContratoDetalhePage({
   });
   if (!contrato) notFound();
 
-  // custos relacionados às empresas do contrato
-  const custos = await prisma.custo.count({
-    where: {
-      ativo: true,
-      deletedAt: null,
-      processo: { empresas: { some: { empresaId: contrato.empresaId, papel: "cliente" } } },
-    },
-  });
-
   return (
     <div>
       <PageHeader
@@ -55,7 +46,6 @@ export default async function ContratoDetalhePage({
             ["Descrição", contrato.descricao ?? "—"],
             ["Assinatura", contrato.dataAssinatura ? formatDate(contrato.dataAssinatura) : "—"],
             ["Validade", contrato.dataValidade ? formatDate(contrato.dataValidade) : "—"],
-            ["Custos vinculados", String(custos)],
           ].map(([k, v]) => (
             <div key={k as string}>
               <dt className="text-muted">{k}</dt>

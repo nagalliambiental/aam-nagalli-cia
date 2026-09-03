@@ -40,7 +40,6 @@ export default async function DashboardPage() {
     processosAtivos,
     prazosAbertos,
     tarefasPendentes,
-    custosPendentes,
     contratosVigentes,
   ] = await Promise.all([
     prisma.notificacao.count({ where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } } }),
@@ -104,7 +103,6 @@ export default async function DashboardPage() {
         ...segTarefa,
       },
     }),
-    prisma.custo.aggregate({ _sum: { valor: true }, where: { ativo: true, deletedAt: null, status: { notIn: ["pago", "cancelado"] } } }),
     prisma.contrato.count({ where: { ativo: true, deletedAt: null } }),
   ]);
 
@@ -138,14 +136,6 @@ export default async function DashboardPage() {
       iconBg: "bg-red-50 text-red-600",
     },
     {
-      label: "Custos pendentes",
-      value: formatMoney(custosPendentes._sum.valor),
-      icon: Wallet,
-      href: "/financeiro",
-      money: true,
-      iconBg: "bg-emerald-50 text-emerald-600",
-    },
-    {
       label: "Contratos",
       value: contratosVigentes,
       icon: FileSignature,
@@ -153,7 +143,7 @@ export default async function DashboardPage() {
       iconBg: "bg-navy-50 text-navy-700",
     },
   ];
-  const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Custos pendentes" && c.label !== "Contratos");
+  const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Contratos");
 
   // Tarefa entra em atenção quando (dataLimite ou prazoData) está vencida ou a ≤ 60 dias.
   const fimDe = (t: { dataLimite: Date | null; prazoData: Date | null }) =>
@@ -205,11 +195,7 @@ export default async function DashboardPage() {
                   </span>
                   <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-navy-600" />
                 </div>
-                <p
-                  className={`mt-3 truncate font-bold text-navy-900 ${
-                    c.money ? "text-xl" : "text-2xl"
-                  }`}
-                >
+                <p className="mt-3 truncate text-2xl font-bold text-navy-900">
                   {c.value}
                 </p>
                 <p className="mt-0.5 text-xs font-medium text-muted">{c.label}</p>

@@ -8,7 +8,7 @@ export default function BackupPage() {
       <Card>
         <div className="p-6">
           <p className="text-sm text-muted">
-            Baixe o backup completo do sistema em formato Excel (.xlsx) com abas para clientes, empreendimentos, processos, títulos, licenças, prazos, tarefas, exigências, custos e contratos.
+            Baixe o backup completo do sistema em formato Excel (.xlsx) com abas para clientes, empreendimentos, processos, títulos, licenças, prazos, tarefas, exigências e contratos.
           </p>
           <div className="mt-6">
             <a href="/api/backup">
