@@ -39,5 +39,5 @@ export function statusAmbiental(
   const limite = dataLimiteRenovacao(dataLimite, dataProtocolo);
   if (limite && agora.getTime() >= limite.getTime()) return "proximo_vencimento";
 
-  return statusSalvo === "ativo" || !statusSalvo ? "ativo" : statusSalvo;
+  return "ativo";
 }
