@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
+import { statusAmbiental } from "@/lib/status";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; apelido: string | null; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; numeroLicenca: string | null; empreendimento: { id: number; nome: string; apelido?: string | null } | null; dataAbertura: Date; status: string; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
+export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; apelido: string | null; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; numeroLicenca: string | null; empreendimento: { id: number; nome: string; apelido?: string | null } | null; dataAbertura: Date; status: string; validade: Date | null; dataLimiteRenovacao: Date | null; dataProtocolo: Date | null; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const status = processo.natureza === "ambiental"
+    ? statusAmbiental(processo.validade, processo.status, processo.dataLimiteRenovacao, processo.dataProtocolo)
+    : processo.status;
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -49,7 +53,7 @@ export function ProcessoRowActions({ processo, podeExcluir = false }: { processo
             <p>aberto em {formatDate(processo.dataAbertura)}</p>
             <p>{processo._count.eventos} eventos · {processo._count.prazos} prazos · {processo._count.tarefas} tarefas</p>
           </div>
-          <StatusBadge status={processo.status} />
+          <StatusBadge status={status} />
         </div>
       </Link>
       {podeExcluir && (

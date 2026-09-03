@@ -13,6 +13,8 @@ const MAP: Record<string, "green" | "red" | "amber" | "blue" | "gray" | "gold"> 
   futuro: "blue",
   proximo: "amber",
   vencendo: "gold",
+  proximo_vencimento: "amber",
+  em_renovacao: "blue",
 };
 
 const LABEL: Record<string, string> = {
@@ -28,6 +30,8 @@ const LABEL: Record<string, string> = {
   futuro: "Futuro",
   proximo: "Próximo",
   vencendo: "Vencendo hoje",
+  proximo_vencimento: "Próximo do vencimento",
+  em_renovacao: "Em Renovação",
 };
 
 export function StatusBadge({ status }: { status: string }) {

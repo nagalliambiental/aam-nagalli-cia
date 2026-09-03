@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         responsavelPessoaId: body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null,
         natureza,
         fase: body.fase ?? null,
-        status: body.status ?? "em_andamento",
+        status: natureza === "ambiental" ? "ativo" : (body.status ?? "em_andamento"),
         areaValor: body.areaValor != null ? Number(body.areaValor) : null,
         areaUnidade: body.areaUnidade ?? "ha",
         substancias: body.substancias ?? null,

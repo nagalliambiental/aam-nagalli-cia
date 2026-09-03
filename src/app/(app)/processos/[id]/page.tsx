@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { classificarListaCondicionantes } from "@/lib/condicionantes";
+import { statusAmbiental } from "@/lib/status";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
@@ -37,6 +38,10 @@ export default async function ProcessoDetalhePage({
   });
 
   if (!processo) notFound();
+
+  const statusProcesso = processo.natureza === "ambiental"
+    ? statusAmbiental(processo.validade, processo.status, processo.dataLimiteRenovacao, processo.dataProtocolo)
+    : processo.status;
 
   const [tarefas, prazos, exigencias, pessoas] =
     await Promise.all([
@@ -80,7 +85,7 @@ export default async function ProcessoDetalhePage({
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
               ["Empreendimento", processo.empreendimento ? (processo.empreendimento.apelido || processo.empreendimento.nome) : "—"],
               ["Responsável", processo.responsavel?.nome ?? "—"],
-              ["Status", <StatusBadge key="s" status={processo.status} />],
+              ["Status", <StatusBadge key="s" status={statusProcesso} />],
               ["Abertura", formatDate(processo.dataAbertura)],
               ...(processo.natureza === "ambiental"
                 ? [
