@@ -20,6 +20,7 @@ export default async function EmpresaDetalhePage({
 
   const empresa = await prisma.empresa.findFirst({
     where: { id: empresaId, ativo: true, deletedAt: null },
+    include: { contatos: { where: { ativo: true, deletedAt: null }, orderBy: { id: "asc" } } },
   });
 
   if (!empresa) notFound();
@@ -42,7 +43,7 @@ export default async function EmpresaDetalhePage({
         actions={
           <div className="flex items-center gap-2">
             {empreendimentos.length > 0 && (
-              <EmpreendimentoDropdown empreendimentos={empreendimentos.map((e) => ({ id: e.id, nome: e.nome }))} />
+              <EmpreendimentoDropdown empreendimentos={empreendimentos.map((e) => ({ id: e.id, nome: e.nome, apelido: e.apelido }))} />
             )}
             <Link href="/empresas">
               <Button variant="ghost">Voltar</Button>
@@ -65,10 +66,8 @@ export default async function EmpresaDetalhePage({
               ["Apelido", empresa.apelido ?? "—"],
               ["CNPJ", empresa.cnpj ? formatCNPJ(empresa.cnpj) : "—"],
               ["Inscrição estadual", empresa.inscricaoEstadual ?? "—"],
-              ["E-mail", empresa.email ?? "—"],
-              ["Telefone", empresa.telefone ?? "—"],
               ["Município/UF", empresa.municipio && empresa.uf ? `${empresa.municipio}/${empresa.uf}` : "—"],
-              ["Endereço", empresa.endereco ?? "—"],
+              ["Endereço", `${empresa.endereco ?? "—"}${empresa.numeroEndereco ? `, ${empresa.numeroEndereco}` : ""}`],
               ["Status", <Badge key="s" tone={empresa.ativo ? "green" : "gray"}>{empresa.ativo ? "ativo" : "inativo"}</Badge>],
             ].map(([k, v]) => (
               <div key={k as string} className="flex justify-between gap-4">
@@ -114,6 +113,27 @@ export default async function EmpresaDetalhePage({
             {empreendimentos.length === 0 && (
               <li className="px-5 py-8 text-center text-sm text-muted">
                 Nenhum empreendimento vinculado a esta empresa.
+              </li>
+            )}
+          </ul>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <Card>
+          <CardHeader title="Contatos" />
+          <ul className="divide-y divide-slate-100">
+            {empresa.contatos.map((c) => (
+              <li key={c.id} className="grid grid-cols-1 gap-1 px-5 py-3 text-sm sm:grid-cols-4 sm:gap-4">
+                <span className="font-medium text-navy-900">{c.nome || "—"}</span>
+                <span className="text-muted">{c.email || "—"}</span>
+                <span className="text-muted">{c.telefone || "—"}</span>
+                <span className="text-muted">{c.assunto || "—"}</span>
+              </li>
+            ))}
+            {empresa.contatos.length === 0 && (
+              <li className="px-5 py-8 text-center text-sm text-muted">
+                Nenhum contato cadastrado.
               </li>
             )}
           </ul>

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-export function EmpreendimentoDropdown({ empreendimentos }: { empreendimentos: { id: number; nome: string }[] }) {
+export function EmpreendimentoDropdown({ empreendimentos }: { empreendimentos: { id: number; nome: string; apelido?: string | null }[] }) {
   const router = useRouter();
   return (
     <select
@@ -15,7 +15,7 @@ export function EmpreendimentoDropdown({ empreendimentos }: { empreendimentos: {
     >
       <option value="">Empreendimentos ▾</option>
       {empreendimentos.map((e) => (
-        <option key={e.id} value={e.id}>{e.nome}</option>
+        <option key={e.id} value={e.id}>{e.apelido ? `${e.nome} (${e.apelido})` : e.nome}</option>
       ))}
     </select>
   );
