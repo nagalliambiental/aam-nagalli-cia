@@ -25,7 +25,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("processoId" in body) data.processoId = body.processoId ? Number(body.processoId) : null;
   if ("empreendimentoId" in body) data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
   if ("prazoData" in body) data.prazoData = dataLocal(body.prazoData);
+  if ("dataLimite" in body) data.dataLimite = dataLocal(body.dataLimite);
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
+  if ("alertaDataLimite" in body) data.alertaDataLimite = body.alertaDataLimite != null ? Number(body.alertaDataLimite) : null;
   if ("prioridade" in body) data.prioridade = body.prioridade;
   if ("visibilidade" in body) data.visibilidade = body.visibilidade === "privado" ? "privado" : "publico";
   if ("status" in body) {
@@ -35,6 +37,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   try {
     const tarefa = await prisma.tarefa.update({ where: { id: tarefaId }, data: data as never });
+
+    // Ao concluir, cessa os alertas da tarefa (marca notificações vinculadas como lidas).
+    if (data.status === "concluida") {
+      await prisma.notificacao.updateMany({ where: { tarefaId, lida: false }, data: { lida: true } });
+    }
+
     await audit({ tipoEntidade: "tarefa", entidadeId: tarefa.id, acao: "editar", usuarioId: Number(session.user.id) });
     return NextResponse.json({ id: tarefa.id });
   } catch {

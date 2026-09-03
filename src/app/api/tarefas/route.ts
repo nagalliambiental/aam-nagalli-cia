@@ -26,6 +26,8 @@ export async function POST(req: Request) {
     const descricao = (body.descricao as string ?? "").trim();
     const observacoes = (body.observacoes as string ?? "").trim();
     const prazoData = dataLocal(body.prazoData);
+    const dataLimite = dataLocal(body.dataLimite);
+    const alertaDataLimite = body.alertaDataLimite != null ? Number(body.alertaDataLimite) : null;
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
     // Cria a exigência vinculada ao processo (mesmo prazo e alerta) apenas se houver processo.
@@ -55,9 +57,11 @@ export async function POST(req: Request) {
         exigenciaId,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",
-        status: "pendente",
+        status: body.status ?? "pendente",
         prazoData,
+        dataLimite,
         alertaDias,
+        alertaDataLimite,
         visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
       },

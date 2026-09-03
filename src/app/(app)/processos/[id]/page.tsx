@@ -154,27 +154,7 @@ export default async function ProcessoDetalhePage({
       id: "tarefas",
       label: "Tarefas e Prazos",
       count: tarefas.length,
-      content: (
-        <>
-          <TarefasPanel processoId={processo.id} tarefas={tarefas} pessoas={pessoas} isAdmin={isAdmin} />
-          <div className="mt-6">
-            <Card>
-              <CardHeader title="Prazos" />
-              <ul className="divide-y divide-slate-100">
-                {prazos.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between gap-4 px-5 py-3">
-                    <p className="text-sm font-medium text-navy-900">{p.descricao}</p>
-                    <span className="text-xs text-muted">{p.dataCalculadaAtual ? formatDate(p.dataCalculadaAtual) : "—"}</span>
-                  </li>
-                ))}
-                {prazos.length === 0 && (
-                  <li className="px-5 py-8 text-center text-sm text-muted">Nenhum prazo cadastrado.</li>
-                )}
-              </ul>
-            </Card>
-          </div>
-        </>
-      ),
+      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} />,
     },
   ];
 

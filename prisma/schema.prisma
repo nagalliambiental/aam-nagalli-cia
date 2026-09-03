@@ -913,6 +913,8 @@ model Tarefa {
   status        String    @default("pendente")
   prazoData     DateTime?
   alertaDias    Int?
+  dataLimite    DateTime?
+  alertaDataLimite Int?
   visibilidade  String    @default("publico") // publico | privado
   dataCriacao   DateTime  @default(now())
   dataConclusao DateTime?

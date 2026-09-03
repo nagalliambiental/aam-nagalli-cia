@@ -21,6 +21,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
+  const podeEditarTudo = user.perfilNome === "Administrador" || user.perfilNome === "Técnico Chefe";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidas
@@ -97,37 +98,27 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                 <div className="min-w-0">
                   <p className="font-medium text-navy-900">
                     <Link href={`/tarefas/${t.id}`} className="hover:underline">{t.titulo}</Link>
+                    <span className="text-muted font-normal"> · {t.responsavel.nome}</span>
                   </p>
                   <p className="truncate text-xs text-muted">
-                    {t.responsavel.nome}
-                    {t.empreendimento ? ` · ${t.empreendimento.apelido || t.empreendimento.nome}` : null}
-                    {t.processo ? (
-                      <>
-                        {" "}· processo{" "}
-                        <Link href={`/processos/${t.processo.id}`} className="text-navy-700 underline">
-                          #{t.processo.numero} ({t.processo.orgao.sigla})
-                        </Link>
-                      </>
-                    ) : null}
-                    {t.alertaDias ? ` · alerta ${t.alertaDias} dias antes` : ""}
+                    {t.dataLimite ? `Data Limite ${formatDate(t.dataLimite)}` : ""}
+                    {t.dataLimite && t.prazoData ? " · " : ""}
+                    {t.prazoData ? `Prazo ${formatDate(t.prazoData)}` : ""}
+                    {!t.dataLimite && !t.prazoData ? "—" : ""}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {t.prazoData && <span className="text-xs text-muted">{formatDate(t.prazoData)}</span>}
                   <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
-                    {t.status}
+                    {t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}
                   </Badge>
                   <TarefaStatusBotao tarefaId={t.id} status={t.status} />
+                  {podeEditarTudo && (
+                    <Link href={`/tarefas/${t.id}`}>
+                      <span className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">Editar</span>
+                    </Link>
+                  )}
                   {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
                 </div>
-              </div>
-              <div className="mt-2">
-                <EdicaoRapidaTarefa
-                  tarefaId={t.id}
-                  responsavelPessoaId={t.responsavelPessoaId}
-                  prazoData={t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null}
-                  pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-                />
               </div>
             </li>
           ))}

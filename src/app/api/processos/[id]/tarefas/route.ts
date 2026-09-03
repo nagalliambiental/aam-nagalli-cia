@@ -37,6 +37,8 @@ export async function POST(req: Request, { params }: Ctx) {
   try {
     const descricao = (body.descricao as string ?? "").trim();
     const prazoData = dataLocal(body.prazoData);
+    const dataLimite = dataLocal(body.dataLimite);
+    const alertaDataLimite = body.alertaDataLimite != null ? Number(body.alertaDataLimite) : null;
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
     // Cria a exigência vinculada ao processo (mesmo prazo e alerta) e a tarefa aponta para ela.
@@ -62,7 +64,9 @@ export async function POST(req: Request, { params }: Ctx) {
         prioridade: body.prioridade ?? "media",
         status: body.status ?? "pendente",
         prazoData,
+        dataLimite,
         alertaDias,
+        alertaDataLimite,
         visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
       },

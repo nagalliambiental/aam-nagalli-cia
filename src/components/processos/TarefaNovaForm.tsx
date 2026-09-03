@@ -24,6 +24,9 @@ export function TarefaNovaForm({
     prioridade: "media",
     prazoData: "",
     alertaDias: "30",
+    dataLimite: "",
+    alertaDataLimite: "",
+    status: "pendente",
     responsavelPessoaId: pessoas[0]?.id ?? "",
     empreendimentoId: "",
     processoId: "",
@@ -94,12 +97,20 @@ export function TarefaNovaForm({
           </div>
         )}
         <div>
-          <Label htmlFor="prazoData">Prazo</Label>
+          <Label htmlFor="prazoData">Prazo Final</Label>
           <Input id="prazoData" type="date" value={form.prazoData} onChange={(e) => setForm((f) => ({ ...f, prazoData: e.target.value }))} />
         </div>
         <div>
-          <Label htmlFor="alertaDias">Alerta (dias antes do vencimento)</Label>
+          <Label htmlFor="alertaDias">Alerta (dias antes)</Label>
           <Input id="alertaDias" type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
+        </div>
+        <div>
+          <Label htmlFor="dataLimite">Data Limite</Label>
+          <Input id="dataLimite" type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
+        </div>
+        <div>
+          <Label htmlFor="alertaDataLimite">Alerta (dias antes)</Label>
+          <Input id="alertaDataLimite" type="number" min="1" value={form.alertaDataLimite} onChange={(e) => setForm((f) => ({ ...f, alertaDataLimite: e.target.value }))} />
         </div>
         <div>
           <Label htmlFor="prioridade">Prioridade</Label>
@@ -108,6 +119,14 @@ export function TarefaNovaForm({
             <option value="media">Média</option>
             <option value="alta">Alta</option>
             <option value="urgente">Urgente</option>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="status">Status</Label>
+          <Select id="status" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+            <option value="pendente">Pendente</option>
+            <option value="em_andamento">Iniciada</option>
+            <option value="concluida">Concluída</option>
           </Select>
         </div>
         {showVisibilidade && (
