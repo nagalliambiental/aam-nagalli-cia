@@ -433,6 +433,10 @@ model Processo {
   validade            DateTime?
   dataProtocolo       DateTime?
   alertaDias          Int?
+  dataLimiteRenovacao DateTime?
+  alertaRenovacaoDias Int?
+  protocoloRenovacao  String?
+  dataProtocoloRenovacao DateTime?
   condicionantes      String?
 
   descricao        String?
@@ -462,6 +466,9 @@ model Processo {
   notificacoes      Notificacao[]
   comunicacoes      Comunicacao[]
   custos            Custo[]
+
+  vinculosAmbientais ProcessoVinculo[] @relation("Vinc_Minerario")
+  vinculosMinerarios ProcessoVinculo[] @relation("Vinc_Ambiental")
 
   @@index([orgaoId, status])
   @@index([tipoProcessoId])
@@ -1129,6 +1136,19 @@ model Custo {
 
   @@index([processoId, data])
   @@index([tipo, status])
+}
+
+model ProcessoVinculo {
+  id                   Int @id @default(autoincrement())
+  processoAmbientalId  Int
+  processoMinerarioId  Int
+
+  ambiental Processo @relation("Vinc_Ambiental", fields: [processoAmbientalId], references: [id], onDelete: Cascade)
+  minerario Processo @relation("Vinc_Minerario", fields: [processoMinerarioId], references: [id], onDelete: Cascade)
+
+  @@unique([processoAmbientalId, processoMinerarioId])
+  @@index([processoMinerarioId])
+  @@index([processoAmbientalId])
 }
 
 // =====================================================================

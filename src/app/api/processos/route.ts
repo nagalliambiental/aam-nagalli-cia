@@ -72,10 +72,12 @@ export async function POST(req: Request) {
     (await prisma.orgao.findFirst());
 
   try {
+    const vinculos = Array.isArray(body.vinculos) ? body.vinculos.map(Number).filter((x: number) => Number.isInteger(x)) : [];
     const processo = await prisma.processo.create({
       data: {
         numero,
         nup,
+        seiUrl: body.seiUrl ?? null,
         orgaoId: body.orgaoId ?? orgao?.id,
         tipoProcessoId: body.tipoProcessoId ?? tipoProcesso?.id,
         empreendimentoId: body.empreendimentoId ?? null,
@@ -98,12 +100,24 @@ export async function POST(req: Request) {
         validade: dataLocal(body.validade),
         dataProtocolo: dataLocal(body.dataProtocolo),
         alertaDias: body.alertaDias != null ? Number(body.alertaDias) : null,
+        dataLimiteRenovacao: dataLocal(body.dataLimiteRenovacao),
+        alertaRenovacaoDias: body.alertaRenovacaoDias != null ? Number(body.alertaRenovacaoDias) : null,
+        protocoloRenovacao: body.protocoloRenovacao ?? null,
+        dataProtocoloRenovacao: dataLocal(body.dataProtocoloRenovacao),
         condicionantes: body.condicionantes ?? null,
         dataAbertura: dataLocal(body.dataAbertura) ?? new Date(),
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,
       },
     });
+
+    // Cria os vínculos (ambiental ↔ minerário)
+    if (vinculos.length) {
+      const dataVinculo = natureza === "ambiental"
+        ? vinculos.map((m: number) => ({ processoAmbientalId: processo.id, processoMinerarioId: m }))
+        : vinculos.map((a: number) => ({ processoAmbientalId: a, processoMinerarioId: processo.id }));
+      await prisma.processoVinculo.createMany({ data: dataVinculo, skipDuplicates: true });
+    }
 
     await audit({
       tipoEntidade: "processo",

@@ -20,6 +20,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const data: Record<string, unknown> = {};
   if ("numero" in body) data.numero = body.numero;
+  if ("seiUrl" in body) data.seiUrl = body.seiUrl ?? null;
   if ("nup" in body) {
     const nup = body.nup ? String(body.nup).trim() || null : null;
     if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
@@ -63,6 +64,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("validade" in body) data.validade = dataLocal(body.validade);
   if ("dataProtocolo" in body) data.dataProtocolo = dataLocal(body.dataProtocolo);
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
+  if ("dataLimiteRenovacao" in body) data.dataLimiteRenovacao = dataLocal(body.dataLimiteRenovacao);
+  if ("alertaRenovacaoDias" in body) data.alertaRenovacaoDias = body.alertaRenovacaoDias != null ? Number(body.alertaRenovacaoDias) : null;
+  if ("protocoloRenovacao" in body) data.protocoloRenovacao = body.protocoloRenovacao ?? null;
+  if ("dataProtocoloRenovacao" in body) data.dataProtocoloRenovacao = dataLocal(body.dataProtocoloRenovacao);
   if ("condicionantes" in body) data.condicionantes = body.condicionantes ?? null;
   if ("dataAbertura" in body) data.dataAbertura = dataLocal(body.dataAbertura);
   if ("descricao" in body) data.descricao = body.descricao ?? null;
@@ -70,6 +75,20 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   try {
     const processo = await prisma.processo.update({ where: { id: processoId }, data: data as never });
+
+    // Substitui os vínculos (ambiental ↔ minerário) quando enviados.
+    if (Array.isArray(body.vinculos)) {
+      const vinculos = body.vinculos.map(Number).filter((x: number) => Number.isInteger(x));
+      await prisma.processoVinculo.deleteMany({
+        where: { OR: [{ processoAmbientalId: processoId }, { processoMinerarioId: processoId }] },
+      });
+      if (vinculos.length) {
+        const dataVinculo = processo.natureza === "ambiental"
+          ? vinculos.map((m: number) => ({ processoAmbientalId: processoId, processoMinerarioId: m }))
+          : vinculos.map((a: number) => ({ processoAmbientalId: a, processoMinerarioId: processoId }));
+        await prisma.processoVinculo.createMany({ data: dataVinculo, skipDuplicates: true });
+      }
+    }
 
     await audit({ tipoEntidade: "processo", entidadeId: processo.id, acao: "editar", usuarioId: Number(session.user.id) });
     return NextResponse.json({ id: processo.id });

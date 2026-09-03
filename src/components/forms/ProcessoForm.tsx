@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
+import { VinculoPicker } from "@/components/processos/VinculoPicker";
 
 const FASES_VALIDAS = [
   "Requerimento de Pesquisa",
-  "Autorização de Pesquisa",
+  "Alvará de Pesquisa",
   "Direito de Requerer a Lavra",
   "Requerimento de Lavra",
   "Licenciamento",
@@ -26,11 +27,11 @@ function normalizarFase(fase: string): string | null {
   const f = fase.toLowerCase();
   const mapeia: [RegExp, string][] = [
     [/\brequerimento.*pesquisa\b/, "Requerimento de Pesquisa"],
-    [/\bautoriza.+\bpesquisa\b|\bauth\b.*\bpesquisa\b/, "Autorização de Pesquisa"],
+    [/\bautoriza.+\bpesquisa\b|\bauth\b.*\bpesquisa\b/, "Alvará de Pesquisa"],
     [/direito de requerer a lavra/, "Direito de Requerer a Lavra"],
     [/\brequerimento.*lavra\b/, "Requerimento de Lavra"],
     [/\bconcess.+\blavra\b|\blavra\b/, "Concessão de Lavra"],
-    [/\bpesquisa\b/, "Autorização de Pesquisa"],
+    [/\bpesquisa\b/, "Alvará de Pesquisa"],
   ];
   for (const [re, valor] of mapeia) {
     if (re.test(f)) return valor;
@@ -38,85 +39,19 @@ function normalizarFase(fase: string): string | null {
   return FASES_VALIDAS.includes(fase.trim()) ? fase.trim() : null;
 }
 
-// ArcGIS REST API suporta JSONP (callback) - contorna CORS e roda direto no navegador do usuário
-function jsonp(url: string, timeoutMs = 9000): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const cbName = `__anm_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
-    const script = document.createElement("script");
-    const cleanup = () => {
-      delete (globalThis as unknown as Record<string, unknown>)[cbName];
-      script.remove();
-    };
-    (globalThis as unknown as Record<string, (d: unknown) => void>)[cbName] = (data: unknown) => {
-      cleanup();
-      resolve(data);
-    };
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error("timeout"));
-    }, timeoutMs);
-    script.onerror = () => {
-      clearTimeout(timer);
-      cleanup();
-      reject(new Error("error"));
-    };
-    script.src = `${url}${url.includes("?") ? "&" : "?"}callback=${cbName}`;
-    document.head.appendChild(script);
-  });
-}
-
-// Consulta SIGMINE direto do navegador (sem depender do servidor/Vercel)
-async function consultaSigmineBrowser(numero: string): Promise<{
-  areaHa: number | null;
-  fase: string | null;
-  substancias: string | null;
-  titular: string | null;
-  uf: string | null;
-  processoSigmine: string | null;
-} | null> {
-  const m2 = numero.replace(/\s/g, "").match(/(\d{3})\.?(\d{3})\/(\d{4})/);
-  if (!m2) return null;
-  const num = m2[1] + m2[2];
-  const ano = m2[3];
-  try {
-    const url =
-      "https://geo.anm.gov.br/arcgis/rest/services/SIGMINE/dados_anm/FeatureServer/0/query";
-    const params = new URLSearchParams({
-      where: `NUMERO=${num} AND ANO=${ano}`,
-      outFields: "PROCESSO,NUMERO,ANO,FASE,NOME,SUBS,USO,AREA_HA,UF,ULT_EVENTO",
-      returnGeometry: "false",
-      f: "json",
-      resultRecordCount: "5",
-    });
-    const data = (await jsonp(`${url}?${params}`)) as {
-      features?: { attributes?: Record<string, unknown> }[];
-    };
-    const feats = data?.features;
-    if (!feats?.length) return null;
-    const a = feats[0].attributes ?? {};
-    return {
-      areaHa: a.AREA_HA != null ? Number(a.AREA_HA) : null,
-      fase: a.FASE ? normalizarFase(String(a.FASE)) : null,
-      substancias: a.SUBS ? (a.USO ? `${String(a.SUBS)} (${String(a.USO)})` : String(a.SUBS)) : null,
-      titular: a.NOME ? String(a.NOME) : null,
-      uf: a.UF ? String(a.UF) : null,
-      processoSigmine: a.PROCESSO ? String(a.PROCESSO) : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export type OrgaoOpt = { id: number; sigla: string; nome: string };
 export type TipoOpt = { id: number; nome: string };
 export type EmpOpt = { id: number; nome: string; apelido?: string | null };
 export type PessoaOpt = { id: number; nome: string };
+export type ProcOpt = { id: number; numero: string; fase?: string | null };
 
 export function ProcessoForm({
   orgaos,
   tipos,
   empreendimentos,
   pessoas = [],
+  processosMinerarios = [],
+  processosAmbientais = [],
   initial,
   processoId,
 }: {
@@ -124,9 +59,12 @@ export function ProcessoForm({
   tipos: TipoOpt[];
   empreendimentos: EmpOpt[];
   pessoas?: PessoaOpt[];
+  processosMinerarios?: ProcOpt[];
+  processosAmbientais?: ProcOpt[];
   initial?: {
     numero?: string;
     nup?: string;
+    seiUrl?: string;
     orgaoId?: number;
     tipoProcessoId?: number;
     empreendimentoId?: number | null;
@@ -149,10 +87,15 @@ export function ProcessoForm({
     validade?: string;
     dataProtocolo?: string;
     alertaDias?: number;
+    dataLimiteRenovacao?: string;
+    alertaRenovacaoDias?: number;
+    protocoloRenovacao?: string;
+    dataProtocoloRenovacao?: string;
     condicionantes?: string;
     dataAbertura?: string;
     descricao?: string;
     observacoes?: string;
+    vinculos?: number[];
   };
   processoId?: number;
 }) {
@@ -161,6 +104,7 @@ export function ProcessoForm({
   const [form, setForm] = useState({
     numero: initial?.numero ?? "",
     nup: initial?.nup ?? "",
+    seiUrl: initial?.seiUrl ?? "",
     orgaoId: initial?.orgaoId ?? "",
     empreendimentoId: String(initial?.empreendimentoId ?? ""),
     responsavelPessoaId: initial?.responsavelPessoaId != null ? String(initial.responsavelPessoaId) : "",
@@ -183,174 +127,19 @@ export function ProcessoForm({
     validade: initial?.validade ?? "",
     dataProtocolo: initial?.dataProtocolo ?? "",
     alertaDias: initial?.alertaDias != null ? String(initial.alertaDias) : "",
+    dataLimiteRenovacao: initial?.dataLimiteRenovacao ?? "",
+    alertaRenovacaoDias: initial?.alertaRenovacaoDias != null ? String(initial.alertaRenovacaoDias) : "",
+    protocoloRenovacao: initial?.protocoloRenovacao ?? "",
+    dataProtocoloRenovacao: initial?.dataProtocoloRenovacao ?? "",
     condicionantes: initial?.condicionantes ?? "",
     dataAbertura: initial?.dataAbertura ?? new Date().toISOString().slice(0, 10),
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
   });
+  const [vinculos, setVinculos] = useState<number[]>(initial?.vinculos ?? []);
   const [error, setError] = useState<string | null>(null);
 const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [cmLoading, setCmLoading] = useState(false);
-  const [cmMsg, setCmMsg] = useState<string | null>(null);
-  const [cmCaptcha, setCmCaptcha] = useState<string | null>(null);
-  const [cmCodigo, setCmCodigo] = useState("");
-  const [cmSession, setCmSession] = useState<{ cookies: string; viewState: string; viewStateGen: string; eventValidation: string } | null>(null);
-  const [cmPopupOpen, setCmPopupOpen] = useState(false);
-
-  // OCR gratuito no navegador: preenche o código do captcha automaticamente (Tesseract.js)
-  const [cmOcr, setCmOcr] = useState(false);
-  async function automatizarCaptcha() {
-    if (!cmCaptcha) return;
-    setCmOcr(true);
-    setCmMsg("Lendo captcha automaticamente...");
-    try {
-      const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker("eng");
-      await worker.setParameters({ tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" });
-      const { data } = await worker.recognize(cmCaptcha);
-      await worker.terminate();
-      const txt = (data.text ?? "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 4);
-      if (txt.length === 4) {
-        setCmCodigo(txt);
-        setCmMsg(`Código detectado: ${txt.toUpperCase()}. Revise e confirme.`);
-        setCmOcr(false);
-        return;
-      }
-      setCmMsg("Não consegui ler o captcha. Digite o código da imagem manualmente.");
-    } catch {
-      setCmMsg("OCR indisponível. Digite o código da imagem manualmente.");
-    } finally {
-      setCmOcr(false);
-    }
-  }
-
-  // Dispara o OCR assim que o popup recebe a imagem
-  useEffect(() => {
-    if (cmPopupOpen && cmCaptcha) {
-      automatizarCaptcha();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cmPopupOpen, cmCaptcha]);
-
-  async function buscarCadastroMineiro(codigoOverride?: string) {
-    if (!form.numero.trim()) { setCmMsg("Informe o número do processo primeiro."); return; }
-    setCmLoading(true);
-    setCmMsg(null);
-    setCmCaptcha(null);
-
-    // 1) Tentativa automática direto no navegador via SIGMINE (dados abertos ANM, JSONP)
-    if (!codigoOverride) {
-      const sig = await consultaSigmineBrowser(form.numero);
-      if (sig && (sig.areaHa != null || sig.fase || sig.processoSigmine)) {
-        const updates: Partial<typeof form> = {};
-        if (sig.areaHa != null) {
-          updates.areaValor = String(sig.areaHa);
-          updates.areaUnidade = "ha";
-        }
-        if (sig.fase) updates.fase = sig.fase;
-        if (sig.substancias) updates.substancias = sig.substancias;
-        if (Object.keys(updates).length > 0) setForm((f) => ({ ...f, ...updates }));
-        const obs = `[ANM] ${sig.titular ?? ""} - Substância: ${sig.substancias ?? ""} - Processo ANM: ${sig.processoSigmine ?? form.numero}`.replace(/\s+/g, " ").trim();
-        if (obs.trim() !== "[ANM]") {
-          setForm((f) => ({ ...f, observacoes: f.observacoes ? `${f.observacoes}\n${obs}` : obs }));
-        }
-        const extras: string[] = [];
-        if (sig.areaHa != null) extras.push(`${sig.areaHa} ha`);
-        if (sig.fase) extras.push(`Fase ${sig.fase}`);
-        if (sig.substancias) extras.push(sig.substancias);
-        if (sig.uf) extras.push(sig.uf);
-        if (!form.nup.trim()) {
-          // SIGMINE não fornece NUP: continua para o backend (Cadastro Mineiro) só para o NUP
-          setCmMsg(`Dados da ANM preenchidos. Para preencher o NUP, resolva o captcha abaixo.`);
-        } else {
-          setCmMsg(`Preenchido automaticamente (SIGMINE/ANM): ${extras.join(" · ")}`);
-          setCmLoading(false);
-          return;
-        }
-      }
-    }
-
-    // 2) Fallback: backend (popup captcha manual do Cadastro Mineiro)
-    try {
-      const res = await fetch("/api/processos/cadastro-mineiro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          numero: form.numero,
-          codigo: codigoOverride ?? undefined,
-          // reenvia a sessão do popup para a consulta com o código digitado
-          ...(cmSession && { cookies: cmSession.cookies, viewState: cmSession.viewState, viewStateGen: cmSession.viewStateGen, eventValidation: cmSession.eventValidation }),
-        }),
-      });
-      const d = await res.json();
-      if (d.modo === "captcha_manual" && d.captchaBase64) {
-        setCmCaptcha(d.captchaBase64);
-        setCmSession(d.cookies ? { cookies: d.cookies, viewState: d.viewState, viewStateGen: d.viewStateGen, eventValidation: d.eventValidation } : cmSession);
-        setCmPopupOpen(true);
-        setCmMsg(d.mensagem ?? "Digite o código da imagem.");
-        return;
-      }
-      if (d.modo === "captcha_popup" && d.captchaUrl) {
-        setCmCaptcha(d.captchaUrl);
-        setCmSession({ cookies: d.cookies, viewState: d.viewState, viewStateGen: d.viewStateGen, eventValidation: d.eventValidation });
-        setCmPopupOpen(true);
-        setCmMsg("");
-        return;
-      }
-      if (d.modo === "manual_fallback") {
-        setCmPopupOpen(false);
-        setCmSession(null);
-        setCmMsg(d.mensagem ?? "Preencha NUP e área manualmente e salve.");
-        return;
-      }
-      if (!res.ok) {
-        setCmPopupOpen(false);
-        setCmSession(null);
-        setCmMsg(d.error ?? d.mensagem ?? "Não foi possível consultar o Cadastro Mineiro.");
-        return;
-      }
-      const updates: Partial<typeof form> = {};
-      if (d.nup) updates.nup = d.nup;
-      if (d.fase) updates.fase = d.fase;
-      if (d.areaHa != null) {
-        updates.areaValor = String(d.areaHa);
-        updates.areaUnidade = "ha";
-      }
-      if (d.substancias) updates.substancias = d.substancias;
-      if (Object.keys(updates).length === 0) {
-        setCmMsg("Consulta OK, mas sem dados novos para preencher.");
-        return;
-      }
-      setForm((f) => ({ ...f, ...updates }));
-      const extras: string[] = [];
-      if (d.nup) extras.push(`NUP ${d.nup}`);
-      if (d.areaHa) extras.push(`${d.areaHa} ha`);
-      if (d.substancias) extras.push(d.substancias);
-      if (d.fase) extras.push(`Fase ${d.fase}`);
-      if (d.uf) extras.push(d.uf);
-      if (d.modo === "sigmine") {
-        const obs = `[ANM] ${d.titular ?? ""} - Substância: ${d.substancias ?? ""} - Processo ANM: ${d.processoSigmine ?? form.numero}`.replace(/\s+/g, " ").trim();
-        setForm((f) => ({ ...f, observacoes: f.observacoes ? `${f.observacoes}\n${obs}` : obs }));
-        extras.push("dados abertos ANM");
-      }
-      setCmMsg(`Preenchido: ${extras.join(" · ")}`);
-      setCmCaptcha(null);
-      setCmCodigo("");
-      setCmPopupOpen(false);
-      setCmSession(null);
-    } catch {
-      setCmMsg("Erro ao consultar Cadastro Mineiro.");
-    } finally {
-      setCmLoading(false);
-    }
-  }
-
-  function confirmarCaptcha() {
-    if (!cmCodigo.trim()) { setCmMsg("Digite o código da imagem."); return; }
-    buscarCadastroMineiro(cmCodigo.trim());
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -368,7 +157,12 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
       validade: form.validade ? new Date(form.validade) : null,
       dataProtocolo: form.dataProtocolo ? new Date(form.dataProtocolo) : null,
       alertaDias: form.alertaDias !== "" ? Number(form.alertaDias) : null,
+      dataLimiteRenovacao: form.dataLimiteRenovacao ? new Date(form.dataLimiteRenovacao) : null,
+      alertaRenovacaoDias: form.alertaRenovacaoDias !== "" ? Number(form.alertaRenovacaoDias) : null,
+      protocoloRenovacao: form.protocoloRenovacao || null,
+      dataProtocoloRenovacao: form.dataProtocoloRenovacao ? new Date(form.dataProtocoloRenovacao) : null,
       dataAbertura: form.dataAbertura ? new Date(form.dataAbertura) : null,
+      vinculos,
     };
 
     const res = await fetch(
@@ -485,19 +279,6 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={grid}>
         <div className="md:col-span-2">
-          <Label htmlFor="empreendimentoId">Empreendimento</Label>
-          <Select
-            id="empreendimentoId"
-            value={form.empreendimentoId}
-            onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value }))}
-          >
-            <option value="">— sem vínculo —</option>
-            {empreendimentos.map((x) => (
-              <option key={x.id} value={x.id}>{x.nome}{x.apelido ? ` (${x.apelido})` : ""}</option>
-            ))}
-          </Select>
-        </div>
-        <div className="md:col-span-2">
           <Label>Natureza do processo</Label>
           <div className="flex overflow-hidden rounded-md ring-1 ring-slate-200">
             {(["minerario", "ambiental"] as const).map((n) => (
@@ -518,52 +299,23 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             ))}
           </div>
         </div>
-        <div>
-          <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="empreendimentoId">Empreendimento</Label>
           <Select
-            id="responsavelPessoaId"
-            value={String(form.responsavelPessoaId)}
-            onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}
+            id="empreendimentoId"
+            value={form.empreendimentoId}
+            onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value }))}
           >
-            <option value="">— sem responsável —</option>
-            {pessoas.map((p) => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
+            <option value="">— sem vínculo —</option>
+            {empreendimentos.map((x) => (
+              <option key={x.id} value={x.id}>{x.nome}{x.apelido ? ` (${x.apelido})` : ""}</option>
             ))}
           </Select>
         </div>
 
         {form.natureza === "minerario" ? (
           <>
-            <div>
-              <Label htmlFor="numero" required>Número do processo</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="numero"
-                  value={form.numero}
-                  onChange={(e) => setForm((f) => ({ ...f, numero: mascararNumeroProcesso(e.target.value) }))}
-                  placeholder="000.000/0000"
-                  required
-                  className="flex-1"
-                />
-                <Button type="button" variant="secondary" onClick={() => buscarCadastroMineiro()} disabled={cmLoading}>
-                  {cmLoading ? "Buscando..." : "Buscar CM"}
-                </Button>
-              </div>
-              {cmMsg && <p className="mt-1 text-xs text-muted">{cmMsg}</p>}
-            </div>
-            <div>
-              <Label htmlFor="nup">NUP (SEI)</Label>
-              <Input id="nup" value={form.nup} onChange={set("nup")} placeholder="48051.000000/0000-00" />
-              <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
-            </div>
-            <div>
-              <Label htmlFor="orgaoId" required>Órgão</Label>
-              <Select id="orgaoId" value={String(form.orgaoId)} onChange={(e) => setForm((f) => ({ ...f, orgaoId: e.target.value as unknown as number }))} required>
-                {orgaos.map((o) => (
-                  <option key={o.id} value={o.id}>{o.sigla} — {o.nome}</option>
-                ))}
-              </Select>
-            </div>
             <div>
               <Label htmlFor="fase">Fase (regime Autorização → Concessão)</Label>
               <Select id="fase" value={form.fase} onChange={set("fase")}>
@@ -577,44 +329,59 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             {form.fase === "outro" && (
               <div>
                 <Label htmlFor="faseOutra">Fase (outra)</Label>
-                <Input
-                  id="faseOutra"
-                  value={form.faseOutra}
-                  onChange={(e) => setForm((f) => ({ ...f, faseOutra: e.target.value }))}
-                  placeholder="Digite a fase do processo"
-                />
+                <Input id="faseOutra" value={form.faseOutra} onChange={(e) => setForm((f) => ({ ...f, faseOutra: e.target.value }))} placeholder="Digite a fase do processo" />
               </div>
             )}
             <div>
               <Label htmlFor="status">Status</Label>
               <Select id="status" value={form.status} onChange={set("status")}>
-                <option value="em_andamento">Em andamento</option>
                 <option value="ativo">Ativo</option>
-                <option value="pendente">Pendente</option>
-                <option value="arquivado">Arquivado</option>
-                <option value="cancelado">Cancelado</option>
+                <option value="paralisado">Paralisado</option>
                 <option value="encerrado">Encerrado</option>
+                {!["ativo", "paralisado", "encerrado"].includes(form.status) && <option value={form.status}>{form.status}</option>}
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="numero" required>Número do processo</Label>
+              <Input
+                id="numero"
+                value={form.numero}
+                onChange={(e) => setForm((f) => ({ ...f, numero: mascararNumeroProcesso(e.target.value) }))}
+                placeholder="000.000/0000"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="nup">NUP (SEI)</Label>
+              <Input id="nup" value={form.nup} onChange={set("nup")} placeholder="48051.000000/0000-00" />
+              <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="seiUrl" required>URL vinculado ao SEI</Label>
+              <Input id="seiUrl" value={form.seiUrl} onChange={set("seiUrl")} placeholder="https://sei.parana.pr.gov.br/...md_pesq_processo_exibir.php?token=..." required />
+              <p className="mt-1 text-xs text-muted">Informe a URL de exibição do processo no SEI (com token).</p>
+            </div>
+            <div>
+              <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
+              <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
+                <option value="">— sem responsável —</option>
+                {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
               </Select>
             </div>
             <div>
               <Label htmlFor="areaValor">Área</Label>
-              <Input id="areaValor" type="number" step="any" min="0" value={form.areaValor} onChange={set("areaValor")} placeholder="0,00" />
-            </div>
-            <div>
-              <Label htmlFor="areaUnidade">Unidade</Label>
-              <Select id="areaUnidade" value={form.areaUnidade} onChange={set("areaUnidade")}>
-                <option value="ha">Hectare (ha)</option>
-                <option value="m²">Metro quadrado (m²)</option>
-              </Select>
+              <div className="flex gap-2">
+                <Input id="areaValor" type="number" step="any" min="0" value={form.areaValor} onChange={set("areaValor")} placeholder="0,00" className="flex-1" />
+                <Select id="areaUnidade" value={form.areaUnidade} onChange={set("areaUnidade")} className="w-24">
+                  <option value="ha">ha</option>
+                  <option value="m²">m²</option>
+                </Select>
+              </div>
             </div>
             <div>
               <Label htmlFor="substancias">Substâncias</Label>
               <Input id="substancias" value={form.substancias} onChange={set("substancias")} placeholder="Ex: Basalto (Brita)" />
               <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
-            </div>
-            <div>
-              <Label htmlFor="dataAbertura">Data de abertura</Label>
-              <Input id="dataAbertura" type="date" value={form.dataAbertura} onChange={set("dataAbertura")} />
             </div>
             <div className="md:col-span-2">
               <label className="flex items-center gap-2 text-sm text-navy-900">
@@ -628,8 +395,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               </label>
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea id="descricao" value={form.descricao} onChange={set("descricao")} rows={2} />
+              <VinculoPicker titulo="Vinculação com processo ambiental" opcoes={processosAmbientais} valor={vinculos} onChange={setVinculos} />
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="observacoes">Observações</Label>
@@ -639,55 +405,10 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
         ) : (
           <>
             <div>
-              <Label htmlFor="status">Status</Label>
-              <Select id="status" value={form.status} onChange={set("status")}>
-                <option value="em_andamento">Em andamento</option>
-                <option value="ativo">Ativo</option>
-                <option value="pendente">Pendente</option>
-                <option value="arquivado">Arquivado</option>
-                <option value="cancelado">Cancelado</option>
-                <option value="encerrado">Encerrado</option>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="numeroLicenca">Nº Licença</Label>
-              <div className="flex gap-2">
-                <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" />
-                <Button type="button" variant="secondary" onClick={consultarLicenca} disabled={buscaLicLoading}>
-                  {buscaLicLoading ? "Buscando..." : "Buscar"}
-                </Button>
-              </div>
-              <p className="mt-1 text-xs text-muted">
-                A busca automática é feita apenas no SGA (IAT) e no IMA. Para documentos do <span className="font-medium">E-protocolo</span>, use o botão <span className="font-medium">Importar PDF</span> (Condicionantes) para extrair os campos.
-              </p>
-              {buscaLicMsg && <p className="mt-1 text-xs text-muted">{buscaLicMsg}</p>}
-            </div>
-            <div>
-              <Label htmlFor="numeroProtocolo">Nº Protocolo</Label>
-              <Input id="numeroProtocolo" value={form.numeroProtocolo} onChange={set("numeroProtocolo")} />
-            </div>
-            <div>
-              <Label htmlFor="atividade">Atividade</Label>
-              <Input id="atividade" value={form.atividade} onChange={set("atividade")} />
-            </div>
-            <div>
-              <Label htmlFor="modalidade">Modalidade</Label>
-              <Select id="modalidade" value={form.modalidade} onChange={set("modalidade")}>
-                <option value="">— selecione —</option>
-                {MODALIDADES.map((m) => <option key={m} value={m}>{m}</option>)}
-              </Select>
-            </div>
-            {form.modalidade === "Outro" && (
-              <div className="md:col-span-2">
-                <Label htmlFor="modalidadeOutra">Modalidade (outra)</Label>
-                <Input id="modalidadeOutra" value={form.modalidadeOutra} onChange={set("modalidadeOutra")} />
-              </div>
-            )}
-            <div>
               <Label htmlFor="orgaoAmbiental">Órgão</Label>
               <Select id="orgaoAmbiental" value={form.orgaoAmbiental} onChange={set("orgaoAmbiental")}>
                 <option value="">— selecione —</option>
-                {ORGAOS_AMB.map((o) => <option key={o} value={o}>{o}</option>)}
+                {ORGAOS_AMB.map((o) => (<option key={o} value={o}>{o}</option>))}
               </Select>
             </div>
             {form.orgaoAmbiental === "Outro" && (
@@ -697,30 +418,74 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               </div>
             )}
             <div>
-              <Label htmlFor="validade">Validade</Label>
-              <Input id="validade" type="date" value={form.validade} onChange={set("validade")} />
+              <Label htmlFor="modalidade">Fase</Label>
+              <Select id="modalidade" value={form.modalidade} onChange={set("modalidade")}>
+                <option value="">— selecione —</option>
+                {MODALIDADES.map((m) => (<option key={m} value={m}>{m}</option>))}
+              </Select>
+            </div>
+            {form.modalidade === "Outro" && (
+              <div className="md:col-span-2">
+                <Label htmlFor="modalidadeOutra">Fase (outra)</Label>
+                <Input id="modalidadeOutra" value={form.modalidadeOutra} onChange={set("modalidadeOutra")} />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="atividade">Atividade</Label>
+              <Input id="atividade" value={form.atividade} onChange={set("atividade")} />
             </div>
             <div>
-              <Label htmlFor="dataProtocolo">Data Protocolo</Label>
-              <Input id="dataProtocolo" type="date" value={form.dataProtocolo} onChange={set("dataProtocolo")} />
+              <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
+              <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
+                <option value="">— sem responsável —</option>
+                {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="numeroLicenca">Nº Licença</Label>
+              <div className="flex gap-2">
+                <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" className="flex-1" />
+                <Button type="button" variant="secondary" onClick={consultarLicenca} disabled={buscaLicLoading}>
+                  {buscaLicLoading ? "Buscando..." : "Buscar"}
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted">Busca automática só no SGA (IAT) e IMA. Para E-protocolo use <span className="font-medium">Upload PDF</span> abaixo.</p>
+              {buscaLicMsg && <p className="mt-1 text-xs text-muted">{buscaLicMsg}</p>}
+            </div>
+            <div>
+              <Label htmlFor="validade">Data de validade</Label>
+              <Input id="validade" type="date" value={form.validade} onChange={set("validade")} />
             </div>
             <div>
               <Label htmlFor="alertaDias">Alerta (dias antes do vencimento)</Label>
               <Input id="alertaDias" type="number" min="0" value={form.alertaDias} onChange={set("alertaDias")} />
             </div>
             <div>
-              <Label htmlFor="dataAbertura">Data de abertura</Label>
-              <Input id="dataAbertura" type="date" value={form.dataAbertura} onChange={set("dataAbertura")} />
+              <Label htmlFor="dataLimiteRenovacao">Data Limite para Renovação</Label>
+              <Input id="dataLimiteRenovacao" type="date" value={form.dataLimiteRenovacao} onChange={set("dataLimiteRenovacao")} />
+            </div>
+            <div>
+              <Label htmlFor="alertaRenovacaoDias">Alerta (dias antes)</Label>
+              <Input id="alertaRenovacaoDias" type="number" min="0" value={form.alertaRenovacaoDias} onChange={set("alertaRenovacaoDias")} />
+            </div>
+            <div className="md:col-span-2">
+              <VinculoPicker titulo="Vinculação com processo minerário" opcoes={processosMinerarios} valor={vinculos} onChange={setVinculos} />
+            </div>
+            <div>
+              <Label htmlFor="numeroProtocolo">Nº do Protocolo de Renovação</Label>
+              <Input id="numeroProtocolo" value={form.numeroProtocolo} onChange={set("numeroProtocolo")} />
+            </div>
+            <div>
+              <Label htmlFor="dataProtocolo">Data do Protocolo de Renovação</Label>
+              <Input id="dataProtocolo" type="date" value={form.dataProtocolo} onChange={set("dataProtocolo")} />
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="condicionantes">Condicionantes</Label>
-              <div className="flex items-center gap-2">
-                <Textarea id="condicionantes" value={form.condicionantes} onChange={set("condicionantes")} rows={4} className="flex-1" />
-                <label className="cursor-pointer whitespace-nowrap rounded-md bg-white px-3 py-2 text-sm font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
-                  {pdfLoading ? "Lendo..." : "Importar PDF"}
-                  <input type="file" accept=".pdf,image/*" className="hidden" onChange={importarLicenca} disabled={pdfLoading} />
-                </label>
-              </div>
+              <label className="mb-1 inline-flex cursor-pointer items-center gap-1 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                {pdfLoading ? "Lendo..." : "Upload PDF (extrair)"}
+                <input type="file" accept=".pdf,image/*" className="hidden" onChange={importarLicenca} disabled={pdfLoading} />
+              </label>
+              <Textarea id="condicionantes" value={form.condicionantes} onChange={set("condicionantes")} rows={4} />
               {pdfMsg && <p className="mt-1 text-xs text-muted">{pdfMsg}</p>}
             </div>
             <div className="md:col-span-2">
@@ -743,40 +508,6 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
           Cancelar
         </Button>
       </div>
-
-      {cmPopupOpen && cmCaptcha && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-navy-900">Cadastro Mineiro</h3>
-            <p className="mt-1 text-sm text-muted">Resolva o captcha para buscar automaticamente os dados do processo na ANM.</p>
-            <div className="mt-4 flex justify-center rounded-lg border border-slate-200 bg-slate-50 p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cmCaptcha} alt="captcha" className="h-12 rounded border border-slate-300 bg-white" />
-            </div>
-            <Input
-              value={cmCodigo}
-              onChange={(e) => setCmCodigo(e.target.value)}
-              placeholder="Código da imagem"
-              maxLength={6}
-              className="mt-4 text-center text-lg tracking-[0.3em]"
-              autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarCaptcha(); } }}
-            />
-            {cmMsg && <p className="mt-2 text-xs text-muted">{cmMsg}</p>}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => { setCmPopupOpen(false); setCmCaptcha(null); setCmCodigo(""); }} disabled={cmLoading}>
-                Cancelar
-              </Button>
-              <Button type="button" variant="secondary" onClick={automatizarCaptcha} disabled={cmOcr || cmLoading}>
-                {cmOcr ? "Lendo..." : "Ler código"}
-              </Button>
-              <Button type="button" onClick={confirmarCaptcha} disabled={cmLoading || !cmCodigo}>
-                {cmLoading ? "Buscando..." : "Buscar dados"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ConfirmPopup
         open={!!dup}
