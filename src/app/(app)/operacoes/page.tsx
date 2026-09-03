@@ -10,18 +10,11 @@ export default async function OperacoesPage() {
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
   const procWhere = { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) };
 
-  const [tarefas, prazos] = await Promise.all([
-    prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] }, processo: procWhere },
-      orderBy: { prazoData: "asc" },
-      include: { processo: { include: { empreendimento: { include: { empresaPrincipal: true } } } } },
-    }),
-    prisma.prazo.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: procWhere },
-      orderBy: { dataCalculadaAtual: "asc" },
-      select: { id: true, descricao: true, status: true, dataCalculadaAtual: true, alertaDias: true, processo: { select: { numero: true } } },
-    }),
-  ]);
+  const tarefas = await prisma.tarefa.findMany({
+    where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] }, processo: procWhere },
+    orderBy: { prazoData: "asc" },
+    include: { processo: { include: { empreendimento: { include: { empresaPrincipal: true } } } } },
+  });
 
   const UM_DIA = 86400000;
   const barras = tarefas.map((t) => {
@@ -35,11 +28,15 @@ export default async function OperacoesPage() {
   });
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const vencidos = prazos.filter((x) => x.dataCalculadaAtual && new Date(x.dataCalculadaAtual) < hoje);
-  const dentroAlerta = prazos.filter((x) => {
-    if (!x.dataCalculadaAtual) return false;
-    const dias = x.alertaDias ?? 30;
-    return new Date(x.dataCalculadaAtual).getTime() - dias * UM_DIA <= hoje.getTime();
+  const vencidas = tarefas.filter((x) => {
+    const fim = x.dataLimite ?? x.prazoData;
+    return fim && new Date(fim) < hoje;
+  });
+  const proximas = tarefas.filter((x) => {
+    const fim = x.dataLimite ?? x.prazoData;
+    if (!fim) return false;
+    const dias = x.dataLimite ? (x.alertaDataLimite ?? 30) : (x.alertaDias ?? 30);
+    return new Date(fim).getTime() - dias * UM_DIA <= hoje.getTime() && new Date(fim) >= hoje;
   });
 
   return (
@@ -49,31 +46,39 @@ export default async function OperacoesPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <div className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-navy-900">Prazos em aberto</div>
+          <div className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-navy-900">Tarefas e prazos</div>
           <ul className="divide-y divide-slate-100">
-            {prazos.map((x) => (
-              <li key={x.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium text-navy-900">{x.descricao}</p>
-                  <p className="text-xs text-muted">{x.processo ? `Processo ${x.processo.numero}` : "Sem processo"} {x.dataCalculadaAtual ? `· até ${formatDate(x.dataCalculadaAtual)}` : ""}</p>
-                </div>
-                <Badge tone={x.status === "vencido" ? "red" : x.status === "vencendo" ? "amber" : "blue"}>{x.status}</Badge>
-              </li>
-            ))}
-            {prazos.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhum prazo em aberto.</li>}
+            {tarefas.map((x) => {
+              const fim = x.dataLimite ?? x.prazoData;
+              return (
+                <li key={x.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-navy-900">{x.titulo}</p>
+                    <p className="text-xs text-muted">
+                      {x.processo ? `Processo ${x.processo.numero}` : "Sem processo"}
+                      {fim ? ` · Data Limite ${formatDate(new Date(fim))}` : ""}
+                    </p>
+                  </div>
+                  <Badge tone={x.status === "concluida" ? "green" : x.status === "em_andamento" ? "blue" : "amber"}>
+                    {x.status === "concluida" ? "Concluída" : x.status === "em_andamento" ? "Iniciada" : "Pendente"}
+                  </Badge>
+                </li>
+              );
+            })}
+            {tarefas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa em aberto.</li>}
           </ul>
         </Card>
 
         <Card>
           <div className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-navy-900">Alertas</div>
           <ul className="divide-y divide-slate-100">
-            {vencidos.map((x) => (
-              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="red">vencido</Badge> {x.descricao} {x.processo ? `· ${x.processo.numero}` : ""}</li>
+            {vencidas.map((x) => (
+              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="red">vencida</Badge> {x.titulo} {x.processo ? `· ${x.processo.numero}` : ""}</li>
             ))}
-            {dentroAlerta.map((x) => (
-              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {x.descricao} {x.processo ? `· ${x.processo.numero}` : ""} — até {x.dataCalculadaAtual ? formatDate(x.dataCalculadaAtual) : "—"}</li>
+            {proximas.map((x) => (
+              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {x.titulo} {x.processo ? `· ${x.processo.numero}` : ""} — até {formatDate(new Date(x.dataLimite ?? x.prazoData!))}</li>
             ))}
-            {vencidos.length === 0 && dentroAlerta.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
+            {(vencidas.length === 0 && proximas.length === 0) && <li className="px-5 py-8 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
           </ul>
         </Card>
       </div>
