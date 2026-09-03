@@ -172,7 +172,7 @@ export function EmpreendimentoForm({
           >
             <option value="ativo">Ativo</option>
             <option value="paralisado">Paralisado</option>
-            <option value="fechado">Fechado</option>
+            <option value="encerrado">Encerrado</option>
           </Select>
         </div>
         <div>

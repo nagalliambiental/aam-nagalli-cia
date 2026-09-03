@@ -1,12 +1,9 @@
 export const TIPOS_EMPREENDIMENTO: { value: string; label: string }[] = [
   { value: "pedreira", label: "Pedreira" },
-  { value: "mina_ceu_aberto", label: "Mina a céu aberto" },
-  { value: "mina_subterranea", label: "Mina subterrânea" },
-  { value: "garimpo", label: "Garimpo (lavra garimpeira)" },
-  { value: "areia", label: "Areial / Areia e cascalho" },
+  { value: "usina_asfalto", label: "Usina de Asfalto" },
+  { value: "usina_concreto", label: "Usina de Concreto" },
   { value: "saibreira", label: "Saibreira" },
-  { value: "argila", label: "Olaría / Extração de argila" },
-  { value: "britagem", label: "Britagem / Usina de beneficiamento" },
+  { value: "areial", label: "Areial" },
   { value: "outro", label: "Outro" },
 ];
 
