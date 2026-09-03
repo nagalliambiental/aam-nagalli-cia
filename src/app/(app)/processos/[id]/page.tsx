@@ -25,6 +25,8 @@ export default async function ProcessoDetalhePage({
   const podeExcluir = await usuarioTemPermissao("processo:excluir");
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
+  const podeEditarTudo = user.perfilNome === "Administrador" || user.perfilNome === "Técnico Chefe";
+  const podeExcluirTarefa = await usuarioTemPermissao("tarefa:excluir");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const processo = await prisma.processo.findFirst({
@@ -154,7 +156,7 @@ export default async function ProcessoDetalhePage({
       id: "tarefas",
       label: "Tarefas e Prazos",
       count: tarefas.length,
-      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} />,
+      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} podeEditarTudo={podeEditarTudo} podeExcluir={podeExcluirTarefa} />,
     },
   ];
 

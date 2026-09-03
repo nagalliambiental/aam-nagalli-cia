@@ -5,8 +5,23 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { ImportarTarefasPdf } from "@/components/processos/ImportarTarefasPdf";
+import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
+import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
 
-type TarefaItem = { id: number; titulo: string; prioridade: string; status: string; prazoData: Date | null; responsavel: { nome: string } };
+type TarefaItem = {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  prioridade: string;
+  status: string;
+  prazoData: Date | null;
+  dataLimite: Date | null;
+  alertaDias: number | null;
+  alertaDataLimite: number | null;
+  responsavelPessoaId: number | null;
+  visibilidade: string;
+  responsavel: { nome: string };
+};
 type PrazoItem = { id: number; descricao: string; dataCalculadaAtual: Date | null };
 
 export function TarefasPanel({
@@ -15,12 +30,16 @@ export function TarefasPanel({
   prazos = [],
   pessoas,
   isAdmin = false,
+  podeEditarTudo = false,
+  podeExcluir = false,
 }: {
   processoId: number;
   tarefas: TarefaItem[];
   prazos?: PrazoItem[];
   pessoas: { id: number; nome: string }[];
   isAdmin?: boolean;
+  podeEditarTudo?: boolean;
+  podeExcluir?: boolean;
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -144,13 +163,41 @@ export function TarefasPanel({
 
       <ul className="divide-y divide-slate-100">
         {tarefas.map((t) => (
-          <li key={t.id} className="flex items-center justify-between gap-4 px-5 py-3">
-            <div className="min-w-0">
-              <p className="truncate font-medium text-navy-900">{t.titulo} <span className="text-muted font-normal">· {t.responsavel.nome}</span></p>
-              <p className="text-xs text-muted">{t.prazoData ? `Prazo ${formatDate(t.prazoData)}` : ""}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>{t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}</Badge>
+          <li key={t.id} className="px-5 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-medium text-navy-900">{t.titulo} <span className="text-muted font-normal">· {t.responsavel.nome}</span></p>
+                <p className="truncate text-xs text-muted">
+                  {t.dataLimite ? `Data Limite ${formatDate(t.dataLimite)}` : ""}
+                  {t.dataLimite && t.prazoData ? " · " : ""}
+                  {t.prazoData ? `Prazo ${formatDate(t.prazoData)}` : ""}
+                  {!t.dataLimite && !t.prazoData ? "—" : ""}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
+                  {t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}
+                </Badge>
+                <EdicaoRapidaTarefa
+                  tarefa={{
+                    id: t.id,
+                    titulo: t.titulo,
+                    descricao: t.descricao,
+                    prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
+                    alertaDias: t.alertaDias,
+                    dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
+                    alertaDataLimite: t.alertaDataLimite,
+                    prioridade: t.prioridade,
+                    status: t.status,
+                    responsavelPessoaId: t.responsavelPessoaId,
+                    visibilidade: t.visibilidade,
+                  }}
+                  pessoas={pessoas}
+                  isAdmin={isAdmin}
+                  podeEditarTudo={podeEditarTudo}
+                />
+                {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
+              </div>
             </div>
           </li>
         ))}

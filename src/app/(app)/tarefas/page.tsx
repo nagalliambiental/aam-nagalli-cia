@@ -111,12 +111,24 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   <Badge tone={t.status === "concluida" ? "green" : t.status === "em_andamento" ? "blue" : "amber"}>
                     {t.status === "concluida" ? "Concluída" : t.status === "em_andamento" ? "Iniciada" : "Pendente"}
                   </Badge>
-                  <TarefaStatusBotao tarefaId={t.id} status={t.status} />
-                  {podeEditarTudo && (
-                    <Link href={`/tarefas/${t.id}`}>
-                      <span className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">Editar</span>
-                    </Link>
-                  )}
+                  <EdicaoRapidaTarefa
+                    tarefa={{
+                      id: t.id,
+                      titulo: t.titulo,
+                      descricao: t.descricao,
+                      prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
+                      alertaDias: t.alertaDias,
+                      dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
+                      alertaDataLimite: t.alertaDataLimite,
+                      prioridade: t.prioridade,
+                      status: t.status,
+                      responsavelPessoaId: t.responsavelPessoaId,
+                      visibilidade: t.visibilidade,
+                    }}
+                    pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+                    isAdmin={isAdmin}
+                    podeEditarTudo={podeEditarTudo}
+                  />
                   {podeExcluir && <TarefaExcluirBotao tarefaId={t.id} />}
                 </div>
               </div>
