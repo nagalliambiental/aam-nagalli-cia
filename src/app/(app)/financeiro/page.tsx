@@ -79,9 +79,14 @@ export default async function FinanceiroPage() {
         title="Financeiro"
         subtitle="Contratos e consolidação de custos"
         actions={
-          <Link href="/contratos/nova">
-            <Button>Novo contrato</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <a href="/api/relatorios/gastos" target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar gastos (XLSX)</Button>
+            </a>
+            <Link href="/contratos/nova">
+              <Button>Novo contrato</Button>
+            </Link>
+          </div>
         }
       />
 
