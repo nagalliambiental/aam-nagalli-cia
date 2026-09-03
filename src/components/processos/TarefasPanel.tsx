@@ -21,12 +21,10 @@ type TarefaItem = {
   visibilidade: string;
   responsavel: { nome: string };
 };
-type PrazoItem = { id: number; descricao: string; dataCalculadaAtual: Date | null };
 
 export function TarefasPanel({
   processoId,
   tarefas,
-  prazos = [],
   pessoas,
   processoNumero,
   isAdmin = false,
@@ -35,7 +33,6 @@ export function TarefasPanel({
 }: {
   processoId: number;
   tarefas: TarefaItem[];
-  prazos?: PrazoItem[];
   pessoas: { id: number; nome: string }[];
   processoNumero?: string;
   isAdmin?: boolean;
@@ -190,19 +187,6 @@ export function TarefasPanel({
         ))}
         {tarefas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa.</li>}
       </ul>
-
-      <div className="border-t border-slate-100 px-5 py-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Prazos</p>
-        <ul className="divide-y divide-slate-100">
-          {prazos.map((p) => (
-            <li key={p.id} className="flex items-center justify-between gap-4 py-2">
-              <p className="text-sm text-navy-900">{p.descricao}</p>
-              <span className="text-xs text-muted">{p.dataCalculadaAtual ? formatDate(p.dataCalculadaAtual) : "—"}</span>
-            </li>
-          ))}
-          {prazos.length === 0 && <li className="py-4 text-center text-sm text-muted">Nenhum prazo cadastrado.</li>}
-        </ul>
-      </div>
     </Card>
   );
 }

@@ -10,13 +10,11 @@ export default async function OperacoesPage() {
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
   const procWhere = { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) };
 
-  const [processos, prazos] = await Promise.all([
-    prisma.processo.findMany({
-      where: procWhere,
-      orderBy: { dataAbertura: "desc" },
-      include: {
-        empreendimento: { include: { empresaPrincipal: true } },
-      },
+  const [tarefas, prazos] = await Promise.all([
+    prisma.tarefa.findMany({
+      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] }, processo: procWhere },
+      orderBy: { prazoData: "asc" },
+      include: { processo: { include: { empreendimento: { include: { empresaPrincipal: true } } } } },
     }),
     prisma.prazo.findMany({
       where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: procWhere },
@@ -26,14 +24,14 @@ export default async function OperacoesPage() {
   ]);
 
   const UM_DIA = 86400000;
-  const barras = processos.map((p) => {
-    const fim = p.validade ?? p.dataLimiteRenovacao ?? new Date(p.dataAbertura.getTime() + 30 * UM_DIA);
-    const cliente = p.empreendimento?.empresaPrincipal
-      ? (p.empreendimento.empresaPrincipal.nomeFantasia || p.empreendimento.empresaPrincipal.razaoSocial)
+  const barras = tarefas.map((t) => {
+    const fim = t.prazoData ?? t.dataLimite ?? new Date(t.dataCriacao.getTime() + 30 * UM_DIA);
+    const cliente = t.processo?.empreendimento?.empresaPrincipal
+      ? (t.processo.empreendimento.empresaPrincipal.nomeFantasia || t.processo.empreendimento.empresaPrincipal.razaoSocial)
       : "Sem cliente";
-    const empreendimento = p.empreendimento ? (p.empreendimento.apelido || p.empreendimento.nome) : "Sem empreendimento";
-    const titulo = p.apelido || `#${p.numero}`;
-    return { id: p.id, titulo, iniMs: p.dataAbertura.getTime(), fimMs: fim.getTime(), natureza: p.natureza, status: p.status, cliente, empreendimento };
+    const empreendimento = t.processo?.empreendimento ? (t.processo.empreendimento.apelido || t.processo.empreendimento.nome) : "Sem empreendimento";
+    const titulo = t.processo ? `Processo #${t.processo.numero} | ${t.titulo}` : t.titulo;
+    return { id: t.id, titulo, iniMs: t.dataCriacao.getTime(), fimMs: fim.getTime(), natureza: t.processo?.natureza ?? "minerario", status: t.status, cliente, empreendimento };
   });
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);

@@ -45,21 +45,12 @@ export default async function ProcessoDetalhePage({
     ? statusAmbiental(processo.validade, processo.status, processo.dataLimiteRenovacao, processo.dataProtocolo)
     : processo.status;
 
-  const [tarefas, prazos, exigencias, pessoas] =
+  const [tarefas, pessoas] =
     await Promise.all([
       prisma.tarefa.findMany({
         where: { processoId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
         orderBy: { dataCriacao: "desc" },
         include: { responsavel: true },
-      }),
-      prisma.prazo.findMany({
-        where: { processoId, ativo: true, deletedAt: null },
-        orderBy: { dataCalculadaAtual: "asc" },
-      }),
-      prisma.exigencia.findMany({
-        where: { processoId, ativo: true, deletedAt: null },
-        orderBy: { dataRecebimento: "desc" },
-        include: { orgao: true, responsavel: true },
       }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
     ]);
@@ -156,7 +147,7 @@ export default async function ProcessoDetalhePage({
       id: "tarefas",
       label: "Tarefas e Prazos",
       count: tarefas.length,
-      content: <TarefasPanel processoId={processo.id} processoNumero={processo.numero} tarefas={tarefas} prazos={prazos} pessoas={pessoas} isAdmin={isAdmin} podeEditarTudo={podeEditarTudo} podeExcluir={podeExcluirTarefa} />,
+      content: <TarefasPanel processoId={processo.id} processoNumero={processo.numero} tarefas={tarefas} pessoas={pessoas} isAdmin={isAdmin} podeEditarTudo={podeEditarTudo} podeExcluir={podeExcluirTarefa} />,
     },
   ];
 
