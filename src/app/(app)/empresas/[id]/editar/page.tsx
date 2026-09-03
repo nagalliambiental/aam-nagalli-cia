@@ -15,31 +15,34 @@ export default async function EditarEmpresaPage({
 
   const empresa = await prisma.empresa.findFirst({
     where: { id: empresaId, ativo: true, deletedAt: null },
+    include: { contatos: { where: { ativo: true, deletedAt: null }, orderBy: { id: "asc" } } },
   });
 
   if (!empresa) notFound();
 
   return (
     <div>
-      <PageHeader title="Editar empresa" subtitle={empresa.razaoSocial} />
+      <PageHeader title="Editar cliente" subtitle={empresa.razaoSocial} />
       <Card>
-        <CardHeader title="Dados da empresa" />
+        <CardHeader title="Dados do cliente" />
         <div className="p-5">
           <EmpresaForm
             empresaId={empresa.id}
             initial={{
               razaoSocial: empresa.razaoSocial,
               nomeFantasia: empresa.nomeFantasia ?? undefined,
-              apelido: (empresa as Record<string, unknown>).apelido as string ?? undefined,
+              apelido: empresa.apelido ?? undefined,
               cnpj: empresa.cnpj ?? undefined,
               inscricaoEstadual: empresa.inscricaoEstadual ?? undefined,
               email: empresa.email ?? undefined,
               telefone: empresa.telefone ?? undefined,
               endereco: empresa.endereco ?? undefined,
+              numeroEndereco: empresa.numeroEndereco ?? undefined,
               municipio: empresa.municipio ?? undefined,
               uf: empresa.uf ?? undefined,
               cep: empresa.cep ?? undefined,
               observacoes: empresa.observacoes ?? undefined,
+              contatos: empresa.contatos.map((c) => ({ nome: c.nome ?? "", email: c.email ?? "", telefone: c.telefone ?? "", assunto: c.assunto ?? "" })),
             }}
           />
         </div>

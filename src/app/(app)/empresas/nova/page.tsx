@@ -7,9 +7,9 @@ export default async function NovaEmpresaPage() {
 
   return (
     <div>
-      <PageHeader title="Nova empresa" subtitle="Preencha os dados do cadastro" />
+      <PageHeader title="Novo cliente" subtitle="Preencha os dados do cadastro" />
       <Card>
-        <CardHeader title="Dados da empresa" />
+        <CardHeader title="Dados do cliente" />
         <div className="p-5">
           <EmpresaForm />
         </div>

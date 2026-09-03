@@ -22,7 +22,7 @@ const SECTIONS: NavGroup[] = [
     label: "Cadastros",
     icon: Library,
     items: [
-      { href: "/empresas", label: "Empresas", icon: Building2 },
+      { href: "/empresas", label: "Clientes", icon: Building2 },
       { href: "/empreendimentos", label: "Empreendimentos", icon: Mountain },
     ],
   },

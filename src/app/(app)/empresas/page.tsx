@@ -4,6 +4,7 @@ import { Button, Card, Badge } from "@/components/ui";
 import { PageHeader } from "@/components/ui";
 import { formatCNPJ } from "@/lib/format";
 import { Search } from "lucide-react";
+import { ImportarClientes } from "@/components/empresas/ImportarClientes";
 
 type SearchParams = Promise<{ q?: string | string[] }>;
 
@@ -36,12 +37,24 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
   return (
     <div>
       <PageHeader
-        title="Empresas"
-        subtitle="Cadastro de empresas clientes"
+        title="Clientes"
+        subtitle="Cadastro de clientes (empresas)"
         actions={
-          <Link href="/empresas/nova">
-            <Button>Nova empresa</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ImportarClientes />
+            <Link href="/api/relatorios/clientes/xlsx" target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar XLSX</Button>
+            </Link>
+            <Link href="/api/relatorios/clientes/pdf" target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar PDF</Button>
+            </Link>
+            <Link href="/api/relatorios/clientes/modelo" target="_blank" rel="noreferrer">
+              <Button variant="ghost">Modelo</Button>
+            </Link>
+            <Link href="/empresas/nova">
+              <Button>Nova empresa</Button>
+            </Link>
+          </div>
         }
       />
 

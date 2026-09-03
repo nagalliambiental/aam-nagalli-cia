@@ -45,6 +45,7 @@ model Empresa {
   email             String?
   telefone          String?
   endereco          String?
+  numeroEndereco    String?
   municipio         String?
   uf                String?
   cep               String?
@@ -65,9 +66,26 @@ model Empresa {
   contratos                 Contrato[]
   projetos                  Projeto[]
   pedidos                   Pedido[]
+  contatos                  ContatoCliente[]
 
   @@index([razaoSocial])
   @@index([municipio, uf])
+}
+
+model ContatoCliente {
+  id        Int     @id @default(autoincrement())
+  empresaId Int
+  nome      String?
+  email     String?
+  telefone  String?
+  assunto   String?
+
+  ativo        Boolean   @default(true)
+  deletedAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
 
 model Pessoa {

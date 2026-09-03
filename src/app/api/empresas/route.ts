@@ -5,8 +5,31 @@ import { audit } from "@/lib/audit";
 
 const CAMPOS = [
   "razaoSocial", "nomeFantasia", "apelido", "cnpj", "inscricaoEstadual", "email",
-  "telefone", "endereco", "municipio", "uf", "cep", "observacoes",
+  "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
 ] as const;
+
+interface ContatoInput {
+  nome?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  assunto?: string | null;
+}
+
+function normalizarContatos(contatos: unknown): ContatoInput[] {
+  if (!Array.isArray(contatos)) return [];
+  return contatos
+    .filter((c) => c && typeof c === "object")
+    .map((c) => {
+      const o = c as ContatoInput;
+      return {
+        nome: (o.nome as string)?.trim() || null,
+        email: (o.email as string)?.trim() || null,
+        telefone: (o.telefone as string)?.trim() || null,
+        assunto: (o.assunto as string)?.trim() || null,
+      };
+    })
+    .filter((c) => c.nome || c.email || c.telefone || c.assunto);
+}
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -31,8 +54,12 @@ export async function POST(req: Request) {
   }
 
   try {
+    const contatos = normalizarContatos(body.contatos);
     const empresa = await prisma.empresa.create({
-      data: data as never,
+      data: {
+        ...data,
+        contatos: contatos.length ? { create: contatos } : undefined,
+      } as never,
     });
 
     await audit({

@@ -5,7 +5,7 @@ import { audit } from "@/lib/audit";
 
 const CAMPOS = [
   "razaoSocial", "nomeFantasia", "apelido", "cnpj", "inscricaoEstadual", "email",
-  "telefone", "endereco", "municipio", "uf", "cep", "observacoes",
+  "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
 ] as const;
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -35,7 +35,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
   try {
     const empresa = await prisma.empresa.update({
       where: { id: empresaId },
-      data: data as never,
+      data: {
+        ...data,
+        ...(Array.isArray(body.contatos)
+          ? { contatos: { deleteMany: {}, create: body.contatos.filter((c: { nome?: string; email?: string; telefone?: string; assunto?: string }) => c?.nome || c?.email || c?.telefone || c?.assunto).map((c: Record<string, string>) => ({ nome: c.nome?.trim() || null, email: c.email?.trim() || null, telefone: c.telefone?.trim() || null, assunto: c.assunto?.trim() || null })) } }
+          : {}),
+      } as never,
     });
 
     await audit({
