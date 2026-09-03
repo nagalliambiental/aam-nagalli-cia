@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const nome = (body.nome as string) ?? "";
   const empresaPrincipalId = body.empresaPrincipalId ? Number(body.empresaPrincipalId) : null;
+  const apelido = (body.apelido as string | undefined)?.trim() || null;
 
   if (!nome || !empresaPrincipalId) {
     return NextResponse.json(
@@ -23,19 +24,21 @@ export async function POST(req: Request) {
     );
   }
 
-  // Impede empreendimento duplicado: mesma empresa principal + mesmo nome.
+  // Impede empreendimento duplicado: mesma empresa principal + mesmo nome + mesmo apelido.
+  // O apelido é tratado como diferencial (ex.: "Pedreira do Trevo" FILIAL e MATRIZ são distintos).
   const jaExiste = await prisma.empreendimento.findFirst({
     where: {
       empresaPrincipalId,
       nome: { equals: nome, mode: "insensitive" },
+      ...(apelido ? { apelido: { equals: apelido, mode: "insensitive" } } : { apelido: null }),
       ativo: true,
       deletedAt: null,
     },
-    select: { id: true, nome: true },
+    select: { id: true, nome: true, apelido: true },
   });
   if (jaExiste) {
     return NextResponse.json(
-      { error: "Empreendimento já cadastrado.", existingId: jaExiste.id, existingNome: jaExiste.nome },
+      { error: "Empreendimento já cadastrado.", existingId: jaExiste.id, existingNome: jaExiste.nome, existingApelido: jaExiste.apelido },
       { status: 409 }
     );
   }
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     const emp = await prisma.empreendimento.create({
       data: {
         nome,
-        apelido: body.apelido ?? null,
+        apelido,
         empresaPrincipalId,
         tipo: body.tipo ?? "pedreira",
         municipio: body.municipio ?? null,

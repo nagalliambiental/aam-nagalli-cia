@@ -31,6 +31,31 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
   if ("empresaPrincipalId" in body) data.empresaPrincipalId = Number(body.empresaPrincipalId);
 
+  // Guarda de duplicado ao editar nome/apelido/empresa (apelido é diferencial), excluindo a si.
+  if ("nome" in body || "apelido" in body || "empresaPrincipalId" in body) {
+    const atual = await prisma.empreendimento.findUnique({
+      where: { id: empreendimentoId },
+      select: { nome: true, apelido: true, empresaPrincipalId: true },
+    });
+    const novoNome = ("nome" in body ? (body.nome as string) : atual?.nome) ?? "";
+    const novoApelido = ("apelido" in body ? ((body.apelido as string) ?? "") : (atual?.apelido ?? ""))?.trim() || null;
+    const novaEmpresa = "empresaPrincipalId" in body ? Number(body.empresaPrincipalId) : atual?.empresaPrincipalId;
+    const dup = await prisma.empreendimento.findFirst({
+      where: {
+        empresaPrincipalId: novaEmpresa,
+        nome: { equals: novoNome, mode: "insensitive" },
+        ...(novoApelido ? { apelido: { equals: novoApelido, mode: "insensitive" } } : { apelido: null }),
+        ativo: true,
+        deletedAt: null,
+        id: { not: empreendimentoId },
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      return NextResponse.json({ error: "Empreendimento já cadastrado.", existingId: dup.id }, { status: 409 });
+    }
+  }
+
   try {
     const emp = await prisma.empreendimento.update({
       where: { id: empreendimentoId },
