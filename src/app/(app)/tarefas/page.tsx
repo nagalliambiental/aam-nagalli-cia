@@ -104,7 +104,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   status: t.status,
                   responsavelPessoaId: t.responsavelPessoaId,
                   visibilidade: t.visibilidade,
-                  dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
+                  dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString() : null,
                   responsavelNome: t.responsavel.nome,
                   processoLabel: t.processo ? `Processo: #${t.processo.numero} (${t.processo.orgao.sigla})` : "Processo: — sem vínculo —",
                   empreendimentoId: t.empreendimentoId,

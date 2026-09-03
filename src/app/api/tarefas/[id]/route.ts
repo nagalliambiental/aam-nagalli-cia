@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
-import { dataLocal } from "@/lib/format";
+import { dataLocal, parseDataHoraSP } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -33,13 +33,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("status" in body) {
     data.status = body.status;
     if (body.status === "concluida") {
-      data.dataConclusao = body.dataConclusao ? new Date(body.dataConclusao) : new Date();
+      data.dataConclusao = parseDataHoraSP(body.dataConclusao) ?? new Date();
     } else {
       data.dataConclusao = null;
     }
   }
   if ("dataConclusao" in body && !("status" in body)) {
-    data.dataConclusao = body.dataConclusao ? new Date(body.dataConclusao) : null;
+    data.dataConclusao = parseDataHoraSP(body.dataConclusao);
   }
 
   try {

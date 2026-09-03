@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
 import { Pencil, X, Trash2 } from "lucide-react";
 
 type Tarefa = {
@@ -65,7 +65,7 @@ export function LinhaTarefa({
     visibilidade: tarefa.visibilidade,
     empreendimentoId: tarefa.empreendimentoId != null ? String(tarefa.empreendimentoId) : "",
     processoId: tarefa.processoId != null ? String(tarefa.processoId) : "",
-    dataConclusao: tarefa.dataConclusao ?? "",
+    dataConclusao: tarefa.dataConclusao ? formatDateTimeLocal(tarefa.dataConclusao) : "",
   });
 
   async function mudarStatus(v: string) {
@@ -128,6 +128,11 @@ export function LinhaTarefa({
           <p className="text-xs text-muted">{tarefa.processoLabel}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {tarefa.status === "concluida" && tarefa.dataConclusao && (
+            <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+              Concluída em: {formatDateTime(tarefa.dataConclusao)}
+            </span>
+          )}
           <Select value={tarefa.status} onChange={(e) => mudarStatus(e.target.value)} className="w-32 text-xs" style={{ borderColor: "#2563eb", color: "#2563eb" }}>
             {STATUS_OPTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </Select>

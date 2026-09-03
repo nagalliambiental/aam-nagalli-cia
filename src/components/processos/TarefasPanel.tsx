@@ -214,7 +214,7 @@ export function TarefasPanel({
                   status: t.status,
                   responsavelPessoaId: t.responsavelPessoaId,
                   visibilidade: t.visibilidade,
-                  dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
+                  dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString() : null,
                   responsavelNome: t.responsavel.nome,
                   processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
                 }}

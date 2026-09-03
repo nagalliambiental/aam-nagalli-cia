@@ -10,7 +10,7 @@ export function formatDate(d?: Date | null) {
   }).format(new Date(d));
 }
 
-export function formatDateTime(d?: Date | null) {
+export function formatDateTime(d?: Date | string | null) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     timeZone: TIMEZONE,
@@ -20,6 +20,44 @@ export function formatDateTime(d?: Date | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(d));
+}
+
+/**
+ * Formata uma data para preencher <input type="datetime-local"> no fuso de
+ * Brasília (yyyy-mm-ddTHH:mm). Evita o deslocamento de +3h do toISOString (UTC).
+ */
+export function formatDateTimeLocal(d?: Date | string | null): string {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(dt);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+/**
+ * Converte "yyyy-mm-ddTHH:mm" (horário de Brasília, como vem do datetime-local)
+ * em uma Date correta (ancorada em -03:00). Evita o parse como UTC no servidor.
+ */
+export function parseDataHoraSP(s?: string | null): Date | null {
+  if (!s) return null;
+  const t = s.trim();
+  if (!t) return null;
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(t)) {
+    const d = new Date(t);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const norm = t.length === 16 ? `${t}:00-03:00` : `${t}-03:00`;
+  const d = new Date(norm);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 /**
