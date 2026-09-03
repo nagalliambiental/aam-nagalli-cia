@@ -11,19 +11,6 @@ export function ProcessoRowActions({ processo, podeExcluir = false }: { processo
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const curta = (m: string | null) => {
-    const map: Record<string, string> = {
-      "Licença Prévia": "LP",
-      "Licença de Instalação": "LI",
-      "Licença de Operação": "LO",
-      "Licença de Operação e Regularização": "LOR",
-      "Autorização Ambiental": "AA",
-    };
-    if (!m) return "";
-    const sup = m.split(" ")[0]; // "Licença"/"Autorização"/...
-    return map[m] ?? sup.toUpperCase();
-  };
-
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -40,18 +27,13 @@ export function ProcessoRowActions({ processo, podeExcluir = false }: { processo
         <div className="min-w-0">
           <p className="truncate font-medium text-navy-900">
             {processo.natureza === "ambiental"
-              ? (processo.apelido || processo.empreendimento?.apelido || processo.empreendimento?.nome || processo.numero)
-              : <>{processo.numero} <span className="text-muted font-normal">· {processo.orgao.sigla}</span></>}
+              ? <>{processo.apelido || processo.empreendimento?.apelido || processo.empreendimento?.nome || processo.numero}{processo.numeroLicenca ? ` · ${processo.numeroLicenca}` : ""}</>
+              : <>{processo.numero}</>}
+            <span className="text-muted font-normal"> · {processo.orgao.sigla}</span>
             {processo.nup ? <span className="ml-2 text-xs font-normal text-navy-600">NUP {processo.nup}</span> : null}
           </p>
           <p className="truncate text-sm text-muted">
-            {processo.natureza === "ambiental"
-              ? (processo.modalidade && processo.numeroLicenca
-                  ? `${curta(processo.modalidade)} / ${processo.numeroLicenca}`
-                  : processo.modalidade
-                    ? curta(processo.modalidade)
-                    : processo.numeroLicenca || "—")
-              : (processo.fase ? `Fase: ${processo.fase}` : "—")}
+            {processo.modalidade ? `Fase: ${processo.modalidade}` : (processo.fase ? `Fase: ${processo.fase}` : "—")}
           </p>
           {processo.empreendimento ? (
             <p className="truncate text-xs">
