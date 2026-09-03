@@ -302,7 +302,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
           </div>
         </div>
 
-        <div className="md:col-span-2">
+        <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
           <Select
             id="empreendimentoId"
@@ -315,7 +315,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             ))}
           </Select>
         </div>
-        <div className="md:col-span-2">
+        <div>
           <Label htmlFor="apelido">Apelido do processo</Label>
           <Input id="apelido" value={form.apelido} onChange={set("apelido")} placeholder="Ex.: Pedreira Norte / LO 213" />
         </div>
@@ -389,7 +389,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               <Input id="substancias" value={form.substancias} onChange={set("substancias")} placeholder="Ex: Basalto (Brita)" />
               <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
             </div>
-            <div className="md:col-span-2">
+            <div>
               <label className="flex items-center gap-2 text-sm text-navy-900">
                 <input
                   type="checkbox"
@@ -447,7 +447,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
                 {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
               </Select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <Label htmlFor="numeroLicenca">Nº Licença</Label>
               <div className="flex gap-2">
                 <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" className="flex-1" />
