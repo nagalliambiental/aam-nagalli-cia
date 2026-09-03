@@ -25,6 +25,7 @@ type Processo = {
   responsavel: { nome: string } | null;
   empreendimento: { id: number; nome: string; apelido: string | null } | null;
   _count: { eventos: number; prazos: number; tarefas: number };
+  notificacoes: { id: number }[];
 };
 
 const STATUS_OPTS = [
@@ -127,7 +128,7 @@ export function ProcessosFiltro({
       <ul className="divide-y divide-slate-200">
         {filtrados.map((p) => (
           <li key={p.id}>
-            <ProcessoRowActions processo={p} podeExcluir={podeExcluir} />
+            <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.notificacoes.length > 0} />
           </li>
         ))}
         {filtrados.length === 0 && (

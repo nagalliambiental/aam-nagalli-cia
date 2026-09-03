@@ -41,6 +41,12 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound();
 
+  // Ao visualizar o processo, as movimentações SEI novas passam a "vistas" (some o badge).
+  await prisma.notificacao.updateMany({
+    where: { processoId, tipo: "sei_movimentacao", lida: false },
+    data: { lida: true },
+  });
+
   const statusProcesso = processo.natureza === "ambiental"
     ? statusAmbiental(processo.validade, processo.status, processo.dataLimiteRenovacao, processo.dataProtocolo)
     : processo.status;

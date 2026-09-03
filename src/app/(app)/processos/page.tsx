@@ -36,6 +36,7 @@ export default async function ProcessosPage() {
       responsavel: { select: { nome: true } },
       empreendimento: { select: { id: true, nome: true, apelido: true } },
       _count: { select: { eventos: true, prazos: true, tarefas: true } },
+      notificacoes: { where: { tipo: "sei_movimentacao", lida: false }, select: { id: true } },
     },
   });
 

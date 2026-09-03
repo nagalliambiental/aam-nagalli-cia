@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { StatusBadge } from "@/components/processos/StatusBadge";
+import { Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { statusAmbiental } from "@/lib/status";
 import { Trash2 } from "lucide-react";
 
-export function ProcessoRowActions({ processo, podeExcluir = false }: { processo: { id: number; numero: string; apelido: string | null; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; numeroLicenca: string | null; empreendimento: { id: number; nome: string; apelido?: string | null } | null; dataAbertura: Date; status: string; validade: Date | null; dataLimiteRenovacao: Date | null; dataProtocolo: Date | null; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean }) {
+export function ProcessoRowActions({ processo, podeExcluir = false, temNovaMovimentacao = false }: { processo: { id: number; numero: string; apelido: string | null; nup: string | null; orgao: { sigla: string }; natureza: string; fase: string | null; modalidade: string | null; numeroLicenca: string | null; empreendimento: { id: number; nome: string; apelido?: string | null } | null; dataAbertura: Date; status: string; validade: Date | null; dataLimiteRenovacao: Date | null; dataProtocolo: Date | null; _count: { eventos: number; prazos: number; tarefas: number } }; podeExcluir?: boolean; temNovaMovimentacao?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const status = processo.natureza === "ambiental"
@@ -54,6 +55,7 @@ export function ProcessoRowActions({ processo, podeExcluir = false }: { processo
             <p>{processo._count.eventos} eventos · {processo._count.prazos} prazos · {processo._count.tarefas} tarefas</p>
           </div>
           <StatusBadge status={status} />
+          {temNovaMovimentacao && <Badge tone="blue">nova movimentação SEI</Badge>}
         </div>
       </Link>
       {podeExcluir && (
