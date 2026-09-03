@@ -110,14 +110,18 @@ export default async function ProcessoDetalhePage({
             </div>
           )}
           </Card>
-          {processo.natureza !== "ambiental" && (
-            <div className="mt-6">
-              <SeiSyncPanel processoId={processo.id} nup={processo.nup} />
-            </div>
-          )}
         </>
       ),
     },
+    ...(processo.natureza !== "ambiental"
+      ? [
+          {
+            id: "movimentacoes-sei",
+            label: "Movimentações SEI",
+            content: <SeiSyncPanel processoId={processo.id} nup={processo.nup} />,
+          },
+        ]
+      : []),
     ...(processo.natureza === "ambiental" && processo.condicionantes
       ? [
           {
