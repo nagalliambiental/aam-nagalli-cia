@@ -195,8 +195,8 @@ export function EmpresaForm({
         <div className="md:col-span-2">
           <Label htmlFor="endereco">Endereço</Label>
           <div className="flex gap-2">
-            <Input id="endereco" value={form.endereco} onChange={(e) => set("endereco", e.target.value)} placeholder="Logradouro, complemento, bairro" className="flex-1" />
-            <Input id="numeroEndereco" value={form.numeroEndereco} onChange={(e) => set("numeroEndereco", e.target.value)} placeholder="Nº" className="w-28" />
+            <Input id="endereco" value={form.endereco} onChange={(e) => set("endereco", e.target.value)} placeholder="Logradouro, complemento, bairro" className="flex-[3]" />
+            <Input id="numeroEndereco" value={form.numeroEndereco} onChange={(e) => set("numeroEndereco", e.target.value)} placeholder="Nº" className="flex-1" />
           </div>
         </div>
 
