@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { TIPOS_EMPREENDIMENTO } from "@/lib/empreendimentos";
 
@@ -43,6 +44,7 @@ export function EmpreendimentoForm({
     empresaPrincipalId: String(initial?.empresaPrincipalId ?? empresas[0]?.id ?? ""),
   });
   const [error, setError] = useState<string | null>(null);
+  const [existingId, setExistingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
 
@@ -96,6 +98,7 @@ export function EmpreendimentoForm({
 
     if (!res.ok) {
       setError(data?.error ?? "Erro ao salvar.");
+      setExistingId(data?.existingId ? Number(data.existingId) : null);
       return;
     }
     router.push(`/empreendimentos/${data.id}`);
@@ -242,7 +245,14 @@ export function EmpreendimentoForm({
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p>{error}</p>
+          {existingId != null && (
+            <Link href={`/empreendimentos/${existingId}`} className="mt-1 inline-flex font-medium text-red-800 underline">
+              Abrir empreendimento existente →
+            </Link>
+          )}
+        </div>
       )}
 
       <div className="flex items-center gap-3">

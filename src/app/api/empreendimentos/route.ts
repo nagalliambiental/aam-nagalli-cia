@@ -23,6 +23,23 @@ export async function POST(req: Request) {
     );
   }
 
+  // Impede empreendimento duplicado: mesma empresa principal + mesmo nome.
+  const jaExiste = await prisma.empreendimento.findFirst({
+    where: {
+      empresaPrincipalId,
+      nome: { equals: nome, mode: "insensitive" },
+      ativo: true,
+      deletedAt: null,
+    },
+    select: { id: true, nome: true },
+  });
+  if (jaExiste) {
+    return NextResponse.json(
+      { error: "Empreendimento já cadastrado.", existingId: jaExiste.id, existingNome: jaExiste.nome },
+      { status: 409 }
+    );
+  }
+
   try {
     const emp = await prisma.empreendimento.create({
       data: {

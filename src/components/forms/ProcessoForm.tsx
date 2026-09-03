@@ -383,6 +383,7 @@ export function ProcessoForm({
 
     if (!res.ok) {
       if (res.status === 409 && data.existingId) {
+        alert(data.error ?? "Processo já cadastrado.");
         router.push(`/processos/${data.existingId}`);
         router.refresh();
         return;

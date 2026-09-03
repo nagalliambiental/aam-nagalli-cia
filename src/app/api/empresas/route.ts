@@ -45,9 +45,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ id: empresa.id }, { status: 201 });
   } catch (e) {
-    const msg = e instanceof Error && e.message.includes("Unique")
-      ? "Já existe empresa com este CNPJ."
-      : "Erro ao criar empresa.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const isDup = (e as { code?: string })?.code === "P2002";
+    return NextResponse.json(
+      { error: isDup ? "Empresa já cadastrada com este CNPJ." : "Erro ao criar empresa." },
+      { status: isDup ? 409 : 500 }
+    );
   }
 }
