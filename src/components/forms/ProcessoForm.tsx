@@ -43,7 +43,7 @@ export type OrgaoOpt = { id: number; sigla: string; nome: string };
 export type TipoOpt = { id: number; nome: string };
 export type EmpOpt = { id: number; nome: string; apelido?: string | null };
 export type PessoaOpt = { id: number; nome: string };
-export type ProcOpt = { id: number; numero: string; fase?: string | null };
+export type ProcOpt = { id: number; numero: string; fase?: string | null; apelido?: string | null; numeroLicenca?: string | null; empreendimentoNome?: string | null };
 
 export function ProcessoForm({
   orgaos,
@@ -377,8 +377,8 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             <div>
               <Label htmlFor="areaValor">Área</Label>
               <div className="flex gap-2">
-                <Input id="areaValor" type="number" step="any" min="0" value={form.areaValor} onChange={set("areaValor")} placeholder="0,00" className="flex-1" />
-                <Select id="areaUnidade" value={form.areaUnidade} onChange={set("areaUnidade")} className="w-24">
+                <Input id="areaValor" type="number" step="any" min="0" value={form.areaValor} onChange={set("areaValor")} placeholder="0,00" className="flex-[7]" />
+                <Select id="areaUnidade" value={form.areaUnidade} onChange={set("areaUnidade")} className="flex-[3]">
                   <option value="ha">ha</option>
                   <option value="m²">m²</option>
                 </Select>
@@ -387,7 +387,6 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             <div>
               <Label htmlFor="substancias">Substâncias</Label>
               <Input id="substancias" value={form.substancias} onChange={set("substancias")} placeholder="Ex: Basalto (Brita)" />
-              <p className="mt-1 text-xs text-muted">Preenchido automaticamente no Buscar CM.</p>
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm text-navy-900">

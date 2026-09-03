@@ -15,7 +15,11 @@ export default async function NovoProcessoPage() {
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null, natureza: "minerario" }, orderBy: { numero: "asc" }, select: { id: true, numero: true, fase: true } }),
-    prisma.processo.findMany({ where: { ativo: true, deletedAt: null, natureza: "ambiental" }, orderBy: { numero: "asc" }, select: { id: true, numero: true, fase: true } }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null, natureza: "ambiental" },
+      orderBy: { numero: "asc" },
+      select: { id: true, numero: true, fase: true, apelido: true, numeroLicenca: true, empreendimento: { select: { nome: true, apelido: true } } },
+    }),
   ]);
 
   return (
@@ -30,7 +34,7 @@ export default async function NovoProcessoPage() {
             empreendimentos={empreendimentos.map((x) => ({ id: x.id, nome: x.nome, apelido: x.apelido }))}
             pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
             processosMinerarios={minerarios.map((p) => ({ id: p.id, numero: p.numero, fase: p.fase }))}
-            processosAmbientais={ambientais.map((p) => ({ id: p.id, numero: p.numero, fase: p.fase }))}
+            processosAmbientais={ambientais.map((p) => ({ id: p.id, numero: p.numero, fase: p.fase, apelido: p.apelido, numeroLicenca: p.numeroLicenca, empreendimentoNome: p.empreendimento?.apelido || p.empreendimento?.nome || null }))}
           />
         </div>
       </Card>

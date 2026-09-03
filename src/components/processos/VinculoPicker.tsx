@@ -2,7 +2,17 @@
 
 import { Select } from "@/components/ui";
 
-export type ProcOpt = { id: number; numero: string; fase?: string | null };
+export type ProcOpt = { id: number; numero: string; fase?: string | null; apelido?: string | null; numeroLicenca?: string | null; empreendimentoNome?: string | null };
+
+function rotulo(o: ProcOpt) {
+  if (o.numeroLicenca || o.apelido) {
+    const a = o.apelido || o.numero;
+    const lic = o.numeroLicenca ? ` · ${o.numeroLicenca}` : "";
+    const emp = o.empreendimentoNome ? ` · ${o.empreendimentoNome}` : "";
+    return `${a}${lic}${emp}`;
+  }
+  return `#${o.numero}${o.fase ? ` · ${o.fase}` : ""}`;
+}
 
 export function VinculoPicker({
   titulo,
@@ -33,7 +43,7 @@ export function VinculoPicker({
         <option value="">— selecionar {titulo.split(" com ")[0]} —</option>
         {disponiveis.map((o) => (
           <option key={o.id} value={o.id}>
-            #{o.numero}{o.fase ? ` · ${o.fase}` : ""}
+            {rotulo(o)}
           </option>
         ))}
       </Select>
@@ -42,7 +52,7 @@ export function VinculoPicker({
           const proc = opcoes.find((o) => o.id === id);
           return (
             <span key={id} className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-navy-800 ring-1 ring-slate-200">
-              #{proc?.numero ?? id}
+              {proc ? rotulo(proc) : `#${id}`}
               <button type="button" onClick={() => remover(id)} className="text-slate-400 hover:text-red-600" title="Remover">
                 ×
               </button>
