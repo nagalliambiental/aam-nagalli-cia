@@ -74,6 +74,7 @@ export default async function DashboardPage() {
         deletedAt: null,
         status: { notIn: ["concluida"] },
         ...segTarefa,
+        ...(isAdmin ? {} : { visibilidade: "publico" }),
         OR: [
           { prazoData: { lte: new Date(AGORA.getTime() + 60 * 24 * 60 * 60 * 1000) } },
           { prazoData: null },

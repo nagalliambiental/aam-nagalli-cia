@@ -19,6 +19,7 @@ export function TarefaEdicaoForm({
   pessoas,
   empreendimentos,
   initial,
+  showVisibilidade = false,
 }: {
   tarefaId: number;
   pessoas: { id: number; nome: string }[];
@@ -29,12 +30,14 @@ export function TarefaEdicaoForm({
     observacoes: string | null;
     status: string;
     prioridade: string;
+    visibilidade?: string;
     responsavelPessoaId: number | null;
     empreendimentoId: number | null;
     processoId: number | null;
     prazoData: string | null;
     alertaDias: number | null;
   };
+  showVisibilidade?: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -43,6 +46,7 @@ export function TarefaEdicaoForm({
     observacoes: initial.observacoes ?? "",
     status: initial.status,
     prioridade: initial.prioridade,
+    visibilidade: initial.visibilidade ?? "publico",
     responsavelPessoaId: initial.responsavelPessoaId != null ? String(initial.responsavelPessoaId) : "",
     empreendimentoId: initial.empreendimentoId != null ? String(initial.empreendimentoId) : "",
     processoId: initial.processoId != null ? String(initial.processoId) : "",
@@ -66,6 +70,7 @@ export function TarefaEdicaoForm({
         descricao: form.descricao,
         observacoes: form.observacoes,
         prioridade: form.prioridade,
+        visibilidade: form.visibilidade,
         responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
         empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
         processoId: form.processoId ? Number(form.processoId) : null,
@@ -95,17 +100,26 @@ export function TarefaEdicaoForm({
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <Label htmlFor="responsavelPessoaId" required>Responsável</Label>
+          <Label htmlFor="responsavelPessoaId" required>Responsável pela Execução</Label>
           <Select id="responsavelPessoaId" value={form.responsavelPessoaId} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))} required>
             {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </Select>
         </div>
         <div>
           <Label htmlFor="prioridade">Prioridade</Label>
-          <Select id="prioridade" value={form.prioridade} onChange={(e) => setForm((f) => ({ ...f, prioridade: e.target.value }))}>
-            {PRIORIDADES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </Select>
-        </div>
+              <Select id="prioridade" value={form.prioridade} onChange={(e) => setForm((f) => ({ ...f, prioridade: e.target.value }))}>
+                {PRIORIDADES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </Select>
+            </div>
+            {showVisibilidade && (
+              <div>
+                <Label htmlFor="visibilidade">Visibilidade</Label>
+                <Select id="visibilidade" value={form.visibilidade} onChange={(e) => setForm((f) => ({ ...f, visibilidade: e.target.value }))}>
+                  <option value="publico">Público</option>
+                  <option value="privado">Privado</option>
+                </Select>
+              </div>
+            )}
         <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
           <Select id="empreendimentoId" value={form.empreendimentoId} onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value, processoId: "" }))}>

@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         status: "pendente",
         prazoData,
         alertaDias,
+        visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
       },
     });

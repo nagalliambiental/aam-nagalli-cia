@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui";
+import { ImportarTarefasPdf } from "@/components/processos/ImportarTarefasPdf";
 
 type TarefaItem = {
   id: number;
@@ -19,10 +20,12 @@ export function TarefasPanel({
   processoId,
   tarefas,
   pessoas,
+  isAdmin = false,
 }: {
   processoId: number;
   tarefas: TarefaItem[];
   pessoas: { id: number; nome: string }[];
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -35,6 +38,7 @@ export function TarefasPanel({
     prazoData: "",
     alertaDias: "30",
     responsavelPessoaId: pessoas[0]?.id ?? "",
+    visibilidade: "publico",
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,9 +73,12 @@ export function TarefasPanel({
       <CardHeader
         title="Tarefas"
         actions={
-          <Button variant="secondary" onClick={() => setShow((s) => !s)}>
-            {show ? "Cancelar" : "+ Tarefa"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ImportarTarefasPdf processoId={processoId} responsaveis={pessoas} />
+            <Button variant="secondary" onClick={() => setShow((s) => !s)}>
+              {show ? "Cancelar" : "+ Tarefa"}
+            </Button>
+          </div>
         }
       />
 
@@ -131,7 +138,7 @@ export function TarefasPanel({
               </Select>
             </div>
             <div>
-              <Label htmlFor="responsavelPessoaId">Responsável</Label>
+              <Label htmlFor="responsavelPessoaId">Responsável pela Execução</Label>
               <Select
                 id="responsavelPessoaId"
                 value={String(form.responsavelPessoaId)}
@@ -149,6 +156,17 @@ export function TarefasPanel({
               </Select>
             </div>
           </div>
+          {isAdmin && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="visibilidade">Visibilidade</Label>
+                <Select id="visibilidade" value={form.visibilidade} onChange={(e) => setForm((f) => ({ ...f, visibilidade: e.target.value }))}>
+                  <option value="publico">Público</option>
+                  <option value="privado">Privado</option>
+                </Select>
+              </div>
+            </div>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" disabled={loading}>
             {loading ? "Salvando..." : "Adicionar tarefa"}

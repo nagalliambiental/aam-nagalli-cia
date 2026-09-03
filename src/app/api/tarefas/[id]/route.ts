@@ -27,6 +27,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("prazoData" in body) data.prazoData = dataLocal(body.prazoData);
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("prioridade" in body) data.prioridade = body.prioridade;
+  if ("visibilidade" in body) data.visibilidade = body.visibilidade === "privado" ? "privado" : "publico";
   if ("status" in body) {
     data.status = body.status;
     data.dataConclusao = body.status === "concluida" ? new Date() : null;

@@ -52,7 +52,7 @@ export function EdicaoRapidaTarefa({
       {open && (
         <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
           <div>
-            <Label htmlFor={`resp-${tarefaId}`}>Responsável</Label>
+            <Label htmlFor={`resp-${tarefaId}`}>Responsável pela Execução</Label>
             <Select
               id={`resp-${tarefaId}`}
               value={responsavelId}

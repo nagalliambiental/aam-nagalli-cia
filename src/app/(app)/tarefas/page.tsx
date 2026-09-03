@@ -8,7 +8,7 @@ import { EdicaoRapidaTarefa } from "@/components/processos/EdicaoRapidaTarefa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { TarefaStatusBotao } from "@/components/processos/TarefaStatusBotao";
 import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
-import { usuarioTemPermissao } from "@/lib/perfil";
+import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
@@ -19,6 +19,8 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const verConcluidas = typeof sp.status === "string" && sp.status === "concluida";
   const podeCriar = await usuarioTemPermissao("tarefa:criar");
   const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidas
@@ -31,7 +33,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
 
   const [tarefas, pessoas, empreendimentos] = await Promise.all([
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
+      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
       take: 200,
@@ -63,6 +65,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         <NovaTarefaBotao
           pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
           empreendimentos={empreendimentosOpt}
+          isAdmin={isAdmin}
         />
       )}
 

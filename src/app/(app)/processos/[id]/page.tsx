@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { Tabs } from "@/components/ui/Tabs";
@@ -8,7 +8,6 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { classificarListaCondicionantes } from "@/lib/condicionantes";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
-import { ExigenciasPanel } from "@/components/processos/ExigenciasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
@@ -23,6 +22,8 @@ export default async function ProcessoDetalhePage({
   await requirePermissao("processo:ler");
   const podeEditar = await usuarioTemPermissao("processo:editar");
   const podeExcluir = await usuarioTemPermissao("processo:excluir");
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const processo = await prisma.processo.findFirst({
@@ -40,7 +41,7 @@ export default async function ProcessoDetalhePage({
   const [tarefas, prazos, exigencias, pessoas] =
     await Promise.all([
       prisma.tarefa.findMany({
-        where: { processoId, ativo: true, deletedAt: null },
+        where: { processoId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
         orderBy: { dataCriacao: "desc" },
         include: { responsavel: true },
       }),
@@ -146,25 +147,43 @@ export default async function ProcessoDetalhePage({
       : []),
     {
       id: "tarefas",
-      label: "Tarefas",
+      label: "Tarefas e Prazos",
       count: tarefas.length,
-      content: <TarefasPanel processoId={processo.id} tarefas={tarefas} pessoas={pessoas} />,
-    },
-    {
-      id: "exigencias",
-      label: "Exigências & Prazos",
-      count: exigencias.length,
-      content: <ExigenciasPanel processoId={processo.id} exigencias={exigencias} pessoas={pessoas} prazos={prazos} fase={processo.fase} />,
+      content: (
+        <>
+          <TarefasPanel processoId={processo.id} tarefas={tarefas} pessoas={pessoas} isAdmin={isAdmin} />
+          <div className="mt-6">
+            <Card>
+              <CardHeader title="Prazos" />
+              <ul className="divide-y divide-slate-100">
+                {prazos.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                    <p className="text-sm font-medium text-navy-900">{p.descricao}</p>
+                    <span className="text-xs text-muted">{p.dataCalculadaAtual ? formatDate(p.dataCalculadaAtual) : "—"}</span>
+                  </li>
+                ))}
+                {prazos.length === 0 && (
+                  <li className="px-5 py-8 text-center text-sm text-muted">Nenhum prazo cadastrado.</li>
+                )}
+              </ul>
+            </Card>
+          </div>
+        </>
+      ),
     },
   ];
 
   return (
     <div>
       <PageHeader
-        title={`Processo #${processo.numero}`}
+        title={
+          processo.natureza === "ambiental"
+            ? [processo.apelido || processo.empreendimento?.apelido || processo.empreendimento?.nome || processo.numero, processo.numeroLicenca].filter(Boolean).join(" · ")
+            : `Processo ${processo.numero}`
+        }
         subtitle={
           processo.natureza === "ambiental"
-            ? `${processo.orgao.sigla} · Modalidade ${processo.modalidade ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`
+            ? `${processo.orgao.sigla} · Fase ${processo.modalidade ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`
             : `${processo.orgao.sigla} · Fase ${processo.fase ?? "—"}${processo.nup ? ` · NUP ${processo.nup}` : ""}`
         }
         actions={

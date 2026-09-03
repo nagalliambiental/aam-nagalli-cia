@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -35,7 +36,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
   try {
     const descricao = (body.descricao as string ?? "").trim();
-    const prazoData = body.prazoData ? new Date(body.prazoData) : null;
+    const prazoData = dataLocal(body.prazoData);
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
     // Cria a exigência vinculada ao processo (mesmo prazo e alerta) e a tarefa aponta para ela.
@@ -62,6 +63,7 @@ export async function POST(req: Request, { params }: Ctx) {
         status: body.status ?? "pendente",
         prazoData,
         alertaDias,
+        visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
       },
     });

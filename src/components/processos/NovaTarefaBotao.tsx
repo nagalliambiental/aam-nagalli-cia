@@ -8,9 +8,11 @@ import { TarefaNovaForm } from "@/components/processos/TarefaNovaForm";
 export function NovaTarefaBotao({
   pessoas,
   empreendimentos,
+  isAdmin = false,
 }: {
   pessoas: { id: number; nome: string }[];
   empreendimentos: { id: number; nome: string; processos: { id: number; numero: string }[] }[];
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -32,7 +34,7 @@ export function NovaTarefaBotao({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <TarefaNovaForm pessoas={pessoas} empreendimentos={empreendimentos} onClose={() => setOpen(false)} />
+          <TarefaNovaForm pessoas={pessoas} empreendimentos={empreendimentos} showVisibilidade={isAdmin} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>

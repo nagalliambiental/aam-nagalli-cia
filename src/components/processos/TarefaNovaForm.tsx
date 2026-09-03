@@ -9,10 +9,12 @@ type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string |
 export function TarefaNovaForm({
   pessoas,
   empreendimentos,
+  showVisibilidade = false,
   onClose,
 }: {
   pessoas: { id: number; nome: string }[];
   empreendimentos: EmpreendimentoComProcessos[];
+  showVisibilidade?: boolean;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -25,6 +27,7 @@ export function TarefaNovaForm({
     responsavelPessoaId: pessoas[0]?.id ?? "",
     empreendimentoId: "",
     processoId: "",
+    visibilidade: "publico",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,7 @@ export function TarefaNovaForm({
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <Label htmlFor="responsavelPessoaId" required>Responsável</Label>
+          <Label htmlFor="responsavelPessoaId" required>Responsável pela Execução</Label>
           <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value as unknown as number }))} required>
             {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </Select>
@@ -107,6 +110,15 @@ export function TarefaNovaForm({
             <option value="urgente">Urgente</option>
           </Select>
         </div>
+        {showVisibilidade && (
+          <div>
+            <Label htmlFor="visibilidade">Visibilidade</Label>
+            <Select id="visibilidade" value={form.visibilidade} onChange={(e) => setForm((f) => ({ ...f, visibilidade: e.target.value }))}>
+              <option value="publico">Público</option>
+              <option value="privado">Privado</option>
+            </Select>
+          </div>
+        )}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Badge } from "@/components/ui";
 import { TarefaEdicaoForm } from "@/components/processos/TarefaEdicaoForm";
@@ -18,10 +18,12 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
   const tarefaId = Number(id);
   await requirePermissao("tarefa:editar");
   const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
 
   const [tarefa, pessoas, empreendimentos] = await Promise.all([
     prisma.tarefa.findFirst({
-      where: { id: tarefaId, ativo: true, deletedAt: null },
+      where: { id: tarefaId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
       include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
@@ -64,12 +66,14 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
               apelido: e.apelido,
               processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
             }))}
+            showVisibilidade={isAdmin}
             initial={{
               titulo: tarefa.titulo,
               descricao: tarefa.descricao,
               observacoes: tarefa.observacoes,
               status: tarefa.status,
               prioridade: tarefa.prioridade,
+              visibilidade: tarefa.visibilidade,
               responsavelPessoaId: tarefa.responsavelPessoaId,
               empreendimentoId: tarefa.empreendimentoId,
               processoId: tarefa.processoId,
