@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, CardHeader, Input, Label, Select, Modal } from "@/components/ui";
-import { formatMoney } from "@/lib/format";
+import { Button, Card, Input, Label, Select, Modal } from "@/components/ui";
+import { formatMoney, parseNumberBR } from "@/lib/format";
 import { Pencil, Trash2, Plus } from "lucide-react";
 
 type Servico = { id: number; nome: string; descricao: string | null; valorUnitario: number; unidade: string };
@@ -27,7 +27,7 @@ export function ServicosManager({ servicos }: { servicos: Servico[] }) {
     const res = await fetch(url, {
       method: edit ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, valorUnitario: Number(form.valorUnitario) }),
+      body: JSON.stringify({ ...form, valorUnitario: parseNumberBR(form.valorUnitario) }),
     });
     const d = await res.json().catch(() => ({}));
     setLoading(false);
@@ -88,7 +88,7 @@ export function ServicosManager({ servicos }: { servicos: Servico[] }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="svalor" required>Valor unitário (R$)</Label>
-              <Input id="svalor" type="number" step="0.01" min="0" value={form.valorUnitario} onChange={(e) => setForm((f) => ({ ...f, valorUnitario: e.target.value }))} required />
+              <Input id="svalor" type="text" inputMode="decimal" placeholder="0,00" value={form.valorUnitario} onChange={(e) => setForm((f) => ({ ...f, valorUnitario: e.target.value }))} required />
             </div>
             <div>
               <Label htmlFor="sunidade">Unidade</Label>

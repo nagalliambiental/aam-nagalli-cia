@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { parseNumberBR } from "@/lib/format";
 import { Plus, Trash2 } from "lucide-react";
 
 type Empresa = { id: number; nome: string };
@@ -54,12 +55,12 @@ export function PedidoForm({
   }
 
   const subtotal = useMemo(() => {
-    return round2(itens.reduce((s, it) => s + (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0), 0));
+    return round2(itens.reduce((s, it) => s + parseNumberBR(it.quantidade) * parseNumberBR(it.valorUnitario), 0));
   }, [itens]);
 
   const desconto = useMemo(() => {
     if (!descontoTipo) return 0;
-    const dv = Number(descontoValor) || 0;
+    const dv = parseNumberBR(descontoValor);
     if (descontoTipo === "percentual") return round2(subtotal * (Math.min(100, dv) / 100));
     return Math.min(dv, subtotal);
   }, [descontoTipo, descontoValor, subtotal]);
@@ -76,9 +77,9 @@ export function PedidoForm({
       body: JSON.stringify({
         empresaId: Number(empresaId),
         descontoTipo: descontoTipo || null,
-        descontoValor: descontoTipo ? Number(descontoValor) : null,
+        descontoValor: descontoTipo ? parseNumberBR(descontoValor) : null,
         observacoes,
-        itens: itens.map((it) => ({ servicoId: it.servicoId, descricao: it.descricao, unidade: it.unidade, quantidade: Number(it.quantidade) || 0, valorUnitario: Number(it.valorUnitario) || 0 })),
+        itens: itens.map((it) => ({ servicoId: it.servicoId, descricao: it.descricao, unidade: it.unidade, quantidade: parseNumberBR(it.quantidade), valorUnitario: parseNumberBR(it.valorUnitario) })),
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -132,15 +133,15 @@ export function PedidoForm({
               </div>
               <div className="col-span-3">
                 <Label htmlFor={`qd-${i}`}>Qtd</Label>
-                <Input id={`qd-${i}`} type="number" step="0.01" min="0" value={it.quantidade} onChange={(e) => setItem(i, { quantidade: e.target.value })} />
+                <Input id={`qd-${i}`} type="text" inputMode="decimal" placeholder="0,00" value={it.quantidade} onChange={(e) => setItem(i, { quantidade: e.target.value })} />
               </div>
               <div className="col-span-3">
                 <Label htmlFor={`vu-${i}`}>Valor unit.</Label>
-                <Input id={`vu-${i}`} type="number" step="0.01" min="0" value={it.valorUnitario} onChange={(e) => setItem(i, { valorUnitario: e.target.value })} />
+                <Input id={`vu-${i}`} type="text" inputMode="decimal" placeholder="0,00" value={it.valorUnitario} onChange={(e) => setItem(i, { valorUnitario: e.target.value })} />
               </div>
               <div className="col-span-3 flex items-end gap-2">
                 <span className="mb-1 w-full truncate text-sm font-semibold text-navy-900">
-                  R$ {round2((Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  R$ {round2(parseNumberBR(it.quantidade) * parseNumberBR(it.valorUnitario)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </span>
                 <button type="button" onClick={() => removeLinha(i)} className="mb-1 rounded p-1 text-slate-400 hover:text-red-600" title="Remover">
                   <Trash2 className="h-4 w-4" />
@@ -166,7 +167,7 @@ export function PedidoForm({
         {descontoTipo && (
           <div>
             <Label htmlFor="dValor">{descontoTipo === "percentual" ? "Desconto (%)" : "Desconto (R$)"}</Label>
-            <Input id="dValor" type="number" step="0.01" min="0" value={descontoValor} onChange={(e) => setDescontoValor(e.target.value)} />
+            <Input id="dValor" type="text" inputMode="decimal" placeholder="0,00" value={descontoValor} onChange={(e) => setDescontoValor(e.target.value)} />
           </div>
         )}
       </div>

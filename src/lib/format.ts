@@ -72,6 +72,22 @@ export function formatMoney(v?: number | string | { toString(): string } | null)
   }).format(n);
 }
 
+/**
+ * Converte um valor digitado em formato brasileiro para número.
+ * Aceita "1.234,56", "150,00", "2,5" e também "150.50".
+ */
+export function parseNumberBR(v: string | number | null | undefined): number {
+  if (v == null) return 0;
+  const s = String(v).trim().replace(/[R$]/g, "").replace(/\s/g, "");
+  if (!s) return 0;
+  if (s.includes(",")) {
+    const n = Number(s.replace(/\./g, "").replace(",", "."));
+    return isNaN(n) ? 0 : n;
+  }
+  const n = Number(s);
+  return isNaN(n) ? 0 : n;
+}
+
 export function formatRelative(d?: Date | null) {
   if (!d) return { label: "—", tone: "gray" as const };
   const now = new Date();
