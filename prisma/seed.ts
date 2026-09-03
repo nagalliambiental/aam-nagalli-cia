@@ -145,6 +145,7 @@ async function main() {
     "processo", "titulo", "licenca", "condicionante", "exigencia", "prazo",
     "tarefa", "documento", "empreendimento", "area", "empresa", "pessoa", "orgao",
     "comunicacao", "custo", "regra_prazo", "bloco_exigencia", "contrato", "integracao", "usuario", "perfil",
+    "servico", "pedido",
   ];
   for (const nome of tiposEntidade) {
     await prisma.tipoEntidade.upsert({ where: { nome }, update: {}, create: { nome, sistema: true } });
