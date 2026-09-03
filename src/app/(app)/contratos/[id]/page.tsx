@@ -27,7 +27,7 @@ export default async function ContratoDetalhePage({
         subtitle={contrato.empresa.nomeFantasia ?? contrato.empresa.razaoSocial}
         actions={
           <>
-            <Link href="/financeiro">
+            <Link href="/contratos">
               <Button variant="ghost">Voltar</Button>
             </Link>
             <Link href={`/contratos/${contrato.id}/editar`}>

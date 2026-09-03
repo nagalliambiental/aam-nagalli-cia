@@ -9,13 +9,15 @@ import {
   LogOut, Menu, X, Mountain,
   BellRing, CalendarDays, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
-  HandCoins, ChartPie, Settings2, Wallet, Download,
+  ChartPie, Settings2, Download,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
+const FATURAS: NavItem = { href: "/faturas", label: "Faturas", icon: FileSignature };
+const CONTRATOS: NavItem = { href: "/contratos", label: "Contratos", icon: FileSignature };
 
 const SECTIONS: NavGroup[] = [
   {
@@ -43,15 +45,6 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
-    label: "Financeiro",
-    icon: HandCoins,
-    items: [
-      { href: "/financeiro", label: "Financeiro", icon: Wallet },
-      { href: "/faturas", label: "Faturas", icon: FileSignature },
-      { href: "/contratos", label: "Contratos", icon: FileSignature },
-    ],
-  },
-  {
     label: "Administrativo",
     icon: Settings2,
     items: [
@@ -67,8 +60,9 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const isAdmin = user.perfilNome === "Administrador";
-  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro" && s.label !== "Administrativo");
-  const flatLinks = [DASHBOARD, ...sections.flatMap((s) => s.items)];
+  const topLinks = isAdmin ? [DASHBOARD, FATURAS, CONTRATOS] : [DASHBOARD, CONTRATOS];
+  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Administrativo");
+  const flatLinks = [...topLinks, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -99,7 +93,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
 
   const nav = (
     <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
-      {renderLink(DASHBOARD)}
+      {topLinks.map(renderLink)}
       {sections.map((group) => {
         const active = isGroupActive(group.items);
         const isOpen = collapsed[group.label] ?? active;
