@@ -32,11 +32,18 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
         : {}),
     },
     orderBy: { dataAbertura: "desc" },
-    include: {
-      orgao: true,
-      tipoProcesso: true,
-      empreendimento: true,
-      _count: { select: { eventos: true, prazos: true, tarefas: true, exigencias: true } },
+    select: {
+      id: true,
+      numero: true,
+      nup: true,
+      natureza: true,
+      fase: true,
+      modalidade: true,
+      status: true,
+      dataAbertura: true,
+      orgao: { select: { sigla: true } },
+      empreendimento: { select: { id: true, nome: true, apelido: true } },
+      _count: { select: { eventos: true, prazos: true, tarefas: true } },
     },
   });
 

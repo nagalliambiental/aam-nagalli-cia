@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } },
       orderBy: { criadoEm: "desc" },
       take: 8,
-      include: { processo: { include: { orgao: true } } },
+      select: { id: true, mensagem: true, processo: { select: { id: true, numero: true } } },
     }),
     prisma.prazo.findMany({
       where: {
@@ -59,7 +59,14 @@ export default async function DashboardPage() {
       },
       orderBy: { dataCalculadaAtual: "asc" },
       take: 200,
-      include: { processo: { include: { orgao: true } } },
+      select: {
+        id: true,
+        descricao: true,
+        alertaDias: true,
+        dataCalculadaAtual: true,
+        processoId: true,
+        processo: { select: { numero: true, orgao: { select: { sigla: true, nome: true } } } },
+      },
     }),
     prisma.tarefa.findMany({
       where: {
@@ -74,7 +81,15 @@ export default async function DashboardPage() {
       },
       orderBy: [{ prioridade: "asc" }, { prazoData: "asc" }],
       take: 12,
-      include: { processo: true, responsavel: true, empreendimento: true },
+      select: {
+        id: true,
+        titulo: true,
+        status: true,
+        prazoData: true,
+        responsavel: { select: { nome: true } },
+        processo: { select: { numero: true } },
+        empreendimento: { select: { nome: true, apelido: true } },
+      },
     }),
     prisma.processo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["cancelado", "arquivado"] }, ...segProcesso } }),
     prisma.prazo.count({ where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: { ativo: true, deletedAt: null, ...segProcesso } } }),
