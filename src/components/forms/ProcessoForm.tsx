@@ -63,6 +63,7 @@ export function ProcessoForm({
   processosAmbientais?: ProcOpt[];
   initial?: {
     numero?: string;
+    apelido?: string;
     nup?: string;
     seiUrl?: string;
     orgaoId?: number;
@@ -103,6 +104,7 @@ export function ProcessoForm({
   const ehFaseCustom = !!initial?.fase && !FASES_VALIDAS.includes(initial.fase);
   const [form, setForm] = useState({
     numero: initial?.numero ?? "",
+    apelido: initial?.apelido ?? "",
     nup: initial?.nup ?? "",
     seiUrl: initial?.seiUrl ?? "",
     orgaoId: initial?.orgaoId ?? "",
@@ -312,6 +314,10 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               <option key={x.id} value={x.id}>{x.nome}{x.apelido ? ` (${x.apelido})` : ""}</option>
             ))}
           </Select>
+        </div>
+        <div className="md:col-span-2">
+          <Label htmlFor="apelido">Apelido do processo</Label>
+          <Input id="apelido" value={form.apelido} onChange={set("apelido")} placeholder="Ex.: Pedreira Norte / LO 213" />
         </div>
 
         {form.natureza === "minerario" ? (

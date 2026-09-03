@@ -45,6 +45,7 @@ export default async function EditarProcessoPage({ params }: { params: Promise<{
             processosAmbientais={ambientais.map((p) => ({ id: p.id, numero: p.numero, fase: p.fase }))}
             initial={{
               numero: processo.numero,
+              apelido: processo.apelido ?? undefined,
               nup: processo.nup ?? undefined,
               seiUrl: processo.seiUrl ?? undefined,
               orgaoId: processo.orgaoId,

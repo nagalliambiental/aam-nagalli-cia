@@ -35,10 +35,12 @@ export default async function ProcessosPage({ searchParams }: { searchParams: Se
     select: {
       id: true,
       numero: true,
+      apelido: true,
       nup: true,
       natureza: true,
       fase: true,
       modalidade: true,
+      numeroLicenca: true,
       status: true,
       dataAbertura: true,
       orgao: { select: { sigla: true } },

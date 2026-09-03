@@ -76,6 +76,7 @@ export async function POST(req: Request) {
     const processo = await prisma.processo.create({
       data: {
         numero,
+        apelido: body.apelido ?? null,
         nup,
         seiUrl: body.seiUrl ?? null,
         orgaoId: body.orgaoId ?? orgao?.id,
