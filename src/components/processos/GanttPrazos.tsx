@@ -122,8 +122,7 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
             <div className="flex border-b border-slate-200 bg-slate-50">
               {semanas.map((wk, i) => (
                 <div key={i} className="border-r border-slate-200 px-2 py-1 text-center text-[10px] font-semibold uppercase text-muted" style={{ width: `${wk.length * 26}px` }}>
-                  WEEK {i + 1}
-                </div>
+                  Semana {i + 1}                </div>
               ))}
             </div>
             {/* Dias */}
