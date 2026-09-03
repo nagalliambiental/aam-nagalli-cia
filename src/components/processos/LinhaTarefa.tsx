@@ -20,7 +20,11 @@ type Tarefa = {
   visibilidade: string;
   responsavelNome: string;
   processoLabel: string;
+  empreendimentoId?: number | null;
+  processoId?: number | null;
 };
+
+type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
 
 const STATUS_OPTS = [
   { value: "pendente", label: "Pendente" },
@@ -32,12 +36,14 @@ const PRIORIDADES = ["baixa", "media", "alta", "urgente"];
 export function LinhaTarefa({
   tarefa,
   pessoas,
+  empreendimentos = [],
   isAdmin = false,
   podeEditarTudo = false,
   podeExcluir = false,
 }: {
   tarefa: Tarefa;
   pessoas: { id: number; nome: string }[];
+  empreendimentos?: EmpComProcessos[];
   isAdmin?: boolean;
   podeEditarTudo?: boolean;
   podeExcluir?: boolean;
@@ -56,6 +62,8 @@ export function LinhaTarefa({
     status: tarefa.status,
     responsavelPessoaId: tarefa.responsavelPessoaId != null ? String(tarefa.responsavelPessoaId) : "",
     visibilidade: tarefa.visibilidade,
+    empreendimentoId: tarefa.empreendimentoId != null ? String(tarefa.empreendimentoId) : "",
+    processoId: tarefa.processoId != null ? String(tarefa.processoId) : "",
   });
 
   async function mudarStatus(v: string) {
@@ -91,11 +99,15 @@ export function LinhaTarefa({
         status: form.status,
         responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
         visibilidade: form.visibilidade,
+        empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
+        processoId: form.processoId ? Number(form.processoId) : null,
       }),
     });
     setLoading(false);
     if (res.ok) { setOpenEdit(false); router.refresh(); }
   }
+
+  const empreendimentoSel = empreendimentos.find((e) => e.id === Number(form.empreendimentoId));
 
   return (
     <div className="px-5 py-3">
@@ -186,6 +198,22 @@ export function LinhaTarefa({
                     <Select id={`lv-${tarefa.id}`} value={form.visibilidade} onChange={(e) => setForm((f) => ({ ...f, visibilidade: e.target.value }))}>
                       <option value="publico">Público</option>
                       <option value="privado">Privado</option>
+                    </Select>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor={`le-${tarefa.id}`}>Empreendimento</Label>
+                  <Select id={`le-${tarefa.id}`} value={form.empreendimentoId} onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value, processoId: "" }))}>
+                    <option value="">— sem empreendimento —</option>
+                    {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}{e.apelido ? ` (${e.apelido})` : ""}</option>)}
+                  </Select>
+                </div>
+                {empreendimentoSel && (
+                  <div>
+                    <Label htmlFor={`lp2-${tarefa.id}`}>Processo</Label>
+                    <Select id={`lp2-${tarefa.id}`} value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
+                      <option value="">— sem processo —</option>
+                      {empreendimentoSel.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
                     </Select>
                   </div>
                 )}

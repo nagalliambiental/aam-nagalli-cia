@@ -1,55 +1,84 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
-import { PageHeader } from "@/components/ui";
-import { OperacoesView } from "@/components/processos/OperacoesView";
+import { PageHeader, Card, Badge } from "@/components/ui";
+import { GanttPrazos } from "@/components/processos/GanttPrazos";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
+import { formatDate } from "@/lib/format";
 
 export default async function OperacoesPage() {
   await requirePermissao("processo:ler");
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
   const procWhere = { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) };
 
-  const [prazos, tarefas, pessoas] = await Promise.all([
+  const [processos, prazos] = await Promise.all([
+    prisma.processo.findMany({
+      where: procWhere,
+      orderBy: { dataAbertura: "desc" },
+      include: {
+        empreendimento: { include: { empresaPrincipal: true } },
+      },
+    }),
     prisma.prazo.findMany({
       where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, processo: procWhere },
       orderBy: { dataCalculadaAtual: "asc" },
-      select: {
-        id: true, descricao: true, status: true, dataInicial: true, dataCalculadaAtual: true, alertaDias: true,
-        processo: { select: { numero: true } },
-      },
+      select: { id: true, descricao: true, status: true, dataCalculadaAtual: true, alertaDias: true, processo: { select: { numero: true } } },
     }),
-    prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, status: { notIn: ["concluida"] }, processo: procWhere },
-      orderBy: { prazoData: "asc" },
-      select: { id: true, titulo: true, status: true, prazoData: true, responsavel: { select: { nome: true } } },
-    }),
-    prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, nome: true } }),
   ]);
+
+  const UM_DIA = 86400000;
+  const barras = processos.map((p) => {
+    const fim = p.validade ?? p.dataLimiteRenovacao ?? new Date(p.dataAbertura.getTime() + 30 * UM_DIA);
+    const cliente = p.empreendimento?.empresaPrincipal
+      ? (p.empreendimento.empresaPrincipal.nomeFantasia || p.empreendimento.empresaPrincipal.razaoSocial)
+      : "Sem cliente";
+    const empreendimento = p.empreendimento ? (p.empreendimento.apelido || p.empreendimento.nome) : "Sem empreendimento";
+    const titulo = p.apelido || `#${p.numero}`;
+    return { id: p.id, titulo, iniMs: p.dataAbertura.getTime(), fimMs: fim.getTime(), natureza: p.natureza, status: p.status, cliente, empreendimento };
+  });
+
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const vencidos = prazos.filter((x) => x.dataCalculadaAtual && new Date(x.dataCalculadaAtual) < hoje);
+  const dentroAlerta = prazos.filter((x) => {
+    if (!x.dataCalculadaAtual) return false;
+    const dias = x.alertaDias ?? 30;
+    return new Date(x.dataCalculadaAtual).getTime() - dias * UM_DIA <= hoje.getTime();
+  });
 
   return (
     <div>
-      <PageHeader
-        title="Prazos & Calendário"
-        subtitle="Prazos, tarefas e alertas em um só lugar"
-      />
-      <OperacoesView
-        prazos={prazos.map((p) => ({
-          id: p.id,
-          descricao: p.descricao,
-          status: p.status,
-          dataInicial: p.dataInicial.toISOString(),
-          dataCalculadaAtual: p.dataCalculadaAtual ? p.dataCalculadaAtual.toISOString() : null,
-          alertaDias: p.alertaDias,
-          processoNumero: p.processo?.numero ?? null,
-        }))}
-        tarefas={tarefas.map((t) => ({
-          id: t.id,
-          titulo: t.titulo,
-          status: t.status,
-          prazoData: t.prazoData ? t.prazoData.toISOString() : null,
-          responsavelNome: t.responsavel?.nome ?? null,
-        }))}
-      />
+      <PageHeader title="Prazos & Calendário" subtitle="Linha do tempo de processos por cliente e empreendimento" />
+      <GanttPrazos barras={barras} />
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <div className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-navy-900">Prazos em aberto</div>
+          <ul className="divide-y divide-slate-100">
+            {prazos.map((x) => (
+              <li key={x.id} className="flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="text-sm font-medium text-navy-900">{x.descricao}</p>
+                  <p className="text-xs text-muted">{x.processo ? `Processo ${x.processo.numero}` : "Sem processo"} {x.dataCalculadaAtual ? `· até ${formatDate(x.dataCalculadaAtual)}` : ""}</p>
+                </div>
+                <Badge tone={x.status === "vencido" ? "red" : x.status === "vencendo" ? "amber" : "blue"}>{x.status}</Badge>
+              </li>
+            ))}
+            {prazos.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhum prazo em aberto.</li>}
+          </ul>
+        </Card>
+
+        <Card>
+          <div className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-navy-900">Alertas</div>
+          <ul className="divide-y divide-slate-100">
+            {vencidos.map((x) => (
+              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="red">vencido</Badge> {x.descricao} {x.processo ? `· ${x.processo.numero}` : ""}</li>
+            ))}
+            {dentroAlerta.map((x) => (
+              <li key={x.id} className="px-5 py-3 text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {x.descricao} {x.processo ? `· ${x.processo.numero}` : ""} — até {x.dataCalculadaAtual ? formatDate(x.dataCalculadaAtual) : "—"}</li>
+            ))}
+            {vencidos.length === 0 && dentroAlerta.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }

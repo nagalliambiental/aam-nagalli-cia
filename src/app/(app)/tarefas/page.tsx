@@ -106,8 +106,11 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   visibilidade: t.visibilidade,
                   responsavelNome: t.responsavel.nome,
                   processoLabel: t.processo ? `Processo: #${t.processo.numero} (${t.processo.orgao.sigla})` : "Processo: — sem vínculo —",
+                  empreendimentoId: t.empreendimentoId,
+                  processoId: t.processoId,
                 }}
                 pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+                empreendimentos={empreendimentosOpt}
                 isAdmin={isAdmin}
                 podeEditarTudo={podeEditarTudo}
                 podeExcluir={podeExcluir}
