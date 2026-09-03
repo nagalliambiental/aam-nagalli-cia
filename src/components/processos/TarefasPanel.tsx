@@ -19,6 +19,7 @@ type TarefaItem = {
   alertaDataLimite: number | null;
   responsavelPessoaId: number | null;
   visibilidade: string;
+  dataConclusao: Date | null;
   responsavel: { nome: string };
 };
 
@@ -80,7 +81,11 @@ export function TarefasPanel({
     router.refresh();
   }
 
+  const abertas = tarefas.filter((t) => t.status !== "concluida");
+  const concluidas = tarefas.filter((t) => t.status === "concluida");
+
   return (
+    <>
     <Card>
       <CardHeader
         title="Tarefas e Prazos"
@@ -160,7 +165,7 @@ export function TarefasPanel({
       )}
 
       <ul className="divide-y divide-slate-100">
-        {tarefas.map((t) => (
+        {abertas.map((t) => (
           <li key={t.id}>
             <LinhaTarefa
               tarefa={{
@@ -175,6 +180,7 @@ export function TarefasPanel({
                 status: t.status,
                 responsavelPessoaId: t.responsavelPessoaId,
                 visibilidade: t.visibilidade,
+                dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
                 responsavelNome: t.responsavel.nome,
                 processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
               }}
@@ -185,8 +191,44 @@ export function TarefasPanel({
             />
           </li>
         ))}
-        {tarefas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa.</li>}
+        {abertas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa em aberto.</li>}
       </ul>
     </Card>
+
+    <div className="mt-6">
+      <Card>
+        <CardHeader title="Finalizadas" />
+        <ul className="divide-y divide-slate-100">
+          {concluidas.map((t) => (
+            <li key={t.id}>
+              <LinhaTarefa
+                tarefa={{
+                  id: t.id,
+                  titulo: t.titulo,
+                  descricao: t.descricao,
+                  prazoData: t.prazoData ? t.prazoData.toISOString().slice(0, 10) : null,
+                  dataLimite: t.dataLimite ? t.dataLimite.toISOString().slice(0, 10) : null,
+                  alertaDias: t.alertaDias,
+                  alertaDataLimite: t.alertaDataLimite,
+                  prioridade: t.prioridade,
+                  status: t.status,
+                  responsavelPessoaId: t.responsavelPessoaId,
+                  visibilidade: t.visibilidade,
+                  dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
+                  responsavelNome: t.responsavel.nome,
+                  processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
+                }}
+                pessoas={pessoas}
+                isAdmin={isAdmin}
+                podeEditarTudo={podeEditarTudo}
+                podeExcluir={podeExcluir}
+              />
+            </li>
+          ))}
+          {concluidas.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted">Nenhuma tarefa finalizada.</li>}
+        </ul>
+      </Card>
+    </div>
+    </>
   );
 }

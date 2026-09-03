@@ -32,7 +32,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("visibilidade" in body) data.visibilidade = body.visibilidade === "privado" ? "privado" : "publico";
   if ("status" in body) {
     data.status = body.status;
-    data.dataConclusao = body.status === "concluida" ? new Date() : null;
+    if (body.status === "concluida") {
+      data.dataConclusao = body.dataConclusao ? new Date(body.dataConclusao) : new Date();
+    } else {
+      data.dataConclusao = null;
+    }
+  }
+  if ("dataConclusao" in body && !("status" in body)) {
+    data.dataConclusao = body.dataConclusao ? new Date(body.dataConclusao) : null;
   }
 
   try {

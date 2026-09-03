@@ -22,6 +22,7 @@ type Tarefa = {
   processoLabel: string;
   empreendimentoId?: number | null;
   processoId?: number | null;
+  dataConclusao?: string | null;
 };
 
 type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
@@ -64,6 +65,7 @@ export function LinhaTarefa({
     visibilidade: tarefa.visibilidade,
     empreendimentoId: tarefa.empreendimentoId != null ? String(tarefa.empreendimentoId) : "",
     processoId: tarefa.processoId != null ? String(tarefa.processoId) : "",
+    dataConclusao: tarefa.dataConclusao ?? "",
   });
 
   async function mudarStatus(v: string) {
@@ -101,6 +103,7 @@ export function LinhaTarefa({
         visibilidade: form.visibilidade,
         empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
         processoId: form.processoId ? Number(form.processoId) : null,
+        dataConclusao: form.dataConclusao || null,
       }),
     });
     setLoading(false);
@@ -192,6 +195,12 @@ export function LinhaTarefa({
                     {STATUS_OPTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </Select>
                 </div>
+                {form.status === "concluida" && (
+                  <div>
+                    <Label htmlFor={`lc-${tarefa.id}`}>Data de conclusão</Label>
+                    <Input id={`lc-${tarefa.id}`} type="datetime-local" value={form.dataConclusao} onChange={(e) => setForm((f) => ({ ...f, dataConclusao: e.target.value }))} />
+                  </div>
+                )}
                 {isAdmin && (
                   <div>
                     <Label htmlFor={`lv-${tarefa.id}`}>Visibilidade</Label>
@@ -220,11 +229,19 @@ export function LinhaTarefa({
               </div>
             </div>
           ) : (
-            <div className="sm:max-w-xs">
-              <Label htmlFor={`rq-${tarefa.id}`}>Status</Label>
-              <Select id={`rq-${tarefa.id}`} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                {STATUS_OPTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </Select>
+            <div className="space-y-3">
+              <div className="sm:max-w-xs">
+                <Label htmlFor={`rq-${tarefa.id}`}>Status</Label>
+                <Select id={`rq-${tarefa.id}`} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+                  {STATUS_OPTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </Select>
+              </div>
+              {form.status === "concluida" && (
+                <div className="sm:max-w-xs">
+                  <Label htmlFor={`rc-${tarefa.id}`}>Data de conclusão</Label>
+                  <Input id={`rc-${tarefa.id}`} type="datetime-local" value={form.dataConclusao} onChange={(e) => setForm((f) => ({ ...f, dataConclusao: e.target.value }))} />
+                </div>
+              )}
             </div>
           )}
           <div className="mt-3 flex justify-end gap-2">
