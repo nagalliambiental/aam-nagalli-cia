@@ -447,7 +447,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
                 {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
               </Select>
             </div>
-            <div className="md:col-span-2">
+            <div>
               <Label htmlFor="numeroLicenca">Nº Licença</Label>
               <div className="flex gap-2">
                 <Input id="numeroLicenca" value={form.numeroLicenca} onChange={set("numeroLicenca")} placeholder="Digitado o nº, consulta IAT/IMA" className="flex-1" />
@@ -457,6 +457,16 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               </div>
               <p className="mt-1 text-xs text-muted">Busca automática só no SGA (IAT) e IMA. Para E-protocolo use <span className="font-medium">Upload PDF</span> abaixo.</p>
               {buscaLicMsg && <p className="mt-1 text-xs text-muted">{buscaLicMsg}</p>}
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select id="status" value={form.status} onChange={set("status")}>
+                <option value="ativo">Ativo</option>
+                <option value="proximo_vencimento">Próximo do Vencimento</option>
+                <option value="em_renovacao">Em Renovação</option>
+                <option value="encerrado">Encerrado</option>
+                {!["ativo","proximo_vencimento","em_renovacao","encerrado"].includes(form.status) && <option value={form.status}>{form.status}</option>}
+              </Select>
             </div>
             <div>
               <Label htmlFor="validade">Data de validade</Label>
