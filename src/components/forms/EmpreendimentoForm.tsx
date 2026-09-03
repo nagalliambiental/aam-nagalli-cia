@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
 import { TIPOS_EMPREENDIMENTO } from "@/lib/empreendimentos";
 
 export function EmpreendimentoForm({
@@ -44,7 +43,7 @@ export function EmpreendimentoForm({
     empresaPrincipalId: String(initial?.empresaPrincipalId ?? empresas[0]?.id ?? ""),
   });
   const [error, setError] = useState<string | null>(null);
-  const [existingId, setExistingId] = useState<number | null>(null);
+  const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
 
@@ -97,8 +96,8 @@ export function EmpreendimentoForm({
     setLoading(false);
 
     if (!res.ok) {
-      setError(data?.error ?? "Erro ao salvar.");
-      setExistingId(data?.existingId ? Number(data.existingId) : null);
+      setDup(res.status === 409 ? { message: data?.error ?? "Empreendimento já cadastrado.", existingId: data?.existingId } : null);
+      setError(res.status === 409 ? null : (data?.error ?? "Erro ao salvar."));
       return;
     }
     router.push(`/empreendimentos/${data.id}`);
@@ -245,15 +244,17 @@ export function EmpreendimentoForm({
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          <p>{error}</p>
-          {existingId != null && (
-            <Link href={`/empreendimentos/${existingId}`} className="mt-1 inline-flex font-medium text-red-800 underline">
-              Abrir empreendimento existente →
-            </Link>
-          )}
-        </div>
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
+
+      <ConfirmPopup
+        open={!!dup}
+        title="Cadastro duplicado"
+        message={dup?.message ?? ""}
+        confirmText="Abrir existente"
+        onCancel={() => setDup(null)}
+        onConfirm={() => { if (dup?.existingId) { router.push(`/empreendimentos/${dup.existingId}`); router.refresh(); } setDup(null); }}
+      />
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={loading}>

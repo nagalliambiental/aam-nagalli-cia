@@ -128,3 +128,61 @@ export function EmptyState({ title, description }: { title: string; description?
     </div>
   );
 }
+
+export function Modal({
+  open,
+  title,
+  children,
+  onClose,
+}: {
+  open: boolean;
+  title?: string;
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && <h3 className="mb-3 text-base font-semibold text-navy-900">{title}</h3>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmPopup({
+  open,
+  title,
+  message,
+  confirmText = "OK",
+  cancelText = "Fechar",
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+}) {
+  return (
+    <Modal open={open} title={title} onClose={onCancel}>
+      <p className="text-sm text-slate-700">{message}</p>
+      <div className="mt-4 flex items-center justify-end gap-2">
+        <Button variant="ghost" onClick={onCancel}>{cancelText}</Button>
+        {onConfirm && <Button onClick={onConfirm}>{confirmText}</Button>}
+      </div>
+    </Modal>
+  );
+}

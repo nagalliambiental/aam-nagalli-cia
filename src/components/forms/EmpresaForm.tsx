@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Textarea } from "@/components/ui";
+import { Button, Input, Label, Textarea, ConfirmPopup } from "@/components/ui";
 
 export type EmpresaInput = {
   razaoSocial: string;
@@ -42,6 +42,7 @@ export function EmpresaForm({
     observacoes: initial?.observacoes ?? "",
   });
   const [error, setError] = useState<string | null>(null);
+const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
   const [cnpjError, setCnpjError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -110,7 +111,8 @@ export function EmpresaForm({
     setLoading(false);
 
     if (!res.ok) {
-      setError(data?.error ?? "Erro ao salvar.");
+      setDup(res.status === 409 ? { message: data?.error ?? "Já existe um cadastro com este CNPJ.", existingId: data?.existingId } : null);
+      setError(res.status === 409 ? null : (data?.error ?? "Erro ao salvar."));
       return;
     }
     router.push(`/empresas/${data.id}`);
@@ -255,6 +257,15 @@ export function EmpresaForm({
           Cancelar
         </Button>
       </div>
+
+      <ConfirmPopup
+        open={!!dup}
+        title="Cadastro duplicado"
+        message={dup?.message ?? ""}
+        confirmText="Abrir existente"
+        onCancel={() => setDup(null)}
+        onConfirm={() => { if (dup?.existingId) { router.push(`/empresas/${dup.existingId}`); router.refresh(); } setDup(null); }}
+      />
     </form>
   );
 }

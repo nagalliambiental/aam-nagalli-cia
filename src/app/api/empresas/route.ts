@@ -46,9 +46,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: empresa.id }, { status: 201 });
   } catch (e) {
     const isDup = (e as { code?: string })?.code === "P2002";
-    return NextResponse.json(
-      { error: isDup ? "Empresa já cadastrada com este CNPJ." : "Erro ao criar empresa." },
-      { status: isDup ? 409 : 500 }
-    );
+    if (isDup) {
+      const existente = data.cnpj
+        ? await prisma.empresa.findUnique({ where: { cnpj: data.cnpj as string }, select: { id: true } })
+        : null;
+      return NextResponse.json(
+        { error: "Empresa já cadastrada com este CNPJ.", existingId: existente?.id ?? undefined },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: "Erro ao criar empresa." }, { status: 500 });
   }
 }

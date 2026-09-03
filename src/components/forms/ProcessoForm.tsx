@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
 
 const FASES_VALIDAS = [
   "Requerimento de Pesquisa",
@@ -189,6 +189,7 @@ export function ProcessoForm({
     observacoes: initial?.observacoes ?? "",
   });
   const [error, setError] = useState<string | null>(null);
+const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [cmLoading, setCmLoading] = useState(false);
   const [cmMsg, setCmMsg] = useState<string | null>(null);
@@ -383,9 +384,7 @@ export function ProcessoForm({
 
     if (!res.ok) {
       if (res.status === 409 && data.existingId) {
-        alert(data.error ?? "Processo já cadastrado.");
-        router.push(`/processos/${data.existingId}`);
-        router.refresh();
+        setDup({ message: data.error ?? "Já existe um processo cadastrado com este número.", existingId: data.existingId });
         return;
       }
       setError(data?.detail ? `${data?.error ?? "Erro ao salvar."} (${data.detail})` : data?.error ?? "Erro ao salvar.");
@@ -778,6 +777,18 @@ export function ProcessoForm({
           </div>
         </div>
       )}
+
+      <ConfirmPopup
+        open={!!dup}
+        title="Processo duplicado"
+        message={dup?.message ?? ""}
+        confirmText="Abrir existente"
+        onCancel={() => setDup(null)}
+        onConfirm={() => {
+          if (dup?.existingId) { router.push(`/processos/${dup.existingId}`); router.refresh(); }
+          setDup(null);
+        }}
+      />
     </form>
   );
 }
