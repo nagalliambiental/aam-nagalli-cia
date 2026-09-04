@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } },
       orderBy: { criadoEm: "desc" },
       take: 8,
-      select: { id: true, mensagem: true, processo: { select: { id: true, numero: true } } },
+      select: { id: true, mensagem: true, tipo: true, criadoEm: true, processo: { select: { id: true, numero: true } } },
     }),
     prisma.tarefa.findMany({
       where: {
@@ -154,6 +154,8 @@ export default async function DashboardPage() {
     .sort((a, b) => new Date(a.fim!).getTime() - new Date(b.fim!).getTime())
     .slice(0, 10);
   const totalAtencao = prazosAlertas.length + tarefasAtencao.length;
+  const movRecentes = alertas.filter((a) => a.tipo === "sei_movimentacao");
+  const alertasOutros = alertas.filter((a) => a.tipo !== "sei_movimentacao");
 
   return (
     <div className="space-y-6">
@@ -183,7 +185,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Cards de métricas */}
-      <div className={`grid grid-cols-2 gap-4 ${cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
+      <div className={`grid grid-cols-2 gap-4 ${cards.length === 5 ? "md:grid-cols-5" : cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
         {cards.map((c) => {
           const Icon = c.icon;
           return (
@@ -305,7 +307,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
-            {alertas.length === 0 && (
+            {alertasOutros.length === 0 && (
               <li className="flex items-center gap-2 px-5 py-8 text-sm text-muted">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600">
                   <TrendingUp className="h-4 w-4" />
@@ -313,7 +315,7 @@ export default async function DashboardPage() {
                 Tudo em dia. Nenhum alerta urgente no momento.
               </li>
             )}
-            {alertas.map((a) => (
+            {alertasOutros.map((a) => (
               <li key={a.id} className="px-5 py-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
@@ -334,6 +336,46 @@ export default async function DashboardPage() {
           </ul>
         </Card>
       </div>
+
+      {/* Movimentações recentes (SEI) — somem ao visualizar o processo */}
+      <Card>
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+              <BellRing className="h-4 w-4" />
+            </span>
+            Movimentações recentes (SEI)
+          </h2>
+          <Link href="/alertas" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
+            Ver todas <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <ul className="divide-y divide-slate-100">
+          {movRecentes.length === 0 && (
+            <li className="px-5 py-8 text-center text-sm text-muted">
+              Nenhuma movimentação nova. Elas somem daqui ao visualizar o processo.
+            </li>
+          )}
+          {movRecentes.map((a) => (
+            <li key={a.id} className="px-5 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy-900">{a.mensagem}</p>
+                  <p className="mt-0.5 text-xs text-muted">{formatDate(a.criadoEm)}</p>
+                </div>
+                {a.processo && (
+                  <Link
+                    href={`/processos/${a.processo.id}`}
+                    className="inline-flex shrink-0 items-center gap-1 text-xs text-navy-600 hover:underline"
+                  >
+                    {a.processo.numero} <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
     </div>
   );
