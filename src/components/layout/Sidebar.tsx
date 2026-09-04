@@ -67,9 +67,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
 
   const isAdmin = user.perfilNome === "Administrador";
   const topLinks = [DASHBOARD];
-  const sections = (isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Administrativo")).map((s) =>
-    s.label === "Financeiro" && !isAdmin ? { ...s, items: s.items.filter((i) => i.href !== "/faturas") } : s
-  );
+  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro" && s.label !== "Administrativo");
   const flatLinks = [...topLinks, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
