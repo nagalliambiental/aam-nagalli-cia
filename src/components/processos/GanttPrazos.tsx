@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button, Select } from "@/components/ui";
 
 type Barra = {
@@ -85,17 +85,17 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
         <div className="flex items-center gap-1">
+          <button type="button" onClick={() => navMes(-12)} title="Ano anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsLeft className="h-5 w-5" /></button>
+          <button type="button" onClick={() => navMes(-1)} title="Mês anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronLeft className="h-5 w-5" /></button>
           <Select value={month.getMonth()} onChange={(e) => setMonth(new Date(month.getFullYear(), Number(e.target.value), 1))} className="w-auto text-sm">
             {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </Select>
           <Select value={month.getFullYear()} onChange={(e) => setMonth(new Date(Number(e.target.value), month.getMonth(), 1))} className="w-auto text-sm">
             {anos.map((a) => <option key={a} value={a}>{a}</option>)}
           </Select>
+          <button type="button" onClick={() => navMes(1)} title="Próximo mês" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronRight className="h-5 w-5" /></button>
+          <button type="button" onClick={() => navMes(12)} title="Próximo ano" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsRight className="h-5 w-5" /></button>
           <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => setMonth(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}>Hoje</Button>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" className="h-7 w-7 p-0" onClick={() => navMes(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button variant="ghost" className="h-7 w-7 p-0" onClick={() => navMes(1)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
 
