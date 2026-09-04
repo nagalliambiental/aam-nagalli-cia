@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Card, Button, Badge } from "@/components/ui";
 import { Search } from "lucide-react";
+import { ImportarEmpreendimentos } from "@/components/empreendimentos/ImportarEmpreendimentos";
 
 type SearchParams = Promise<{ q?: string | string[] }>;
 
@@ -37,9 +38,21 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         title="Empreendimentos"
         subtitle="Unidades operacionais e seus vínculos"
         actions={
-          <Link href="/empreendimentos/nova">
-            <Button>Novo empreendimento</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ImportarEmpreendimentos />
+            <Link href="/api/relatorios/empreendimentos/xlsx" target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar XLSX</Button>
+            </Link>
+            <Link href="/api/relatorios/empreendimentos/pdf" target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar PDF</Button>
+            </Link>
+            <Link href="/api/relatorios/empreendimentos/modelo" target="_blank" rel="noreferrer">
+              <Button variant="ghost">Modelo</Button>
+            </Link>
+            <Link href="/empreendimentos/nova">
+              <Button>Novo empreendimento</Button>
+            </Link>
+          </div>
         }
       />
 
