@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermissao } from "@/lib/perfil";
 import { PageHeader, Card, Badge, Button } from "@/components/ui";
+import { BuscaAuto } from "@/components/ui/BuscaAuto";
 import { formatDate } from "@/lib/format";
 import { UserCog, UserX, UserCheck, Search } from "lucide-react";
 
@@ -33,18 +34,7 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Sea
       />
 
       <Card>
-        <form method="get" className="flex items-center gap-2 p-5">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Buscar por e-mail..."
-              className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
-            />
-          </div>
-          <Button type="submit">Buscar</Button>
-        </form>
+        <BuscaAuto placeholder="Buscar por e-mail..." valorInicial={q} />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
