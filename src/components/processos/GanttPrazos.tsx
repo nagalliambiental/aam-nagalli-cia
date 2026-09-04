@@ -137,13 +137,13 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
               })}
             </div>
 
-            {/* Linhas de barras */}
+            {/* Linhas de barras (só as que cruzam o intervalo visível) */}
             {rows.map((r, i) => (
               <div key={`r${i}`} className="relative border-b border-slate-100" style={{ height: 36 }}>
                 {r.tipo !== "grupo" && (
                   <div className="absolute bottom-0 top-0 w-px bg-navy-500/40" style={{ left: `${pct(hoje.getTime())}%` }} />
                 )}
-                {r.itens.map((b) => (
+                {r.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd).map((b) => (
                   <div
                     key={b.id}
                     className="absolute top-[3px] z-10 flex h-[30px] items-center overflow-hidden rounded px-1.5 text-[10px] font-medium text-white"
