@@ -9,15 +9,13 @@ import {
   LogOut, Menu, X, Mountain,
   BellRing, CalendarDays, FileBarChart,
   ChevronDown, CheckSquare, FileSignature, Radar, Library,
-  ChartPie, Settings2, Download,
+  HandCoins, ChartPie, Settings2, Download,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
-const FATURAS: NavItem = { href: "/faturas", label: "Faturas", icon: FileSignature };
-const CONTRATOS: NavItem = { href: "/contratos", label: "Contratos", icon: FileSignature };
 
 const SECTIONS: NavGroup[] = [
   {
@@ -45,6 +43,14 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
+    label: "Financeiro",
+    icon: HandCoins,
+    items: [
+      { href: "/faturas", label: "Faturas", icon: FileSignature },
+      { href: "/contratos", label: "Contratos", icon: FileSignature },
+    ],
+  },
+  {
     label: "Administrativo",
     icon: Settings2,
     items: [
@@ -60,8 +66,10 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const isAdmin = user.perfilNome === "Administrador";
-  const topLinks = isAdmin ? [DASHBOARD, FATURAS, CONTRATOS] : [DASHBOARD, CONTRATOS];
-  const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Administrativo");
+  const topLinks = [DASHBOARD];
+  const sections = (isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Administrativo")).map((s) =>
+    s.label === "Financeiro" && !isAdmin ? { ...s, items: s.items.filter((i) => i.href !== "/faturas") } : s
+  );
   const flatLinks = [...topLinks, ...sections.flatMap((s) => s.items)];
 
   function isItemActive(href: string) {
