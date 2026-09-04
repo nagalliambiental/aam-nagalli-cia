@@ -46,10 +46,12 @@ export function FaturaForm({
   const [empresaId, setEmpresaId] = useState("");
   const [empreendimentoId, setEmpreendimentoId] = useState("");
   const [referencia, setReferencia] = useState("");
-  const [periodo, setPeriodo] = useState("");
+  const [periodoInicio, setPeriodoInicio] = useState("");
+  const [periodoFim, setPeriodoFim] = useState("");
   const [vencimento, setVencimento] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
   const [loading, setLoading] = useState(false);
+  const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const empsFiltrados = empresaId
@@ -58,6 +60,37 @@ export function FaturaForm({
 
   function setLinha(i: number, patch: Partial<Linha>) {
     setLinhas((arr) => arr.map((x, xi) => (xi === i ? { ...x, ...patch } : x)));
+  }
+
+  async function buscarTarefas() {
+    if (!empreendimentoId || !periodoInicio || !periodoFim) {
+      setError("Selecione o empreendimento e o período (início e fim) para buscar as tarefas.");
+      return;
+    }
+    setBuscando(true);
+    setError(null);
+    try {
+      const qs = new URLSearchParams({ empreendimentoId, inicio: periodoInicio, fim: periodoFim });
+      const res = await fetch(`/api/faturas/tarefas?${qs.toString()}`);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Erro ao buscar tarefas.");
+      const novas: Linha[] = (d || []).map((t: { titulo: string; descricao: string | null; dataCriacao: string; processoNumero: string | null; empreendimentoNome: string }) => ({
+        ...linhaVazia(),
+        data: t.dataCriacao.slice(0, 10),
+        identificacao: `${t.titulo}${t.processoNumero ? ` · Processo #${t.processoNumero}` : ""}${t.empreendimentoNome ? ` · ${t.empreendimentoNome}` : ""}`,
+        descricao: t.descricao ?? "",
+      }));
+      // Mantém linhas manuais já preenchidas e acrescenta as puxadas (sem duplicar vazias iniciais)
+      setLinhas((arr) => {
+        const base = arr.length === 1 && !arr[0].identificacao && !arr[0].descricao ? [] : arr;
+        return [...base, ...novas];
+      });
+      if (novas.length === 0) setError("Nenhuma tarefa encontrada nesse empreendimento/período.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao buscar tarefas.");
+    } finally {
+      setBuscando(false);
+    }
   }
 
   const totalGeral = useMemo(() => round2(linhas.reduce((s, l) => s + calc(l).tot, 0)), [linhas]);
@@ -73,7 +106,8 @@ export function FaturaForm({
         empresaId: Number(empresaId),
         empreendimentoId: empreendimentoId ? Number(empreendimentoId) : null,
         referencia,
-        periodo,
+        periodoInicio: periodoInicio || null,
+        periodoFim: periodoFim || null,
         vencimento: vencimento || null,
         itens: linhas.map((l) => ({
           data: l.data || null,
@@ -114,20 +148,29 @@ export function FaturaForm({
           <Label htmlFor="referencia">Referência</Label>
           <Input id="referencia" value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ex.: Terra Roxa" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:col-span-2">
           <div>
-            <Label htmlFor="periodo">Período</Label>
-            <Input id="periodo" value={periodo} onChange={(e) => setPeriodo(e.target.value)} placeholder="01/01/2023 a 10/04/2026" />
+            <Label htmlFor="pini">Período de</Label>
+            <Input id="pini" type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="pfim">Período até</Label>
+            <Input id="pfim" type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} />
           </div>
           <div>
             <Label htmlFor="venc">Vencimento</Label>
             <Input id="venc" type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} />
           </div>
+          <div className="flex items-end">
+            <Button type="button" variant="secondary" onClick={buscarTarefas} disabled={buscando || !empreendimentoId}>
+              {buscando ? "Buscando..." : "Buscar tarefas do período"}
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <Label>Itens</Label>
+        <Label>Itens (puxados das tarefas — complete os valores manualmente)</Label>
         <Button type="button" variant="secondary" onClick={() => setLinhas((arr) => [...arr, linhaVazia()])} className="px-3 py-1.5 text-xs">
           <Plus className="h-4 w-4" /> Adicionar item
         </Button>

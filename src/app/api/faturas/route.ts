@@ -59,6 +59,12 @@ export async function POST(req: Request) {
   const count = await prisma.fatura.count({ where: { ano } });
   const numero = String(count + 1).padStart(3, "0");
 
+  const periodoInicio = dataLocal(body.periodoInicio);
+  const periodoFim = dataLocal(body.periodoFim);
+  const periodoTexto = periodoInicio && periodoFim
+    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
+    : (body.periodo ?? null);
+
   try {
     const fatura = await prisma.fatura.create({
       data: {
@@ -67,7 +73,9 @@ export async function POST(req: Request) {
         empresaId,
         empreendimentoId: body.empreendimentoId ? Number(body.empreendimentoId) : null,
         referencia: body.referencia ?? null,
-        periodo: body.periodo ?? null,
+        periodo: periodoTexto,
+        periodoInicio,
+        periodoFim,
         vencimento: dataLocal(body.vencimento),
         status: "aberta",
         observacoes: body.observacoes ?? null,

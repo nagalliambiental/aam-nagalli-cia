@@ -1073,6 +1073,8 @@ model Fatura {
   empreendimentoId Int?
   referencia      String?
   periodo         String?
+  periodoInicio   DateTime?
+  periodoFim      DateTime?
   vencimento      DateTime?
   status          String    @default("aberta") // aberta | enviada | paga | cancelada
   observacoes     String?
