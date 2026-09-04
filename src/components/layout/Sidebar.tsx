@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Building2, FolderOpen, CalendarClock,
   LogOut, Menu, X, Mountain,
   BellRing, CalendarDays, FileBarChart,
-  ChevronDown, CheckSquare, FileSignature, Radar, Library,
+  CheckSquare, FileSignature, Radar, Library,
   HandCoins, ChartPie, Settings2, Download,
 } from "lucide-react";
 
@@ -63,7 +63,6 @@ const SECTIONS: NavGroup[] = [
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const isAdmin = user.perfilNome === "Administrador";
   const topLinks = [DASHBOARD];
@@ -102,27 +101,20 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
       {topLinks.map(renderLink)}
       {sections.map((group) => {
         const active = isGroupActive(group.items);
-        const isOpen = collapsed[group.label] ?? active;
         const GroupIcon = group.icon;
         return (
           <div key={group.label}>
-            <button
-              onClick={() => setCollapsed((c) => ({ ...c, [group.label]: !isOpen }))}
-              className={`flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
-                active ? "text-gold-300" : "text-white/50 hover:text-white/80"
+            <div
+              className={`flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${
+                active ? "text-gold-300" : "text-white/50"
               }`}
             >
               <GroupIcon className="h-4 w-4 shrink-0" />
               <span className="flex-1 text-left">{group.label}</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${isOpen ? "" : "-rotate-90"}`}
-              />
-            </button>
-            {isOpen && (
-              <div className="ml-3 mt-0.5 space-y-0.5 border-l border-white/15 pl-3 pb-1">
-                {group.items.map(renderLink)}
-              </div>
-            )}
+            </div>
+            <div className="ml-3 mt-0.5 space-y-0.5 border-l border-white/15 pl-3 pb-1">
+              {group.items.map(renderLink)}
+            </div>
           </div>
         );
       })}
