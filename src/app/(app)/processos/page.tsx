@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Button } from "@/components/ui";
 import { ProcessosFiltro } from "@/components/processos/ProcessosFiltro";
+import { ImportarProcessos } from "@/components/processos/ImportarProcessos";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 
@@ -47,9 +48,21 @@ export default async function ProcessosPage() {
         subtitle="Hub operacional: processos minerários e ambientais"
         actions={
           podeCriar ? (
-            <Link href="/processos/novo">
-              <Button>Novo processo</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <ImportarProcessos />
+              <Link href="/api/relatorios/processos/xlsx" target="_blank" rel="noreferrer">
+                <Button variant="secondary">Exportar XLSX</Button>
+              </Link>
+              <Link href="/api/relatorios/processos/pdf" target="_blank" rel="noreferrer">
+                <Button variant="secondary">Exportar PDF</Button>
+              </Link>
+              <Link href="/api/relatorios/processos/modelo" target="_blank" rel="noreferrer">
+                <Button variant="ghost">Modelo</Button>
+              </Link>
+              <Link href="/processos/novo">
+                <Button>Novo processo</Button>
+              </Link>
+            </div>
           ) : undefined
         }
       />
