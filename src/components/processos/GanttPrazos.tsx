@@ -112,8 +112,8 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
         </div>
 
         {/* Timeline */}
-        <div className="relative min-w-0 flex-1 overflow-x-auto">
-          <div style={{ minWidth: `${days.length * 26}px` }}>
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          <div className="w-full">
             {/* Mês */}
             <div className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-bold text-navy-900">
               {MESES[month.getMonth()]} {month.getFullYear()}
@@ -121,7 +121,7 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
             {/* Semanas */}
             <div className="flex border-b border-slate-200 bg-slate-50">
               {semanas.map((wk, i) => (
-                <div key={i} className="border-r border-slate-200 px-2 py-1 text-center text-[10px] font-semibold uppercase text-muted" style={{ width: `${wk.length * 26}px` }}>
+                <div key={i} className="border-r border-slate-200 px-1 py-1 text-center text-[10px] font-semibold uppercase text-muted" style={{ flex: wk.length }}>
                   Semana {i + 1}                </div>
               ))}
             </div>
@@ -130,7 +130,7 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
               {days.map((d) => {
                 const isHoje = d.toDateString() === hoje.toDateString();
                 return (
-                  <div key={d.getTime()} className="flex items-center justify-center border-r border-slate-100 py-1 text-[10px]" style={{ width: 26 }}>
+                  <div key={d.getTime()} className="flex min-w-0 flex-1 items-center justify-center border-r border-slate-100 py-1 text-[10px]">
                     <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isHoje ? "bg-navy-700 text-white font-bold" : "text-muted"}`}>{d.getDate()}</span>
                   </div>
                 );
