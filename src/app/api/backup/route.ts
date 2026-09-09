@@ -8,16 +8,14 @@ export async function GET(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   if (session.user.perfilNome !== "Administrador") return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
-  const [empresas, empreendimentos, processos, titulos, licencas, prazos, tarefas, exigencias, contratos] = await Promise.all([
+  const [empresas, empreendimentos, processos, prazos, tarefas, contratos, faturas] = await Promise.all([
     prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { razaoSocial: "asc" } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, include: { empresaPrincipal: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { orgao: true, tipoProcesso: true, empreendimento: true } }),
-    prisma.tituloMinerario.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { tipoTitulo: true, orgao: true } }),
-    prisma.licenca.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { tipoLicenca: true, orgao: true } }),
     prisma.prazo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { dataCalculadaAtual: "asc" }, include: { processo: true } }),
-    prisma.tarefa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { titulo: "asc" }, include: { responsavel: true, processo: true } }),
-    prisma.exigencia.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { descricao: "asc" }, include: { processo: true, orgao: true, responsavel: true } }),
+    prisma.tarefa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { titulo: "asc" }, include: { responsavel: true, processo: true, empreendimento: true } }),
     prisma.contrato.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { numero: "asc" }, include: { empresa: true } }),
+    prisma.fatura.findMany({ where: { ativo: true, deletedAt: null }, orderBy: [{ ano: "desc" }, { numero: "desc" }], include: { empresa: true, empreendimento: true, itens: true } }),
   ]);
 
   const wb = new ExcelJS.Workbook();
@@ -69,24 +67,6 @@ export async function GET(req: Request) {
     { header: "Status", key: "status", width: 12 },
   ], processos.map((p) => ({ id: p.id, numero: p.numero, nup: (p as unknown as { nup?: string }).nup, orgao: p.orgao.sigla, tipo: p.tipoProcesso.nome, fase: p.fase, area: (p as unknown as { areaValor?: number; areaUnidade?: string }).areaValor ? `${(p as unknown as { areaValor?: number }).areaValor} ${(p as unknown as { areaUnidade?: string }).areaUnidade}` : "", empreendimento: p.empreendimento?.nome, status: p.status })));
 
-  addSheet("Titulos", [
-    { header: "ID", key: "id", width: 8 },
-    { header: "Número", key: "numero", width: 18 },
-    { header: "Tipo", key: "tipo", width: 18 },
-    { header: "Órgão", key: "orgao", width: 10 },
-    { header: "Situação", key: "situacao", width: 12 },
-    { header: "Validade", key: "validade", width: 14 },
-  ], titulos.map((t) => ({ id: t.id, numero: t.numero, tipo: t.tipoTitulo.nome, orgao: t.orgao.sigla, situacao: t.situacao, validade: t.validade ? new Date(t.validade).toLocaleDateString("pt-BR") : "" })));
-
-  addSheet("Licencas", [
-    { header: "ID", key: "id", width: 8 },
-    { header: "Número", key: "numero", width: 18 },
-    { header: "Tipo", key: "tipo", width: 12 },
-    { header: "Órgão", key: "orgao", width: 10 },
-    { header: "Situação", key: "situacao", width: 12 },
-    { header: "Validade", key: "validade", width: 14 },
-  ], licencas.map((l) => ({ id: l.id, numero: l.numero, tipo: l.tipoLicenca.nome, orgao: l.orgao.sigla, situacao: l.situacao, validade: l.dataValidade ? new Date(l.dataValidade).toLocaleDateString("pt-BR") : "" })));
-
   addSheet("Prazos", [
     { header: "ID", key: "id", width: 8 },
     { header: "Descrição", key: "descricao", width: 40 },
@@ -98,21 +78,13 @@ export async function GET(req: Request) {
   addSheet("Tarefas", [
     { header: "ID", key: "id", width: 8 },
     { header: "Título", key: "titulo", width: 35 },
-    { header: "Responsável", key: "responsavel", width: 20 },
-    { header: "Processo", key: "processo", width: 18 },
-    { header: "Prazo", key: "prazo", width: 14 },
-    { header: "Status", key: "status", width: 12 },
-  ], tarefas.map((t) => ({ id: t.id, titulo: t.titulo, responsavel: t.responsavel?.nome, processo: t.processo?.numero, prazo: t.prazoData ? new Date(t.prazoData).toLocaleDateString("pt-BR") : "", status: t.status })));
-
-  addSheet("Exigencias", [
-    { header: "ID", key: "id", width: 8 },
     { header: "Descrição", key: "descricao", width: 45 },
-    { header: "Processo", key: "processo", width: 18 },
-    { header: "Órgão", key: "orgao", width: 10 },
     { header: "Responsável", key: "responsavel", width: 20 },
+    { header: "Processo", key: "processo", width: 18 },
+    { header: "Empreendimento", key: "empreendimento", width: 28 },
     { header: "Prazo", key: "prazo", width: 14 },
     { header: "Status", key: "status", width: 12 },
-  ], exigencias.map((e) => ({ id: e.id, descricao: e.descricao.slice(0, 80), processo: e.processo?.numero, orgao: e.orgao.sigla, responsavel: e.responsavel?.nome, prazo: e.prazoResposta ? new Date(e.prazoResposta).toLocaleDateString("pt-BR") : "", status: e.status })));
+  ], tarefas.map((t) => ({ id: t.id, titulo: t.titulo, descricao: t.descricao, responsavel: t.responsavel?.nome, processo: t.processo?.numero, empreendimento: t.empreendimento?.apelido || t.empreendimento?.nome || "", prazo: t.prazoData ? new Date(t.prazoData).toLocaleDateString("pt-BR") : "", status: t.status })));
 
   addSheet("Contratos", [
     { header: "ID", key: "id", width: 8 },
@@ -120,6 +92,30 @@ export async function GET(req: Request) {
     { header: "Empresa", key: "empresa", width: 30 },
     { header: "Validade", key: "validade", width: 14 },
   ], contratos.map((c) => ({ id: c.id, numero: c.numero, empresa: c.empresa.razaoSocial, validade: c.dataValidade ? new Date(c.dataValidade).toLocaleDateString("pt-BR") : "" })));
+
+  addSheet("Faturas", [
+    { header: "ID", key: "id", width: 8 },
+    { header: "Número", key: "numero", width: 14 },
+    { header: "Ano", key: "ano", width: 10 },
+    { header: "Cliente", key: "cliente", width: 32 },
+    { header: "Empreendimento", key: "empreendimento", width: 28 },
+    { header: "Referência", key: "referencia", width: 25 },
+    { header: "Vencimento", key: "vencimento", width: 14 },
+    { header: "Status", key: "status", width: 14 },
+    { header: "Recebida em", key: "recebidoEm", width: 18 },
+    { header: "Total", key: "total", width: 16 },
+  ], faturas.map((f) => ({
+    id: f.id,
+    numero: f.numero,
+    ano: f.ano,
+    cliente: f.empresa.nomeFantasia || f.empresa.razaoSocial,
+    empreendimento: f.empreendimento?.apelido || f.empreendimento?.nome || "",
+    referencia: f.referencia || "",
+    vencimento: f.vencimento ? new Date(f.vencimento).toLocaleDateString("pt-BR") : "",
+    status: f.status,
+    recebidoEm: f.recebidoEm ? new Date(f.recebidoEm).toLocaleString("pt-BR") : "",
+    total: f.itens.reduce((sum, item) => sum + Number(item.total), 0),
+  })));
 
   const buf = await wb.xlsx.writeBuffer();
   const arquivo = Buffer.from(buf);
