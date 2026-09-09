@@ -30,7 +30,6 @@ export async function GET() {
     { header: "UF", key: "uf", width: 8 },
     { header: "Email", key: "email", width: 28 },
     { header: "Telefone", key: "telefone", width: 18 },
-    { header: "Contatos", key: "contatos", width: 50 },
   ];
   clientes.forEach((c) => {
     ws.addRow({
@@ -46,13 +45,26 @@ export async function GET() {
       uf: c.uf ?? "",
       email: c.email ?? "",
       telefone: c.telefone ?? "",
-      contatos: c.contatos.map((x) => [x.nome, x.email, x.telefone, x.assunto].filter(Boolean).join(" | ")).join(" ; "),
     });
   });
   ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF021E4C" } };
   ws.views = [{ state: "frozen", ySplit: 1 }];
   ws.autoFilter = { from: "A1", to: { row: 1, column: ws.columns.length } };
+
+  const contatos = wb.addWorksheet("Contatos");
+  contatos.columns = [
+    { header: "CNPJ", key: "cnpj", width: 22 },
+    { header: "Nome", key: "nome", width: 28 },
+    { header: "E-mail", key: "email", width: 32 },
+    { header: "Telefone", key: "telefone", width: 20 },
+    { header: "Assunto", key: "assunto", width: 28 },
+  ];
+  clientes.forEach((c) => c.contatos.forEach((contato) => contatos.addRow({ cnpj: c.cnpj ?? "", nome: contato.nome ?? "", email: contato.email ?? "", telefone: contato.telefone ?? "", assunto: contato.assunto ?? "" })));
+  contatos.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  contatos.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF021E4C" } };
+  contatos.views = [{ state: "frozen", ySplit: 1 }];
+  contatos.autoFilter = { from: "A1", to: { row: 1, column: contatos.columns.length } };
 
   const buf = await wb.xlsx.writeBuffer();
   return new NextResponse(Buffer.from(buf), {

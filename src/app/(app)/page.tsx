@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } },
       orderBy: { criadoEm: "desc" },
       take: 8,
-      select: { id: true, mensagem: true, tipo: true, criadoEm: true, processo: { select: { id: true, numero: true } } },
+       select: { id: true, mensagem: true, tipo: true, criadoEm: true, dataEvento: true, processo: { select: { id: true, numero: true } } },
     }),
     prisma.tarefa.findMany({
       where: {
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-navy-900">{a.mensagem}</p>
-                    <p className="mt-0.5 text-xs text-muted">{formatDate(a.criadoEm)}</p>
+                     <p className="mt-0.5 text-xs text-muted">{formatDate(a.dataEvento ?? a.criadoEm)}</p>
                   </div>
                   {a.processo && (
                     <Link

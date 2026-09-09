@@ -11,9 +11,17 @@ export async function GET() {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Clientes");
   ws.addRow(CABECALHOS);
-  ws.addRow(["Razão Social Exemplo LTDA", "Fantasia Exemplo", "Matriz", "00.000.000/0000-00", "1234567", "85800-000", "Rua Exemplo", "123", "Cascavel", "PR", "contato@exemplo.com", "(45) 99999-9999"]);
-  ws.getRow(1).font = { bold: true };
-  ws.columns.forEach((col, i) => { if (col && "width" in col) (col as { width: number }).width = [40, 28, 22, 22, 16, 12, 36, 8, 24, 8, 28, 20][i] ?? 20; });
+   ws.addRow(["Razão Social Exemplo LTDA", "Fantasia Exemplo", "Matriz", "00.000.000/0000-00", "1234567", "85800-000", "Rua Exemplo", "123", "Cascavel", "PR", "contato@exemplo.com", "(45) 99999-9999"]);
+   ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF021E4C" } };
+   ws.columns.forEach((col, i) => { if (col && "width" in col) (col as { width: number }).width = [40, 28, 22, 22, 16, 12, 36, 8, 24, 8, 28, 20][i] ?? 20; });
+
+   const contatos = wb.addWorksheet("Contatos");
+   contatos.addRow(["CNPJ", "Nome", "E-mail", "Telefone", "Assunto"]);
+   contatos.addRow(["00.000.000/0000-00", "João da Silva", "joao@exemplo.com", "(45) 99999-9999", "Financeiro"]);
+   contatos.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+   contatos.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF021E4C" } };
+   [22, 28, 32, 20, 28].forEach((width, i) => { contatos.getColumn(i + 1).width = width; });
 
   const buf = await wb.xlsx.writeBuffer();
   return new NextResponse(Buffer.from(buf), {

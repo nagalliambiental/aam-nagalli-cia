@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell } from "lucide-react";
+import { safeExternalUrl } from "@/lib/urls";
 
 function formatDateToLocal(d: string): string {
   const date = new Date(d);
@@ -22,6 +23,7 @@ interface Notificacao {
   canal: string;
   lida: boolean;
   dataEnvio: string;
+  dataEvento: string | null;
   processoId: number | null;
   prazoId: number | null;
   tarefaId: number | null;
@@ -30,7 +32,7 @@ interface Notificacao {
 }
 
 function notificacaoLink(n: Notificacao): string | null {
-  if (n.url) return n.url;
+  if (n.url) return safeExternalUrl(n.url);
   if (n.processoId) return `/processos/${n.processoId}`;
   if (n.licencaId) return `/licencas/${n.licencaId}`;
   if (n.prazoId) return `/prazos`;
@@ -115,7 +117,7 @@ export function NotificationBell() {
                   <div className="border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50">
                     <p className="text-sm text-slate-700">{n.mensagem}</p>
                     <p className="mt-1 text-xs text-muted">
-                      {formatDateToLocal(n.dataEnvio)}
+                       {formatDateToLocal(n.dataEvento ?? n.dataEnvio)}
                     </p>
                   </div>
                 );

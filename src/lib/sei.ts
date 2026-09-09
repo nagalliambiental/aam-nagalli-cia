@@ -24,6 +24,22 @@ function limparHtml(s: string): string {
   return s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function extrairUrlPublica(href: string | null): string | null {
+  if (!href) return null;
+  const normalizado = href.replace(/&amp;/g, "&");
+  const candidatos = [
+    ...(normalizado.match(/(?:https?:\/\/|\/)[^'"\s)]+/gi) ?? []),
+    ...(normalizado.match(/["']([^"']+\.php\?[^"']+)["']/i)?.slice(1) ?? []),
+  ];
+  for (const candidato of candidatos) {
+    try {
+      const url = new URL(candidato, BASE_SEI);
+      if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
+    } catch {}
+  }
+  return null;
+}
+
 /**
  * Converte o HTML da página de exibição do processo em andamentos.
  * Cada linha <tr class="andamento..."> tem: data/hora, unidade e descrição.
@@ -63,7 +79,7 @@ export function parseProtocolosProcesso(htmlHtml: string): ProtocoloSei[] {
     const numero = cells[1]?.match(/\b\d{5,}\b/)?.[0] ?? "";
     if (!numero || seen.has(numero) || !/\d{1,2}\/\d{1,2}\/\d{4}/.test(cells[3] ?? "")) continue;
     const href = tds[1]?.match(/href=["']([^"']+)["']/i)?.[1] ?? null;
-    const url = href ? new URL(href, BASE_SEI).toString() : null;
+    const url = extrairUrlPublica(href);
     seen.add(numero);
     out.push({
       numero,

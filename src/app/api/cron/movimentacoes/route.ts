@@ -62,7 +62,7 @@ export async function GET(req: Request) {
     if (p.seiUrl && p.seiUrl.includes("md_pesq_processo_exibir")) {
       const resultado = await consultarPaginaSei(p.seiUrl).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
       const ands = resultado.andamentos;
-      await salvarProtocolosSei(p.id, resultado.protocolos).catch(() => []);
+      await salvarProtocolosSei(p.id, resultado.protocolos, true).catch(() => []);
       if (ands.length > 0) {
         descricao = ands[0].descricao;
         dia = diaNum(ands[0].data);
@@ -111,6 +111,7 @@ export async function GET(req: Request) {
             data: {
               tipo: "sei_movimentacao",
               mensagem: `Nova movimentação no processo ${p.numero}: ${descricao}`,
+              dataEvento: data,
               processoId: p.id,
               destinatarioUsuarioId: null,
             },

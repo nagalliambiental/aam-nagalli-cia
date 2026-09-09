@@ -5,6 +5,7 @@ import { PageHeader, Card, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { MarcarTodasLidas } from "@/components/notificacoes/MarcarTodasLidas";
 import { CriarTarefaNotificacao } from "@/components/notificacoes/CriarTarefaNotificacao";
+import { safeExternalUrl } from "@/lib/urls";
 
 const TIPO: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   dou_notificacao: { label: "DOU", tone: "blue" },
@@ -47,15 +48,15 @@ export default async function NotificacoesPage() {
                       <span className="truncate">{n.mensagem}</span>
                     </p>
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
-                      <span>{formatDate(n.criadoEm)}</span>
+                       <span>{formatDate(n.dataEvento ?? n.criadoEm)}</span>
                       {n.termo && <span>Termo: {n.termo}</span>}
                       {n.processo && (
                         <Link href={`/processos/${n.processo.id}`} className="text-navy-600 hover:underline">
                           Processo {n.processo.numero}
                         </Link>
                       )}
-                      {n.url && (
-                        <a href={n.url} target="_blank" rel="noreferrer" className="text-navy-600 underline hover:text-navy-800">
+                       {safeExternalUrl(n.url) && (
+                         <a href={safeExternalUrl(n.url) ?? undefined} target="_blank" rel="noreferrer" className="text-navy-600 underline hover:text-navy-800">
                           Ver publicação ↗
                         </a>
                       )}

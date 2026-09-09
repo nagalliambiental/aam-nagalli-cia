@@ -25,6 +25,7 @@ export async function GET() {
       canal: true,
       lida: true,
       dataEnvio: true,
+      dataEvento: true,
       processoId: true,
       prazoId: true,
       tarefaId: true,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
+import { safeExternalUrl } from "@/lib/urls";
 
 type Mov = { data: string; hora: string; unidade: string; descricao: string };
 type Protocolo = { numero: string; tipo: string; data: string | null; dataInclusao: string | null; unidade: string | null; url: string | null };
@@ -111,28 +112,25 @@ export function SeiSyncPanel({ processoId, nup, initialProtocolos = [] }: { proc
 
       {msg && <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm text-navy-900 ring-1 ring-slate-200">{msg}</p>}
 
-      {(protocolos.length > 0 || (andamentos && andamentos.length > 0)) && (
-        <div className="mt-3 overflow-hidden rounded-md bg-white ring-1 ring-slate-200">
-          <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
-            Resultado da consulta
-          </p>
-           <div className="max-h-72 space-y-4 overflow-auto p-3">
-             {protocolos.length > 0 && <div>
-               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Protocolos ({protocolos.length})</p>
+      {protocolos.length > 0 && <div className="mt-3 overflow-hidden rounded-md bg-white ring-1 ring-slate-200">
+        <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">Protocolos ({protocolos.length})</p>
+        <div className="max-h-72 overflow-auto p-3">
                <table className="w-full text-left text-sm">
                  <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-muted">
                    <tr><th className="px-3 py-2 font-semibold">Processo / Documento</th><th className="px-3 py-2 font-semibold">Tipo</th><th className="px-3 py-2 font-semibold">Data</th><th className="px-3 py-2 font-semibold">Inclusão</th><th className="px-3 py-2 font-semibold">Unidade</th></tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
-                   {protocolos.map((p) => <tr key={p.numero} className="align-top">
-                     <td className="px-3 py-2 text-xs font-medium">{p.url ? <a href={p.url} target="_blank" rel="noreferrer" className="text-navy-600 underline">{p.numero} ↗</a> : p.numero}</td>
+                    {protocolos.map((p) => { const url = safeExternalUrl(p.url); return <tr key={p.numero} className="align-top">
+                     <td className="px-3 py-2 text-xs font-medium">{url ? <a href={url} target="_blank" rel="noreferrer" className="text-navy-600 underline">{p.numero} ↗</a> : p.numero}</td>
                      <td className="px-3 py-2 text-xs">{p.tipo}</td><td className="whitespace-nowrap px-3 py-2 text-xs text-muted">{p.data}</td><td className="whitespace-nowrap px-3 py-2 text-xs text-muted">{p.dataInclusao}</td><td className="whitespace-nowrap px-3 py-2 text-xs">{p.unidade}</td>
-                   </tr>)}
+                   </tr>; })}
                  </tbody>
                </table>
-             </div>}
-             {andamentos && andamentos.length > 0 && <div>
-             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Andamentos ({andamentos.length})</p>
+        </div>
+      </div>}
+      {andamentos && andamentos.length > 0 && <div className="mt-3 overflow-hidden rounded-md bg-white ring-1 ring-slate-200">
+        <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">Andamentos ({andamentos.length})</p>
+        <div className="max-h-72 overflow-auto p-3">
              <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -152,11 +150,9 @@ export function SeiSyncPanel({ processoId, nup, initialProtocolos = [] }: { proc
                   </tr>
                 ))}
               </tbody>
-             </table>
-             </div>}
-           </div>
+          </table>
         </div>
-      )}
+      </div>}
 
       {!nup && <p className="mt-2 text-xs text-amber-700">Cadastre o NUP no processo para consulta direta no SEI.</p>}
     </div>

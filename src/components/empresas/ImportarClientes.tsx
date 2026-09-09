@@ -22,7 +22,7 @@ export function ImportarClientes() {
       const d = await res.json().catch(() => ({}));
       if (res.ok) {
         const err = d.erros?.length ? ` | ${d.erros.length} erro(s): ${d.erros.slice(0, 3).join("; ")}` : "";
-        setMsg(`${d.criadas} cliente(s) importado(s).${err}`);
+        setMsg(`${d.criadas} cliente(s) e ${d.contatosCriados ?? 0} contato(s) importado(s).${err}`);
       } else {
         setMsg(d.error ?? "Erro ao importar.");
       }
