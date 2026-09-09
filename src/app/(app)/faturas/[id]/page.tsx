@@ -36,10 +36,10 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
         title={`Fatura Nº ${fatura.numero}/${fatura.ano}`}
         subtitle={fatura.empresa.nomeFantasia || fatura.empresa.razaoSocial}
         actions={
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex w-full flex-wrap items-center gap-2 print:hidden sm:w-auto">
             <Badge tone={st.tone}>{st.label}</Badge>
-            <a href={`/api/faturas/${fatura.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md bg-navy-700 px-3 py-2 text-xs font-medium text-white hover:bg-navy-800">PDF</a>
-            <a href={`/api/faturas/${fatura.id}/xlsx`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md px-3 py-2 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-100">XLSX editável</a>
+            <a href={`/api/faturas/${fatura.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md bg-navy-700 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-navy-800">Baixar PDF</a>
+            <a href={`/api/faturas/${fatura.id}/xlsx`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-100">Baixar XLSX</a>
             <Link href={`/faturas/${fatura.id}/editar`} className="inline-flex items-center rounded-md px-3 py-2 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-100">Editar</Link>
             <ImprimirBotao />
             <RecebimentoFatura id={fatura.id} recebido={Boolean(fatura.recebidoEm) || fatura.status === "paga"} />

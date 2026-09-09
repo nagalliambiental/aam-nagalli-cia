@@ -143,16 +143,16 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
               <Button variant="ghost" onClick={() => navMes(1)} className="h-7 w-7 p-0"><ChevronRight className="h-4 w-4" /></Button>
             </div>
           </div>
-          <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50 text-xs font-semibold text-muted">
-            {DIAS.map((d) => <div key={d} className="px-2 py-2 text-center">{d}</div>)}
+          <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50 text-[10px] font-semibold text-muted sm:text-xs">
+            {DIAS.map((d) => <div key={d} className="px-0.5 py-2 text-center sm:px-2">{d}</div>)}
           </div>
           <div className="grid grid-cols-7">
             {grid.map((date, i) => {
-              if (!date) return <div key={i} className="min-h-20 border-b border-r border-slate-100" />;
+               if (!date) return <div key={i} className="min-h-16 border-b border-r border-slate-100 sm:min-h-20" />;
               const itens = itensPorDia.get(date.toDateString()) ?? [];
               const isHoje = date.toDateString() === hoje.toDateString();
               return (
-                <div key={i} className={`min-h-20 border-b border-r border-slate-100 p-1 ${itens.length ? "bg-amber-50/40" : ""}`}>
+                <div key={i} className={`min-h-16 border-b border-r border-slate-100 p-0.5 sm:min-h-20 sm:p-1 ${itens.length ? "bg-amber-50/40" : ""}`}>
                   <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${isHoje ? "bg-navy-700 text-white" : "text-muted"}`}>{date.getDate()}</span>
                   <div className="mt-1 space-y-0.5">
                     {itens.slice(0, 3).map((it, j) => (

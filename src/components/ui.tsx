@@ -8,7 +8,7 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex max-w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed";
   const styles: Record<Variant, string> = {
     primary: "bg-navy-900 text-white hover:bg-navy-800",
     secondary: "bg-white text-navy-900 border border-slate-300 hover:bg-slate-50",
@@ -110,12 +110,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold text-navy-900">{title}</h1>
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="break-words text-2xl font-bold text-navy-900">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end [&>div]:flex-wrap">{actions}</div>}
     </div>
   );
 }

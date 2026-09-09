@@ -105,7 +105,7 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
 
       <div className="flex">
         {/* Coluna esquerda (congelada) */}
-        <div className="w-56 shrink-0 border-r border-slate-200 bg-slate-50">
+        <div className="w-36 shrink-0 border-r border-slate-200 bg-slate-50 sm:w-56">
           <div className="h-[87px] border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">Cliente / Empreendimento</div>
           {rows.map((r, i) => (
             <div key={i} className={`flex h-9 items-center px-3 text-xs ${r.tipo === "grupo" ? "border-b border-slate-200 bg-slate-100 font-semibold text-navy-900" : "border-b border-slate-100 font-medium text-slate-700"}`}>
