@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requirePermissao } from "@/lib/perfil";
+import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { ArrowRight } from "lucide-react";
 import { labelTipoEmpreendimento } from "@/lib/empreendimentos";
+import { DeleteEmpreendimentoButton } from "@/components/forms/DeleteEmpreendimentoButton";
 
 export default async function EmpreendimentoDetalhePage({
   params,
@@ -15,6 +16,8 @@ export default async function EmpreendimentoDetalhePage({
   const { id } = await params;
   const empreendimentoId = Number(id);
   await requirePermissao("cadastro:ler");
+  const podeEditar = await usuarioTemPermissao("cadastro:editar");
+  const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
   const empreendimento = await prisma.empreendimento.findFirst({
     where: { id: empreendimentoId, ativo: true, deletedAt: null },
@@ -45,9 +48,8 @@ export default async function EmpreendimentoDetalhePage({
             <Link href="/empreendimentos">
               <Button variant="ghost">Voltar</Button>
             </Link>
-            <Link href={`/empreendimentos/${empreendimento.id}/editar`}>
-              <Button>Editar</Button>
-            </Link>
+            {podeEditar && <Link href={`/empreendimentos/${empreendimento.id}/editar`}><Button>Editar</Button></Link>}
+            {podeExcluir && <DeleteEmpreendimentoButton id={empreendimento.id} />}
           </>
         }
       />
