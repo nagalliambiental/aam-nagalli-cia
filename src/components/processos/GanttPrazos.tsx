@@ -52,19 +52,23 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
     }));
   }, [barras]);
 
-  const rows = useMemo(() => {
-    const out: { tipo: "grupo" | "emp"; label: string; itens: Barra[] }[] = [];
-    for (const g of grupos) {
-      out.push({ tipo: "grupo", label: g.cliente, itens: g.emps.flatMap((e) => e.itens) });
-      for (const e of g.emps) out.push({ tipo: "emp", label: e.nome, itens: e.itens });
-    }
-    return out;
-  }, [grupos]);
-
   // Range: em torno do mês selecionado (início da 1ª semana do mês até o fim da última)
   const rangeStart = inicioSemana(new Date(month.getFullYear(), month.getMonth(), 1)).getTime();
   const rangeEnd = fimSemana(new Date(month.getFullYear(), month.getMonth() + 1, 0)).getTime();
   const rangeTotal = rangeEnd - rangeStart;
+
+  const rows = useMemo(() => {
+    const out: { tipo: "grupo" | "emp"; label: string; itens: Barra[] }[] = [];
+    for (const g of grupos) {
+      const empsVis = g.emps
+        .map((e) => ({ nome: e.nome, itens: e.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd) }))
+        .filter((e) => e.itens.length > 0);
+      if (empsVis.length === 0) continue;
+      out.push({ tipo: "grupo", label: g.cliente, itens: empsVis.flatMap((e) => e.itens) });
+      for (const e of empsVis) out.push({ tipo: "emp", label: e.nome, itens: e.itens });
+    }
+    return out;
+  }, [grupos, rangeStart, rangeEnd]);
 
   const days: Date[] = [];
   for (let t = rangeStart; t <= rangeEnd; t += UM_DIA) days.push(new Date(t));
