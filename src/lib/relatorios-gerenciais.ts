@@ -15,8 +15,8 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo): Pr
       const data = await prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { dataAbertura: "desc" }, include: { orgao: true, tipoProcesso: true, empreendimento: true } });
       return {
         titulo: "Processos",
-        colunas: ["Nº", "Órgão", "Tipo", "Status", "Abertura", "Empreendimento"].map((label, index) => ({ label, key: `coluna${index}` })),
-        linhas: data.map((p) => [p.numero, p.orgao.sigla, p.tipoProcesso.nome, p.status, formatDate(p.dataAbertura), p.empreendimento ? (p.empreendimento.apelido || p.empreendimento.nome) : "—"]),
+        colunas: ["Nº", "Apelido / Nº da Licença", "Órgão", "Tipo", "Status", "Abertura"].map((label, index) => ({ label, key: `coluna${index}` })),
+        linhas: data.map((p) => [p.numero, p.natureza === "ambiental" ? `${p.apelido || "—"} / ${p.numeroLicenca || "—"}` : (p.apelido || "—"), p.orgao.sigla, p.tipoProcesso.nome, p.status, formatDate(p.dataAbertura)]),
       };
     }
     case "prazos": {

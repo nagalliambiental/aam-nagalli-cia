@@ -18,7 +18,7 @@ export async function GET() {
   const cols = [
     { w: 120, label: "Número" },
     { w: 100, label: "Natureza" },
-    { w: 150, label: "Empreendimento" },
+    { w: 150, label: "Apelido / Nº da Licença" },
     { w: 145, label: "Status" },
   ];
   const rowH = 24;
@@ -37,7 +37,7 @@ export async function GET() {
     const vals = [
       p.apelido || p.numero,
       p.natureza === "ambiental" ? "Ambiental" : "Minerário",
-      p.empreendimento?.apelido || p.empreendimento?.nome || "",
+      p.natureza === "ambiental" ? `${p.apelido || "—"} / ${p.numeroLicenca || "—"}` : (p.apelido || p.empreendimento?.apelido || p.empreendimento?.nome || "—"),
       p.status,
     ];
     y = drawReportTableRow(page, fonts, y, cols, vals, index);

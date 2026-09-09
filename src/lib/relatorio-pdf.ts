@@ -1,4 +1,5 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { readFile } from "node:fs/promises";
+import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from "pdf-lib";
 
 export const REPORT_PAGE = {
   width: 595.28,
@@ -21,6 +22,7 @@ export const REPORT_COLORS = {
 export type ReportFonts = {
   regular: PDFFont;
   bold: PDFFont;
+  logo: PDFImage;
 };
 
 export type ReportColumn = {
@@ -33,6 +35,7 @@ export async function createReportDocument() {
   const fonts: ReportFonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
     bold: await doc.embedFont(StandardFonts.HelveticaBold),
+    logo: await doc.embedJpg(await readFile(`${process.cwd()}/public/logo.jpg`)),
   };
   return { doc, fonts };
 }
@@ -53,10 +56,8 @@ export function drawReportChrome(
   const today = new Date().toLocaleDateString("pt-BR");
 
   page.drawRectangle({ x: 0, y: height - 92, width, height: 92, color: REPORT_COLORS.navy });
-  page.drawRectangle({ x: margin, y: height - 68, width: 42, height: 42, color: REPORT_COLORS.gold });
-  page.drawText("AAM", { x: margin + 4, y: height - 51, size: 12, font: fonts.bold, color: REPORT_COLORS.navy });
-  page.drawText("NAGALLI & CIA", { x: margin + 56, y: height - 42, size: 17, font: fonts.bold, color: REPORT_COLORS.white });
-  page.drawText("GESTÃO AMBIENTAL E MINERÁRIA", { x: margin + 57, y: height - 60, size: 7.5, font: fonts.regular, color: rgb(0.76, 0.84, 0.92) });
+  page.drawImage(fonts.logo, { x: margin, y: height - 75, width: 92, height: 50 });
+  page.drawText("GESTÃO AMBIENTAL E MINERÁRIA", { x: margin + 108, y: height - 50, size: 8, font: fonts.regular, color: rgb(0.76, 0.84, 0.92) });
   page.drawText("RELATÓRIO GERENCIAL", { x: right - 128, y: height - 39, size: 7, font: fonts.bold, color: REPORT_COLORS.gold });
   page.drawText(today, { x: right - 72, y: height - 57, size: 8, font: fonts.regular, color: rgb(0.76, 0.84, 0.92) });
 

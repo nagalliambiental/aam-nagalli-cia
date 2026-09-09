@@ -34,10 +34,10 @@ export async function POST(req: Request, { params }: Ctx) {
     await prisma.processo.update({ where: { id: processoId }, data: { fase: faseFinal } });
   }
 
-  const blocos = await prisma.blocoExigenciaTemplate.findMany({
+  const blocos = (await prisma.blocoExigenciaTemplate.findMany({
     where: { fase: faseFinal, ativo: true },
     orderBy: { ordem: "asc" },
-  });
+  })).filter((bloco) => !/cfem|pfm/i.test(`${bloco.nome} ${bloco.descricao}`));
 
   let criados = 0;
   for (const bloco of blocos) {
