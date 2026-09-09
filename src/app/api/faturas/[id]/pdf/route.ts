@@ -7,26 +7,26 @@ import { formatCNPJ, formatDate, formatDateTime, formatMoney } from "@/lib/forma
 
 type Ctx = { params: Promise<{ id: string }> };
 type Fonts = { regular: PDFFont; bold: PDFFont };
+type Column = { w: number; label: string };
 
 const W = 841.89;
 const H = 595.28;
-const M = 36;
+const M = 34;
 const CONTENT_W = W - M * 2;
 const NAVY = rgb(0.01, 0.12, 0.3);
 const BLUE = rgb(0.04, 0.42, 0.65);
-const GOLD = rgb(0.96, 0.61, 0.05);
 const INK = rgb(0.12, 0.16, 0.22);
 const MUTED = rgb(0.36, 0.42, 0.49);
-const LINE = rgb(0.84, 0.87, 0.91);
+const LINE = rgb(0.78, 0.82, 0.88);
 const SOFT = rgb(0.96, 0.97, 0.98);
 
-function cut(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, length - 3)}...` : value;
-}
+const COLUMNS: Column[] = [
+  { w: 55, label: "DATA" }, { w: 98, label: "IDENTIFICAÇÃO" }, { w: 190, label: "DESCRIÇÃO" },
+  { w: 42, label: "QTDE" }, { w: 75, label: "HORA TÉC. (R$)" }, { w: 48, label: "DESC. (%)" },
+  { w: 70, label: "DESC. VALOR" }, { w: 70, label: "OUTROS (R$)" }, { w: 70, label: "ADM/FISC. (R$)" }, { w: 52, label: "TOTAL (R$)" },
+];
 
-function money(value: unknown) {
-  return formatMoney(Number(value));
-}
+function money(value: unknown) { return formatMoney(Number(value)); }
 
 function wrap(value: string, font: PDFFont, size: number, maxWidth: number) {
   const words = value.trim().split(/\s+/).filter(Boolean);
@@ -37,87 +37,78 @@ function wrap(value: string, font: PDFFont, size: number, maxWidth: number) {
     if (!current && font.widthOfTextAtSize(word, size) > maxWidth) {
       let chunk = "";
       for (const character of word) {
-        const nextChunk = `${chunk}${character}`;
-        if (chunk && font.widthOfTextAtSize(nextChunk, size) > maxWidth) {
-          lines.push(chunk);
-          chunk = character;
-        } else {
-          chunk = nextChunk;
-        }
+        const next = `${chunk}${character}`;
+        if (chunk && font.widthOfTextAtSize(next, size) > maxWidth) { lines.push(chunk); chunk = character; } else chunk = next;
       }
       current = chunk;
       continue;
     }
     const next = current ? `${current} ${word}` : word;
-    if (current && font.widthOfTextAtSize(next, size) > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = next;
-    }
+    if (current && font.widthOfTextAtSize(next, size) > maxWidth) { lines.push(current); current = word; } else current = next;
   }
   if (current) lines.push(current);
   return lines;
 }
 
 function drawHeader(page: PDFPage, fonts: Fonts, logo: PDFImage, fatura: { numero: string; ano: number; status: string; empresa: { razaoSocial: string; nomeFantasia: string | null; cnpj: string | null }; recebidoEm: Date | null }, pageNumber: number) {
-  page.drawRectangle({ x: 0, y: H - 96, width: W, height: 96, color: NAVY });
-  page.drawImage(logo, { x: M, y: H - 82, width: 150, height: 78 });
-  page.drawText("FATURA", { x: W - M - 106, y: H - 38, size: 10, font: fonts.bold, color: GOLD });
-  page.drawText(`${fatura.numero}/${fatura.ano}`, { x: W - M - 106, y: H - 61, size: 17, font: fonts.bold, color: rgb(1, 1, 1) });
-
-  page.drawText(fatura.empresa.nomeFantasia || fatura.empresa.razaoSocial, { x: M, y: H - 122, size: 12, font: fonts.bold, color: NAVY });
-  page.drawText(`CNPJ: ${formatCNPJ(fatura.empresa.cnpj)}`, { x: M, y: H - 138, size: 8.5, font: fonts.regular, color: MUTED });
-  const status = fatura.status === "paga" || fatura.recebidoEm ? "PAGA" : fatura.status.toUpperCase();
-  page.drawText(`Status: ${status}`, { x: W - M - 150, y: H - 122, size: 9, font: fonts.bold, color: status === "PAGA" ? rgb(0.05, 0.45, 0.25) : BLUE });
-  if (fatura.recebidoEm) page.drawText(`Recebida em ${formatDateTime(fatura.recebidoEm)}`, { x: W - M - 150, y: H - 138, size: 8, font: fonts.regular, color: MUTED });
-
-  page.drawLine({ start: { x: M, y: 34 }, end: { x: W - M, y: 34 }, thickness: 0.6, color: LINE });
-  page.drawText("AAM Nagalli & Cia LTDA · Uso interno", { x: M, y: 20, size: 7.5, font: fonts.regular, color: MUTED });
+  page.drawRectangle({ x: 0, y: H - 82, width: W, height: 82, color: NAVY });
+  page.drawImage(logo, { x: M + 4, y: H - 72, width: 128, height: 69 });
+  page.drawText(`FATURA Nº ${fatura.numero} / ${fatura.ano}`, { x: W - M - 205, y: H - 45, size: 16, font: fonts.bold, color: rgb(1, 1, 1) });
+  page.drawText("AAM Nagalli & Cia LTDA", { x: M, y: H - 99, size: 9, font: fonts.bold, color: NAVY });
   page.drawText(`Página ${pageNumber}`, { x: W - M - 43, y: 20, size: 7.5, font: fonts.bold, color: MUTED });
+  page.drawLine({ start: { x: M, y: 34 }, end: { x: W - M, y: 34 }, thickness: 0.6, color: LINE });
+  page.drawText("AAM Nagalli & Cia LTDA · Documento gerado pelo sistema", { x: M, y: 20, size: 7.5, font: fonts.regular, color: MUTED });
 }
 
-function drawItemCard(page: PDFPage, fonts: Fonts, y: number, item: { data: Date | null; identificacao: string; descricao: string | null; qtde: unknown; horaTecnica: unknown; descontoPct: unknown; descontoValor: unknown; outrosCustos: unknown; custosAdmFiscais: unknown; total: unknown }, index: number) {
-  const titleSize = 8.5;
-  const bodySize = 8;
-  const detailSize = 7.2;
-  const descriptionLines = wrap(item.descricao || "—", fonts.regular, bodySize, CONTENT_W - 24);
-  const height = 31 + descriptionLines.length * 11 + 22;
-  const top = y;
-  page.drawRectangle({ x: M, y: top - height, width: CONTENT_W, height, color: index % 2 === 0 ? rgb(1, 1, 1) : SOFT, borderColor: LINE, borderWidth: 0.6 });
-  page.drawText(formatDate(item.data), { x: M + 10, y: top - 17, size: titleSize, font: fonts.regular, color: MUTED });
-  page.drawText(cut(item.identificacao, 78), { x: M + 78, y: top - 17, size: titleSize, font: fonts.bold, color: NAVY });
-  page.drawText("TOTAL", { x: W - M - 126, y: top - 13, size: 6.8, font: fonts.bold, color: MUTED });
-  page.drawText(money(item.total), { x: W - M - 86, y: top - 18, size: 10, font: fonts.bold, color: NAVY });
-
-  const descriptionY = top - 34;
-  page.drawText("Descrição", { x: M + 10, y: descriptionY, size: 7, font: fonts.bold, color: BLUE });
-  descriptionLines.forEach((line, lineIndex) => page.drawText(line, { x: M + 70, y: descriptionY - lineIndex * 11, size: bodySize, font: fonts.regular, color: INK }));
-
-  const detailY = top - 31 - descriptionLines.length * 11;
-  page.drawLine({ start: { x: M + 10, y: detailY }, end: { x: W - M - 10, y: detailY }, thickness: 0.35, color: LINE });
-  const details = [
-    `Qtde: ${Number(item.qtde)}`,
-    `Hora técnica: ${money(item.horaTecnica)}`,
-    `Desconto: ${item.descontoPct == null ? "—" : `${Number(item.descontoPct)}% (${money(item.descontoValor)})`}`,
-    `Outros custos: ${money(item.outrosCustos)}`,
-    `Adm/Fiscais: ${money(item.custosAdmFiscais)}`,
+function drawInfoGrid(page: PDFPage, fonts: Fonts, fatura: { empresa: { razaoSocial: string; cnpj: string | null }; referencia: string | null; periodo: string | null; vencimento: Date | null }) {
+  const half = CONTENT_W / 2;
+  const rows = [
+    ["CLIENTE", fatura.empresa.razaoSocial], ["CNPJ", formatCNPJ(fatura.empresa.cnpj)], ["REFERÊNCIA", fatura.referencia || "—"],
+    ["PERÍODO / VENCIMENTO", `${fatura.periodo || "—"} · Venc.: ${formatDate(fatura.vencimento)}`],
+    ["PAGAMENTO", "Nagalli & Cia LTDA.\nChave PIX: CNPJ 02.836.099/0001-91\nBanco do Brasil: 001; Agência 4500-4; Conta Corrente 27.366-0"],
   ];
-  const detailWidth = (CONTENT_W - 20) / details.length;
-  details.forEach((detail, detailIndex) => page.drawText(detail, { x: M + 10 + detailIndex * detailWidth, y: top - height + 10, size: detailSize, font: fonts.regular, color: MUTED }));
-  return top - height - 8;
+  let y = H - 116;
+  rows.forEach(([label, value], index) => {
+    const height = index === rows.length - 1 ? 43 : 22;
+    page.drawRectangle({ x: M, y: y - height, width: half, height, color: SOFT, borderColor: LINE, borderWidth: 0.45 });
+    page.drawRectangle({ x: M + half, y: y - height, width: half, height, color: rgb(1, 1, 1), borderColor: LINE, borderWidth: 0.45 });
+    page.drawText(label, { x: M + half / 2 - fonts.bold.widthOfTextAtSize(label, 8) / 2, y: y - 14, size: 8, font: fonts.bold, color: NAVY });
+    value.split("\n").forEach((line, lineIndex) => page.drawText(line, { x: M + half + half / 2 - fonts.regular.widthOfTextAtSize(line, 8) / 2, y: y - 14 - lineIndex * 12, size: 8, font: fonts.regular, color: INK }));
+    y -= height;
+  });
+  return y;
+}
+
+function drawTableHeader(page: PDFPage, fonts: Fonts, y: number) {
+  let x = M;
+  COLUMNS.forEach((column) => {
+    page.drawRectangle({ x, y: y - 22, width: column.w, height: 22, color: SOFT, borderColor: LINE, borderWidth: 0.45 });
+    page.drawText(column.label, { x: x + 4, y: y - 14, size: 6.7, font: fonts.bold, color: MUTED });
+    x += column.w;
+  });
+  return y - 22;
+}
+
+function drawItem(page: PDFPage, fonts: Fonts, y: number, item: { data: Date | null; identificacao: string; descricao: string | null; qtde: unknown; horaTecnica: unknown; descontoPct: unknown; descontoValor: unknown; outrosCustos: unknown; custosAdmFiscais: unknown; total: unknown }, index: number) {
+  const descriptionLines = wrap(item.descricao || "—", fonts.regular, 7.8, COLUMNS[2].w - 8);
+  const rowHeight = Math.max(24, descriptionLines.length * 10 + 10);
+  const values = [formatDate(item.data), item.identificacao, "", String(Number(item.qtde)), money(item.horaTecnica), item.descontoPct == null ? "—" : `${Number(item.descontoPct)}%`, money(item.descontoValor), money(item.outrosCustos), money(item.custosAdmFiscais), money(item.total)];
+  let x = M;
+  COLUMNS.forEach((column, columnIndex) => {
+    page.drawRectangle({ x, y: y - rowHeight, width: column.w, height: rowHeight, color: index % 2 === 0 ? rgb(1, 1, 1) : SOFT, borderColor: LINE, borderWidth: 0.35 });
+    if (columnIndex === 2) descriptionLines.forEach((line, lineIndex) => page.drawText(line, { x: x + 4, y: y - 13 - lineIndex * 10, size: 7.8, font: fonts.regular, color: INK }));
+    else page.drawText(values[columnIndex], { x: x + 4, y: y - 14, size: 7.2, font: columnIndex === 9 ? fonts.bold : fonts.regular, color: INK });
+    x += column.w;
+  });
+  return y - rowHeight;
 }
 
 export async function GET(_req: Request, { params }: Ctx) {
   const session = await auth();
   if (session?.user?.perfilNome !== "Administrador") return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   const { id } = await params;
-  const fatura = await prisma.fatura.findFirst({
-    where: { id: Number(id), ativo: true, deletedAt: null },
-    include: { empresa: true, empreendimento: true, itens: { orderBy: { id: "asc" } } },
-  });
+  const fatura = await prisma.fatura.findFirst({ where: { id: Number(id), ativo: true, deletedAt: null }, include: { empresa: true, itens: { orderBy: { id: "asc" } } } });
   if (!fatura) return NextResponse.json({ error: "Fatura não encontrada" }, { status: 404 });
-
   const doc = await PDFDocument.create();
   const fonts: Fonts = { regular: await doc.embedFont(StandardFonts.Helvetica), bold: await doc.embedFont(StandardFonts.HelveticaBold) };
   const logo = await doc.embedJpg(await readFile(`${process.cwd()}/public/logo.jpg`));
@@ -125,42 +116,29 @@ export async function GET(_req: Request, { params }: Ctx) {
   let pageNumber = 1;
   let page = doc.addPage([W, H]);
   drawHeader(page, fonts, logo, fatura, pageNumber);
-
-  page.drawText(`Referência: ${cut(fatura.referencia || fatura.empreendimento?.apelido || fatura.empreendimento?.nome || "—", 70)}`, { x: M, y: H - 163, size: 8.5, font: fonts.regular, color: INK });
-  page.drawText(`Período: ${fatura.periodo || "—"}`, { x: M + 300, y: H - 163, size: 8.5, font: fonts.regular, color: INK });
-  page.drawText(`Vencimento: ${formatDate(fatura.vencimento)}`, { x: W - M - 145, y: H - 163, size: 8.5, font: fonts.bold, color: INK });
-  page.drawRectangle({ x: M, y: H - 188, width: CONTENT_W, height: 22, color: BLUE });
-  page.drawText("ITENS DA FATURA", { x: M + 10, y: H - 181, size: 8, font: fonts.bold, color: rgb(1, 1, 1) });
-
-  let y = H - 198;
+  let y = drawInfoGrid(page, fonts, fatura) - 8;
+  y = drawTableHeader(page, fonts, y);
   for (let index = 0; index < fatura.itens.length; index++) {
     const item = fatura.itens[index];
-    const descriptionLines = wrap(item.descricao || "—", fonts.regular, 8, CONTENT_W - 24);
-    const itemHeight = 31 + descriptionLines.length * 11 + 22;
-    if (y - itemHeight < 78) {
+    const descriptionLines = wrap(item.descricao || "—", fonts.regular, 7.8, COLUMNS[2].w - 8);
+    const rowHeight = Math.max(24, descriptionLines.length * 10 + 10);
+    if (y - rowHeight < 58) {
       page = doc.addPage([W, H]);
       pageNumber += 1;
       drawHeader(page, fonts, logo, fatura, pageNumber);
-      page.drawRectangle({ x: M, y: H - 122, width: CONTENT_W, height: 22, color: BLUE });
-      page.drawText("ITENS DA FATURA · CONTINUAÇÃO", { x: M + 10, y: H - 115, size: 8, font: fonts.bold, color: rgb(1, 1, 1) });
-      y = H - 132;
+      y = drawTableHeader(page, fonts, H - 108);
     }
-    y = drawItemCard(page, fonts, y, item, index);
+    y = drawItem(page, fonts, y, item, index);
   }
-
-  if (y - 102 < 62) {
+  if (y - 48 < 52) {
     page = doc.addPage([W, H]);
     pageNumber += 1;
     drawHeader(page, fonts, logo, fatura, pageNumber);
-    y = H - 122;
+    y = H - 108;
   }
-  page.drawRectangle({ x: W - M - 220, y: y - 38, width: 220, height: 38, color: NAVY });
-  page.drawText("TOTAL GERAL", { x: W - M - 207, y: y - 24, size: 9, font: fonts.bold, color: rgb(1, 1, 1) });
-  page.drawText(formatMoney(total), { x: W - M - 101, y: y - 24, size: 12, font: fonts.bold, color: GOLD });
-  page.drawText("Pagamento", { x: M, y: y - 15, size: 8, font: fonts.bold, color: NAVY });
-  page.drawText("PIX CNPJ 02.836.099/0001-91 · Banco do Brasil 001 · Agência 4500-4 · Conta Corrente 27.366-0", { x: M, y: y - 29, size: 7.5, font: fonts.regular, color: MUTED });
-  if (fatura.observacoes) page.drawText(`Observações: ${cut(fatura.observacoes, 120)}`, { x: M, y: y - 43, size: 7.5, font: fonts.regular, color: MUTED });
-
+  page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 1.2, color: NAVY });
+  page.drawText("TOTAL GERAL", { x: W - M - 154, y: y - 18, size: 8.5, font: fonts.bold, color: NAVY });
+  page.drawText(formatMoney(total), { x: W - M - 54, y: y - 18, size: 10, font: fonts.bold, color: NAVY });
   const bytes = await doc.save();
   return new NextResponse(Buffer.from(bytes), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename=fatura-${fatura.numero}-${fatura.ano}.pdf` } });
 }
