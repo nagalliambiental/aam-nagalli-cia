@@ -36,6 +36,7 @@ export default async function ProcessoDetalhePage({
       tipoProcesso: true,
       empreendimento: true,
       responsavel: true,
+      seiProtocolos: { orderBy: { criadoEm: "desc" } },
     },
   });
 
@@ -124,7 +125,7 @@ export default async function ProcessoDetalhePage({
           {
             id: "movimentacoes-sei",
             label: "Movimentações SEI",
-            content: <SeiSyncPanel processoId={processo.id} nup={processo.nup} />,
+             content: <SeiSyncPanel processoId={processo.id} nup={processo.nup} initialProtocolos={processo.seiProtocolos} />,
           },
         ]
       : []),

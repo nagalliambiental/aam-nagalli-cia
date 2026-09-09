@@ -11,6 +11,15 @@ export interface AndamentoSei {
   descricao: string;
 }
 
+export interface ProtocoloSei {
+  numero: string;
+  tipo: string;
+  data: string;
+  dataInclusao: string;
+  unidade: string;
+  url: string | null;
+}
+
 function limparHtml(s: string): string {
   return s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -38,6 +47,32 @@ export function parseAndamentosProcesso(htmlHtml: string): AndamentoSei[] {
         descricao,
       });
     }
+  }
+  return out;
+}
+
+/** Extrai a tabela "Lista de Protocolos" da página pública do processo. */
+export function parseProtocolosProcesso(htmlHtml: string): ProtocoloSei[] {
+  const rows = htmlHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) ?? [];
+  const out: ProtocoloSei[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const tds = row.match(/<td[^>]*>[\s\S]*?<\/td>/gi) ?? [];
+    if (tds.length < 6) continue;
+    const cells = tds.map((td) => limparHtml(td));
+    const numero = cells[1]?.match(/\b\d{5,}\b/)?.[0] ?? "";
+    if (!numero || seen.has(numero) || !/\d{1,2}\/\d{1,2}\/\d{4}/.test(cells[3] ?? "")) continue;
+    const href = tds[1]?.match(/href=["']([^"']+)["']/i)?.[1] ?? null;
+    const url = href ? new URL(href, BASE_SEI).toString() : null;
+    seen.add(numero);
+    out.push({
+      numero,
+      tipo: cells[2] ?? "",
+      data: cells[3] ?? "",
+      dataInclusao: cells[4] ?? "",
+      unidade: cells[5] ?? "",
+      url,
+    });
   }
   return out;
 }
@@ -87,15 +122,15 @@ function normalizarNup(nup: string): string {
 }
 
 /** Consulta a página do processo e retorna os andamentos + o NUP da página. */
-export async function consultarPaginaSei(url: string): Promise<{ andamentos: AndamentoSei[]; nup: string | null }> {
+export async function consultarPaginaSei(url: string): Promise<{ andamentos: AndamentoSei[]; protocolos: ProtocoloSei[]; nup: string | null }> {
   const res = await fetch(url, {
     headers: { "User-Agent": UA, "Accept-Language": "pt-BR,pt;q=0.9" },
     cache: "no-store",
     signal: AbortSignal.timeout(20000),
   });
-  if (!res.ok) return { andamentos: [], nup: null };
+  if (!res.ok) return { andamentos: [], protocolos: [], nup: null };
   const html = new TextDecoder("iso-8859-1").decode(await res.arrayBuffer());
-  return { andamentos: parseAndamentosProcesso(html), nup: extrairNupProcessoSei(html) };
+  return { andamentos: parseAndamentosProcesso(html), protocolos: parseProtocolosProcesso(html), nup: extrairNupProcessoSei(html) };
 }
 
 /**

@@ -466,6 +466,7 @@ model Processo {
   licencas          LicencaProcesso[]
   notificacoes      Notificacao[]
   comunicacoes      Comunicacao[]
+  seiProtocolos     SeiProtocolo[]
 
 
   vinculosAmbientais ProcessoVinculo[] @relation("Vinc_Minerario")
@@ -1112,6 +1113,23 @@ model FaturaItem {
   total         Decimal @db.Decimal(12, 2)
 
   fatura Fatura @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+}
+
+model SeiProtocolo {
+  id           Int      @id @default(autoincrement())
+  processoId   Int
+  numero       String
+  tipo         String
+  data         String?
+  dataInclusao String?
+  unidade      String?
+  url          String?
+  criadoEm     DateTime @default(now())
+
+  processo Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@unique([processoId, numero])
+  @@index([processoId])
 }
 
 model BackupArquivo {

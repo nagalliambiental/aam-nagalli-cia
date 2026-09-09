@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { consultarPaginaSei, extrairUrlExibirPorNup, extrairUrlsExibirSei, nupConfere, type AndamentoSei } from "@/lib/sei";
+import { consultarPaginaSei, extrairUrlExibirPorNup, extrairUrlsExibirSei, nupConfere, type AndamentoSei, type ProtocoloSei } from "@/lib/sei";
+import { salvarProtocolosSei } from "@/lib/sei-protocolos";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -113,16 +114,20 @@ export async function POST(req: Request, { params }: Ctx) {
   const chave = processo.nup ?? processo.numero;
   if (!chave) return NextResponse.json({ error: "Processo sem NUP ou número" }, { status: 400 });
 
-  const ok = (andamentos: AndamentoSei[]) =>
-    NextResponse.json({
+  const ok = async (andamentos: AndamentoSei[], protocolos: ProtocoloSei[] = []) => {
+    const novosProtocolos = await salvarProtocolosSei(processoId, protocolos);
+    return NextResponse.json({
       ok: true,
       andamentos,
+      protocolos,
+      novosProtocolos,
       criados: 0,
       chave,
       mensagem: andamentos.length === 0
         ? "Nenhum andamento encontrado."
-        : `${andamentos.length} ${andamentos.length === 1 ? "movimentação" : "movimentações"} no SEI.`,
+        : `${andamentos.length} ${andamentos.length === 1 ? "movimentação" : "movimentações"} no SEI${novosProtocolos.length ? ` e ${novosProtocolos.length} novo(s) protocolo(s)` : ""}.`,
     });
+  };
 
   const body = await req.json().catch(() => ({}));
   const codigoManual = (body.codigo as string ?? "").trim();
@@ -132,10 +137,10 @@ export async function POST(req: Request, { params }: Ctx) {
 
   // URL do token informada manualmente (usuário colou) — usa direto, sem captcha.
   if (tokenUrlIn.includes("md_pesq_processo_exibir")) {
-    const { andamentos } = await consultarPaginaSei(tokenUrlIn).catch(() => ({ andamentos: [], nup: null }));
-    if (andamentos.length > 0) {
+    const { andamentos, protocolos } = await consultarPaginaSei(tokenUrlIn).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
+    if (andamentos.length > 0 || protocolos.length > 0) {
       await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: tokenUrlIn } }).catch(() => {});
-      return ok(andamentos);
+      return ok(andamentos, protocolos);
     }
     return NextResponse.json(
       { ok: false, error: "A URL informada não retornou andamentos. Confira se é a do processo (md_pesq_processo_exibir.php?token)." },
@@ -150,8 +155,8 @@ export async function POST(req: Request, { params }: Ctx) {
   // (A) Direto pelo token (sem captcha), quando não estamos confirmando um código.
   // Valida se a página é mesmo do processo procurado; senão, cai para recapturar.
   if (seiTokenUrl && !codigoManual) {
-    const { andamentos, nup } = await consultarPaginaSei(seiTokenUrl).catch(() => ({ andamentos: [], nup: null }));
-    if (nupConfere(chave, nup) && andamentos.length > 0) return ok(andamentos);
+    const { andamentos, protocolos, nup } = await consultarPaginaSei(seiTokenUrl).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
+    if (nupConfere(chave, nup) && (andamentos.length > 0 || protocolos.length > 0)) return ok(andamentos, protocolos);
   }
 
   // (B) Sem código e sem token: retorna captcha para digitação manual.
@@ -213,29 +218,29 @@ export async function POST(req: Request, { params }: Ctx) {
     // Primeiro tenta achar pelo título da "Gestão de Título" (NUP no título).
     const porNup = extrairUrlExibirPorNup(json.html ?? "", chave);
     if (porNup) {
-      const { andamentos, nup } = await consultarPaginaSei(porNup).catch(() => ({ andamentos: [], nup: null }));
-      if (andamentos.length > 0 && nupConfere(chave, nup)) {
+       const { andamentos, protocolos, nup } = await consultarPaginaSei(porNup).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
+       if ((andamentos.length > 0 || protocolos.length > 0) && nupConfere(chave, nup)) {
         await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: porNup } }).catch(() => {});
-        return ok(andamentos);
+         return ok(andamentos, protocolos);
       }
     }
 
     // Senão, testa os vários processos relacionados e usa o primeiro cuja página
     // confirme o NUP procurado. Se nenhum confirmar, usa o que tiver andamentos.
     const urls = extrairUrlsExibirSei(json.html ?? "");
-    let fallback: { url: string; andamentos: AndamentoSei[] } | null = null;
+    let fallback: { url: string; andamentos: AndamentoSei[]; protocolos: ProtocoloSei[] } | null = null;
     for (const url of urls) {
-      const { andamentos, nup } = await consultarPaginaSei(url).catch(() => ({ andamentos: [], nup: null }));
-      if (andamentos.length === 0) continue;
-      if (nupConfere(chave, nup)) {
+       const { andamentos, protocolos, nup } = await consultarPaginaSei(url).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
+       if (andamentos.length === 0 && protocolos.length === 0) continue;
+       if (nupConfere(chave, nup)) {
         await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: url } }).catch(() => {});
-        return ok(andamentos);
+         return ok(andamentos, protocolos);
       }
-      if (!fallback) fallback = { url, andamentos };
+       if (!fallback) fallback = { url, andamentos, protocolos };
     }
     if (fallback) {
       await prisma.processo.update({ where: { id: processoId }, data: { seiUrl: fallback.url } }).catch(() => {});
-      return ok(fallback.andamentos);
+       return ok(fallback.andamentos, fallback.protocolos);
     }
 
     // Não conseguimos identificar o processo — oferece envio manual da URL do token.

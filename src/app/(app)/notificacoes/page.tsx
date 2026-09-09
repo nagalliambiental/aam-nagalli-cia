@@ -9,6 +9,7 @@ import { CriarTarefaNotificacao } from "@/components/notificacoes/CriarTarefaNot
 const TIPO: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   dou_notificacao: { label: "DOU", tone: "blue" },
   sei_movimentacao: { label: "SEI", tone: "amber" },
+  sei_protocolo: { label: "SEI · Protocolo", tone: "blue" },
   prazo_vencido: { label: "Prazo vencido", tone: "red" },
   prazo_vencendo: { label: "Prazo vencendo", tone: "amber" },
   alerta: { label: "Alerta", tone: "red" },

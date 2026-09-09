@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { consultarSigmineEvento } from "@/lib/sigmine";
-import { consultarAndamentosSei } from "@/lib/sei";
+import { consultarPaginaSei } from "@/lib/sei";
+import { salvarProtocolosSei } from "@/lib/sei-protocolos";
 
 export const maxDuration = 60;
 
@@ -59,7 +60,9 @@ export async function GET(req: Request) {
     let fonte: "SEI" | "SIGMINE" = "SIGMINE";
 
     if (p.seiUrl && p.seiUrl.includes("md_pesq_processo_exibir")) {
-      const ands = await consultarAndamentosSei(p.seiUrl).catch(() => []);
+      const resultado = await consultarPaginaSei(p.seiUrl).catch(() => ({ andamentos: [], protocolos: [], nup: null }));
+      const ands = resultado.andamentos;
+      await salvarProtocolosSei(p.id, resultado.protocolos).catch(() => []);
       if (ands.length > 0) {
         descricao = ands[0].descricao;
         dia = diaNum(ands[0].data);
