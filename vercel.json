@@ -24,15 +24,5 @@
     "src/app/api/processos/licenca/extrair/route.ts": {
       "regions": ["gru1"]
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/movimentacoes",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/dou",
-      "schedule": "0 10 * * *"
-    }
-  ]
+  }
 }
