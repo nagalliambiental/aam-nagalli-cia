@@ -1,0 +1,22 @@
+name: Movimentações SEI diário
+
+on:
+  schedule:
+    - cron: "0 11 * * *" # 08h de Brasília (após o DOU)
+  workflow_dispatch: {}
+
+jobs:
+  movimentacoes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsx worker/movimentacoes.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

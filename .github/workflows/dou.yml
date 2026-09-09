@@ -1,0 +1,22 @@
+name: DOU diário
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # 07h de Brasília
+  workflow_dispatch: {}
+
+jobs:
+  dou:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsx worker/dou.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
