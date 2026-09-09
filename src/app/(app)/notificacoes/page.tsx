@@ -40,9 +40,9 @@ export default async function NotificacoesPage() {
           {notifs.map((n) => {
             const t = TIPO[n.tipo] ?? { label: n.tipo, tone: "gray" as const };
             return (
-              <li key={n.id} className={`px-5 py-3 ${n.lida ? "opacity-60" : ""}`}>
+              <li key={n.id} className="px-5 py-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className={`min-w-0 ${n.lida ? "opacity-60" : ""}`}>
                     <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-navy-900">
                       <Badge tone={t.tone}>{t.label}</Badge>
                       <span className="truncate">{n.mensagem}</span>
