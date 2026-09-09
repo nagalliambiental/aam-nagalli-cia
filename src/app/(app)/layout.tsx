@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/perfil";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { BuscaAutoGlobal } from "@/components/BuscaAutoGlobal";
+import { BackupAutomatico } from "@/components/layout/BackupAutomatico";
 
 export default async function AppLayout({
   children,
@@ -13,6 +14,7 @@ export default async function AppLayout({
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
       <BuscaAutoGlobal />
+      <BackupAutomatico administrador={user.perfilNome === "Administrador"} />
       <Sidebar
         user={{ nome: user.email ?? "Usuário", perfilNome: user.perfilNome ?? "" }}
       />

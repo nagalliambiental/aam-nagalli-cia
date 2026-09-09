@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ExcelJS from "exceljs";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (session.user.perfilNome !== "Administrador") return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
   const [empresas, empreendimentos, processos, titulos, licencas, prazos, tarefas, exigencias, contratos] = await Promise.all([
     prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { razaoSocial: "asc" } }),
@@ -121,10 +122,16 @@ export async function GET() {
   ], contratos.map((c) => ({ id: c.id, numero: c.numero, empresa: c.empresa.razaoSocial, validade: c.dataValidade ? new Date(c.dataValidade).toLocaleDateString("pt-BR") : "" })));
 
   const buf = await wb.xlsx.writeBuffer();
-  return new NextResponse(buf as unknown as BodyInit, {
+  const arquivo = Buffer.from(buf);
+  const automatico = new URL(req.url).searchParams.get("automatico") === "1";
+  const nome = `${automatico ? "backup-aam-automatico" : "backup-aam"}-${new Date().toISOString().replace(/[:.]/g, "-")}.xlsx`;
+  await prisma.backupArquivo.create({
+    data: { nome, tamanho: arquivo.length, arquivo, automatico, criadoPor: Number(session.user.id) },
+  });
+  return new NextResponse(arquivo, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="backup-aam-${new Date().toISOString().slice(0, 10)}.xlsx"`,
+      "Content-Disposition": `attachment; filename="${nome}"`,
     },
   });
 }

@@ -4,7 +4,7 @@ import { requirePermissao, usuarioTemPermissao, requireAuth } from "@/lib/perfil
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
 import { Tabs } from "@/components/ui/Tabs";
-import { StatusBadge } from "@/components/processos/StatusBadge";
+import { ProcessoStatusRapido } from "@/components/processos/ProcessoStatusRapido";
 import { formatDate } from "@/lib/format";
 import { classificarListaCondicionantes } from "@/lib/condicionantes";
 import { statusAmbiental } from "@/lib/status";
@@ -84,7 +84,7 @@ export default async function ProcessoDetalhePage({
               ["Órgão", `${processo.orgao.sigla} — ${processo.orgao.nome}`],
               ["Empreendimento", processo.empreendimento ? (processo.empreendimento.apelido || processo.empreendimento.nome) : "—"],
               ["Responsável", processo.responsavel?.nome ?? "—"],
-              ["Status", <StatusBadge key="s" status={statusProcesso} />],
+              ["Status", <ProcessoStatusRapido key="s" id={processo.id} natureza={processo.natureza} status={processo.status} statusExibido={statusProcesso} podeEditar={podeEditar} />],
               ["Abertura", formatDate(processo.dataAbertura)],
               ...(processo.natureza === "ambiental"
                 ? [

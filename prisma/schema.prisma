@@ -1114,6 +1114,18 @@ model FaturaItem {
   fatura Fatura @relation(fields: [faturaId], references: [id], onDelete: Cascade)
 }
 
+model BackupArquivo {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  tamanho   Int
+  arquivo   Bytes
+  automatico Boolean  @default(false)
+  criadoPor Int?
+  criadoEm  DateTime @default(now())
+
+  @@index([criadoEm])
+}
+
 // =====================================================================
 //  AUDITORIA (única exceção a entidadeTipo + entidadeId)
 // =====================================================================
