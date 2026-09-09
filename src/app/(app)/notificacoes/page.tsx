@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/perfil";
 import { PageHeader, Card, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { MarcarTodasLidas } from "@/components/notificacoes/MarcarTodasLidas";
+import { CriarTarefaNotificacao } from "@/components/notificacoes/CriarTarefaNotificacao";
 
 const TIPO: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   dou_notificacao: { label: "DOU", tone: "blue" },
@@ -14,18 +15,22 @@ const TIPO: Record<string, { label: string; tone: "gray" | "blue" | "green" | "a
 };
 
 export default async function NotificacoesPage() {
-  await requireAuth();
-  const notifs = await prisma.notificacao.findMany({
-    orderBy: { criadoEm: "desc" },
-    take: 200,
-    include: { processo: { select: { id: true, numero: true } } },
-  });
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
+  const [notifs, pessoas] = await Promise.all([
+    prisma.notificacao.findMany({
+      orderBy: { criadoEm: "desc" },
+      take: 200,
+      include: { processo: { select: { id: true, numero: true } } },
+    }),
+    prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
+  ]);
 
   return (
     <div>
       <PageHeader
-        title="Notificações"
-        subtitle="Histórico de avisos (DOU, SEI, prazos e alertas)"
+        title="Central de Avisos"
+        subtitle="Histórico de avisos (DOU, SEI, prazos e alertas) — crie tarefas direto daqui"
         actions={<MarcarTodasLidas />}
       />
       <Card>
@@ -55,6 +60,16 @@ export default async function NotificacoesPage() {
                       )}
                       {n.lida && <span>· lida</span>}
                     </p>
+                  </div>
+                  <div className="shrink-0">
+                    <CriarTarefaNotificacao
+                      notificacaoId={n.id}
+                      mensagem={n.mensagem}
+                      processoId={n.processo?.id ?? null}
+                      processoNumero={n.processo?.numero ?? null}
+                      pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+                      isAdmin={isAdmin}
+                    />
                   </div>
                 </div>
               </li>

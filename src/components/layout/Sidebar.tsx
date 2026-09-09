@@ -16,7 +16,7 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
-const NOTIFICACOES: NavItem = { href: "/notificacoes", label: "Notificações", icon: BellRing };
+const NOTIFICACOES: NavItem = { href: "/notificacoes", label: "Central de Avisos", icon: BellRing };
 
 const SECTIONS: NavGroup[] = [
   {
