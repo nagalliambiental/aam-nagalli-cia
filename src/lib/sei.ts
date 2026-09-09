@@ -30,10 +30,14 @@ function extrairUrlPublica(href: string | null): string | null {
   const candidatos = [
     ...(normalizado.match(/(?:https?:\/\/|\/)[^'"\s)]+/gi) ?? []),
     ...(normalizado.match(/["']([^"']+\.php\?[^"']+)["']/i)?.slice(1) ?? []),
+    ...(normalizado.match(/(?:md_pesq_[a-z_]+\.php\?)[^'"\s)]+/i) ?? []),
   ];
   for (const candidato of candidatos) {
     try {
-      const url = new URL(candidato, BASE_SEI);
+      const caminho = candidato.includes(".php?") && !candidato.startsWith("/") && !candidato.startsWith("http")
+        ? `/sei/modulos/pesquisa/${candidato}`
+        : candidato;
+      const url = new URL(caminho, BASE_SEI);
       if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
     } catch {}
   }
@@ -78,8 +82,8 @@ export function parseProtocolosProcesso(htmlHtml: string): ProtocoloSei[] {
     const cells = tds.map((td) => limparHtml(td));
     const numero = cells[1]?.match(/\b\d{5,}\b/)?.[0] ?? "";
     if (!numero || seen.has(numero) || !/\d{1,2}\/\d{1,2}\/\d{4}/.test(cells[3] ?? "")) continue;
-    const href = tds[1]?.match(/href=["']([^"']+)["']/i)?.[1] ?? null;
-    const url = extrairUrlPublica(href);
+    const linkSource = tds[1]?.match(/(?:href|onclick)=["']([^"']+)["']/i)?.[1] ?? row.match(/md_pesq_documento_consulta_externa\.php\?[^'"\s)]+/i)?.[0] ?? null;
+    const url = extrairUrlPublica(linkSource);
     seen.add(numero);
     out.push({
       numero,
