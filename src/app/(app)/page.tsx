@@ -33,7 +33,6 @@ export default async function DashboardPage() {
   const segTarefa = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
-    alertasNaoLidas,
     alertas,
     tarefasAlertas,
     tarefasAtencao,
@@ -42,7 +41,6 @@ export default async function DashboardPage() {
     tarefasPendentes,
     contratosVigentes,
   ] = await Promise.all([
-    prisma.notificacao.count({ where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } } }),
     prisma.notificacao.findMany({
       where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } },
       orderBy: { criadoEm: "desc" },
@@ -127,13 +125,6 @@ export default async function DashboardPage() {
       icon: CheckSquare,
       href: "/tarefas",
       iconBg: "bg-violet-50 text-violet-600",
-    },
-    {
-      label: "Alertas",
-      value: alertasNaoLidas,
-      icon: BellRing,
-      href: "/alertas",
-      iconBg: "bg-red-50 text-red-600",
     },
     {
       label: "Contratos",
