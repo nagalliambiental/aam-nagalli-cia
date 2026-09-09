@@ -154,8 +154,6 @@ export default async function DashboardPage() {
     .sort((a, b) => new Date(a.fim!).getTime() - new Date(b.fim!).getTime())
     .slice(0, 10);
   const totalAtencao = prazosAlertas.length + tarefasAtencao.length;
-  const movRecentes = alertas.filter((a) => a.tipo === "sei_movimentacao");
-
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-navy-900 p-6 text-white shadow-sm md:p-8">
@@ -292,26 +290,26 @@ export default async function DashboardPage() {
           </ul>
         </Card>
 
-        {/* Movimentações recentes (SEI) — somem ao visualizar o processo */}
+        {/* Central de Avisos */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
               <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
                 <BellRing className="h-4 w-4" />
               </span>
-              Movimentações recentes (SEI)
+              Central de Avisos
             </h2>
-            <Link href="/alertas" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
+            <Link href="/notificacoes" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
               Ver todas <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
-            {movRecentes.length === 0 && (
+            {alertas.length === 0 && (
               <li className="px-5 py-8 text-center text-sm text-muted">
-                Nenhuma movimentação nova.
+                Nenhum aviso não lido.
               </li>
             )}
-            {movRecentes.map((a) => (
+            {alertas.map((a) => (
               <li key={a.id} className="px-5 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

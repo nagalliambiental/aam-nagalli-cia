@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -64,6 +64,20 @@ const SECTIONS: NavGroup[] = [
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [avisosNaoLidos, setAvisosNaoLidos] = useState(0);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarContagem() {
+      const response = await fetch("/api/notificacoes/contagem");
+      if (!response.ok || !ativo) return;
+      const data = await response.json();
+      setAvisosNaoLidos(Number(data.count) || 0);
+    }
+    carregarContagem();
+    const interval = setInterval(carregarContagem, 60_000);
+    return () => { ativo = false; clearInterval(interval); };
+  }, []);
 
   const isAdmin = user.perfilNome === "Administrador";
   const topLinks = [DASHBOARD, NOTIFICACOES];
@@ -92,7 +106,12 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
         }`}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        <span className="whitespace-nowrap">{item.label}</span>
+        <span className="min-w-0 flex-1 whitespace-nowrap">{item.label}</span>
+        {item.href === NOTIFICACOES.href && avisosNaoLidos > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
+            {avisosNaoLidos > 99 ? "99+" : avisosNaoLidos}
+          </span>
+        )}
       </Link>
     );
   };
@@ -190,11 +209,16 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                className={`flex items-center justify-center rounded-md p-2.5 transition ${
+                className={`relative flex items-center justify-center rounded-md p-2.5 transition ${
                   itemActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0" />
+                {item.href === NOTIFICACOES.href && avisosNaoLidos > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
+                    {avisosNaoLidos > 99 ? "99+" : avisosNaoLidos}
+                  </span>
+                )}
               </Link>
             );
           })}
