@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "AAM Ambiental & Mineral",
   description:
     "Sistema de gestão integrada de processos minerários (ANM) e ambientais (IAT) da AAM Nagalli & Cia LTDA.",
+  icons: {
+    icon: [{ url: "/favicon.jpeg", type: "image/jpeg" }],
+  },
 };
 
 export default function RootLayout({
