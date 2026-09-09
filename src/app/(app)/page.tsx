@@ -173,7 +173,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Cards de métricas */}
-      <div className={`grid grid-cols-2 gap-4 ${cards.length === 5 ? "md:grid-cols-5" : cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
+      <div className={`grid grid-cols-2 gap-4 ${cards.length === 3 ? "md:grid-cols-3" : cards.length === 5 ? "md:grid-cols-5" : cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
         {cards.map((c) => {
           const Icon = c.icon;
           return (
