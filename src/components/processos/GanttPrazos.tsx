@@ -147,7 +147,7 @@ export function GanttPrazos({ barras }: { barras: Barra[] }) {
                 {r.tipo !== "grupo" && (
                   <div className="absolute bottom-0 top-0 w-px bg-navy-500/40" style={{ left: `${pct(hoje.getTime())}%` }} />
                 )}
-                {r.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd).map((b) => (
+                {r.tipo === "emp" && r.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd).map((b) => (
                   <div
                     key={b.id}
                     className="absolute top-[3px] z-10 flex h-[30px] items-center overflow-hidden rounded px-1.5 text-[10px] font-medium text-white"
