@@ -16,6 +16,7 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
+const NOTIFICACOES: NavItem = { href: "/notificacoes", label: "Notificações", icon: BellRing };
 
 const SECTIONS: NavGroup[] = [
   {
@@ -65,7 +66,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const [open, setOpen] = useState(false);
 
   const isAdmin = user.perfilNome === "Administrador";
-  const topLinks = [DASHBOARD];
+  const topLinks = [DASHBOARD, NOTIFICACOES];
   const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro" && s.label !== "Administrativo");
   const flatLinks = [...topLinks, ...sections.flatMap((s) => s.items)];
 

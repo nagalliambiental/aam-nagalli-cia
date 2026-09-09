@@ -963,7 +963,9 @@ model Notificacao {
   destinatarioUsuarioId Int?
   lida                  Boolean  @default(false)
   dataEnvio             DateTime @default(now())
-  criadoEm              DateTime @default(now())
+  criadoEm              DateTime  @default(now())
+  url                   String?
+  termo                 String?
 
   processoId Int?
   prazoId    Int?

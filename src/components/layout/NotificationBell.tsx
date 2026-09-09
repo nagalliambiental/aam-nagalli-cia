@@ -26,9 +26,11 @@ interface Notificacao {
   prazoId: number | null;
   tarefaId: number | null;
   licencaId: number | null;
+  url: string | null;
 }
 
 function notificacaoLink(n: Notificacao): string | null {
+  if (n.url) return n.url;
   if (n.processoId) return `/processos/${n.processoId}`;
   if (n.licencaId) return `/licencas/${n.licencaId}`;
   if (n.prazoId) return `/prazos`;
@@ -119,7 +121,7 @@ export function NotificationBell() {
                 );
 
                 return href ? (
-                  <a key={n.id} href={href} onClick={() => setOpen(false)}>
+                  <a key={n.id} href={href} onClick={() => setOpen(false)} {...(href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
                     {content}
                   </a>
                 ) : (

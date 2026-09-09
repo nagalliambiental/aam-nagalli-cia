@@ -29,6 +29,8 @@ export async function GET() {
       prazoId: true,
       tarefaId: true,
       licencaId: true,
+      url: true,
+      termo: true,
     },
   });
 

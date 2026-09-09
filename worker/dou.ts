@@ -47,7 +47,9 @@ async function main() {
       await prisma.notificacao.create({
         data: {
           tipo: "dou_notificacao",
-          mensagem: `DOU ${r.secao}: ${r.titulo}`,
+          mensagem: `DOU ${r.secao}: ${r.titulo} (termo: ${t.text})`,
+          url: r.url || null,
+          termo: `${t.tipo}:${t.text}`,
           processoId: t.tipo === "processo" ? t.id : undefined,
           destinatarioUsuarioId: null,
         },
