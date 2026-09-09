@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
       "./**/*.spec.*",
       "./prisma/seed.ts",
       "./scripts/**/*",
+      "./node_modules/.prisma/client/query_engine-*.dll.node",
+      "./node_modules/.prisma/client/**/*.tmp*",
+      "./node_modules/@prisma/engines/**/*",
+      "./node_modules/@prisma/client/runtime/*.cockroachdb.*",
+      "./node_modules/@prisma/client/runtime/*.mysql.*",
+      "./node_modules/@prisma/client/runtime/*.sqlserver.*",
+      "./node_modules/@prisma/client/runtime/*.sqlite.*",
     ],
   },
 };
