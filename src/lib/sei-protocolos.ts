@@ -18,7 +18,15 @@ function recente(data?: string | null) {
 
 export async function salvarProtocolosSei(processoId: number, protocolos: ProtocoloSei[], notificar = false) {
   if (protocolos.length === 0) return [];
-  const existentes = await prisma.seiProtocolo.findMany({ where: { processoId, numero: { in: protocolos.map((p) => p.numero) } }, select: { numero: true } });
+  const existentes = await prisma.seiProtocolo.findMany({ where: { processoId, numero: { in: protocolos.map((p) => p.numero) } }, select: { id: true, numero: true, url: true } });
+  const existentesPorNumero = new Map(existentes.map((p) => [p.numero, p]));
+  for (const protocolo of protocolos) {
+    const existente = existentesPorNumero.get(protocolo.numero);
+    if (existente && protocolo.url && existente.url !== protocolo.url) {
+      await prisma.seiProtocolo.update({ where: { id: existente.id }, data: { url: protocolo.url, tipo: protocolo.tipo, data: protocolo.data, dataInclusao: protocolo.dataInclusao, unidade: protocolo.unidade } });
+      await prisma.notificacao.updateMany({ where: { processoId, tipo: "sei_protocolo", mensagem: { contains: protocolo.numero } }, data: { url: protocolo.url } });
+    }
+  }
   const numerosExistentes = new Set(existentes.map((p) => p.numero));
   const novos = protocolos.filter((p) => !numerosExistentes.has(p.numero));
   if (novos.length === 0) return [];

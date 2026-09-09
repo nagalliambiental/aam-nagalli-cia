@@ -82,7 +82,9 @@ export function parseProtocolosProcesso(htmlHtml: string): ProtocoloSei[] {
     const cells = tds.map((td) => limparHtml(td));
     const numero = cells[1]?.match(/\b\d{5,}\b/)?.[0] ?? "";
     if (!numero || seen.has(numero) || !/\d{1,2}\/\d{1,2}\/\d{4}/.test(cells[3] ?? "")) continue;
-    const linkSource = tds[1]?.match(/(?:href|onclick)=["']([^"']+)["']/i)?.[1] ?? row.match(/md_pesq_documento_consulta_externa\.php\?[^'"\s)]+/i)?.[0] ?? null;
+    const linkSource = tds[1]?.match(/md_pesq_documento_consulta_externa\.php\?[^'"\s)]+/i)?.[0]
+      ?? row.match(/md_pesq_documento_consulta_externa\.php\?[^'"\s)]+/i)?.[0]
+      ?? null;
     const url = extrairUrlPublica(linkSource);
     seen.add(numero);
     out.push({
