@@ -19,6 +19,18 @@ type Linha = {
   outrosCustos: string;
 };
 
+export type FaturaInicial = {
+  id: number;
+  empresaId: number;
+  empreendimentoId: number | null;
+  referencia: string;
+  periodoInicio: string;
+  periodoFim: string;
+  vencimento: string;
+  observacoes: string;
+  itens: Linha[];
+};
+
 const linhaVazia = (): Linha => ({ data: "", identificacao: "", descricao: "", qtde: "", horaTecnica: "", descontoPct: "", outrosCustos: "" });
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
@@ -38,18 +50,21 @@ function calc(l: Linha) {
 export function FaturaForm({
   empresas,
   empreendimentos,
+  initial,
 }: {
   empresas: Empresa[];
   empreendimentos: Empreendimento[];
+  initial?: FaturaInicial;
 }) {
   const router = useRouter();
-  const [empresaId, setEmpresaId] = useState("");
-  const [empreendimentoId, setEmpreendimentoId] = useState("");
-  const [referencia, setReferencia] = useState("");
-  const [periodoInicio, setPeriodoInicio] = useState("");
-  const [periodoFim, setPeriodoFim] = useState("");
-  const [vencimento, setVencimento] = useState("");
-  const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
+  const [empresaId, setEmpresaId] = useState(initial ? String(initial.empresaId) : "");
+  const [empreendimentoId, setEmpreendimentoId] = useState(initial?.empreendimentoId ? String(initial.empreendimentoId) : "");
+  const [referencia, setReferencia] = useState(initial?.referencia ?? "");
+  const [observacoes, setObservacoes] = useState(initial?.observacoes ?? "");
+  const [periodoInicio, setPeriodoInicio] = useState(initial?.periodoInicio ?? "");
+  const [periodoFim, setPeriodoFim] = useState(initial?.periodoFim ?? "");
+  const [vencimento, setVencimento] = useState(initial?.vencimento ?? "");
+  const [linhas, setLinhas] = useState<Linha[]>(initial?.itens.length ? initial.itens : [linhaVazia()]);
   const [loading, setLoading] = useState(false);
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +114,8 @@ export function FaturaForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const res = await fetch("/api/faturas", {
-      method: "POST",
+    const res = await fetch(initial ? `/api/faturas/${initial.id}` : "/api/faturas", {
+      method: initial ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         empresaId: Number(empresaId),
@@ -109,6 +124,7 @@ export function FaturaForm({
         periodoInicio: periodoInicio || null,
         periodoFim: periodoFim || null,
         vencimento: vencimento || null,
+        observacoes: observacoes || null,
         itens: linhas.map((l) => ({
           data: l.data || null,
           identificacao: l.identificacao,
@@ -123,7 +139,7 @@ export function FaturaForm({
     const d = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) { setError(d.error ?? "Erro ao gerar fatura."); return; }
-    router.push(`/faturas/${d.id}`);
+    router.push(`/faturas/${d.id ?? initial?.id}`);
     router.refresh();
   }
 
@@ -147,6 +163,10 @@ export function FaturaForm({
         <div>
           <Label htmlFor="referencia">Referência</Label>
           <Input id="referencia" value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ex.: Terra Roxa" />
+        </div>
+        <div className="md:col-span-2">
+          <Label htmlFor="observacoes">Observações</Label>
+          <Textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={2} placeholder="Informações adicionais da cobrança" />
         </div>
         <div className="grid grid-cols-2 gap-4 md:col-span-2">
           <div>
@@ -233,7 +253,7 @@ export function FaturaForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center gap-2">
-        <Button type="submit" disabled={loading || !empresaId}>{loading ? "Gerando..." : "Gerar fatura"}</Button>
+          <Button type="submit" disabled={loading || !empresaId}>{loading ? "Salvando..." : initial ? "Salvar alterações" : "Gerar fatura"}</Button>
         <Button type="button" variant="ghost" onClick={() => router.back()}>Cancelar</Button>
       </div>
     </form>

@@ -1,0 +1,3 @@
+ALTER TABLE "Fatura"
+ADD COLUMN "recebidoEm" TIMESTAMP(3),
+ADD COLUMN "recebidoPor" INTEGER;

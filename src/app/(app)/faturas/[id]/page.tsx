@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader, Badge } from "@/components/ui";
-import { formatDate, formatMoney, formatCNPJ } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney, formatCNPJ } from "@/lib/format";
 import { ImprimirBotao } from "@/components/ImprimirBotao";
+import { RecebimentoFatura } from "@/components/comercial/RecebimentoFatura";
+import { ExcluirFatura } from "@/components/comercial/ExcluirFatura";
 
 const STATUS: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   aberta: { label: "Aberta", tone: "blue" },
@@ -36,7 +38,12 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
         actions={
           <div className="flex items-center gap-2 print:hidden">
             <Badge tone={st.tone}>{st.label}</Badge>
+            <a href={`/api/faturas/${fatura.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md bg-navy-700 px-3 py-2 text-xs font-medium text-white hover:bg-navy-800">PDF</a>
+            <a href={`/api/faturas/${fatura.id}/xlsx`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md px-3 py-2 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-100">XLSX editável</a>
+            <Link href={`/faturas/${fatura.id}/editar`} className="inline-flex items-center rounded-md px-3 py-2 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-100">Editar</Link>
             <ImprimirBotao />
+            <RecebimentoFatura id={fatura.id} recebido={Boolean(fatura.recebidoEm) || fatura.status === "paga"} />
+            <ExcluirFatura id={fatura.id} />
             <Link href="/faturas">
               <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-navy-600 ring-1 ring-slate-200 hover:bg-slate-100">Voltar</span>
             </Link>
@@ -56,7 +63,7 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 border-t border-slate-300 text-sm">
+           <div className="grid grid-cols-2 border-t border-slate-300 text-sm">
           <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">CLIENTE</div>
           <div className="border-b border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">{fatura.empresa.razaoSocial}</div>
           <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">CNPJ</div>
@@ -67,7 +74,9 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
           <div className="border-b border-slate-300 px-4 py-2 text-center">{fatura.periodo || "—"}{fatura.vencimento ? ` · Venc.: ${formatDate(fatura.vencimento)}` : ""}</div>
           <div className="border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">PAGAMENTO</div>
           <div className="whitespace-pre-line px-4 py-2 text-center">{PAGAMENTO}</div>
-        </div>
+           </div>
+
+           {fatura.recebidoEm && <div className="border-t border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Recebimento confirmado em {formatDateTime(fatura.recebidoEm)}.</div>}
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-xs">

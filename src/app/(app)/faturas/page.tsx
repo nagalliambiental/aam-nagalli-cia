@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PageHeader, Card, Button, Badge } from "@/components/ui";
-import { formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 
 const STATUS: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   aberta: { label: "Aberta", tone: "blue" },
@@ -21,6 +21,12 @@ export default async function FaturasPage() {
     orderBy: [{ ano: "desc" }, { numero: "desc" }],
     include: { empresa: true, itens: true },
   });
+  const hoje = new Date();
+  const total = (items: typeof faturas) => items.reduce((sum, f) => sum + f.itens.reduce((subtotal, item) => subtotal + Number(item.total), 0), 0);
+  const valorTotal = total(faturas);
+  const recebidas = faturas.filter((f) => f.recebidoEm || f.status === "paga");
+  const emAberto = faturas.filter((f) => !f.recebidoEm && f.status !== "paga" && f.status !== "cancelada");
+  const vencidas = emAberto.filter((f) => f.vencimento && new Date(f.vencimento) < hoje);
 
   return (
     <div>
@@ -29,6 +35,28 @@ export default async function FaturasPage() {
         subtitle="Cobrança aos clientes (somente administrador)"
         actions={<Link href="/faturas/nova"><Button>Nova fatura</Button></Link>}
       />
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-l-4 border-l-navy-700 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Faturado</p>
+          <p className="mt-2 text-2xl font-bold text-navy-900">{formatMoney(valorTotal)}</p>
+          <p className="mt-1 text-xs text-muted">{faturas.length} fatura(s)</p>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">A receber</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700">{formatMoney(total(emAberto))}</p>
+          <p className="mt-1 text-xs text-muted">{emAberto.length} em aberto</p>
+        </Card>
+        <Card className="border-l-4 border-l-emerald-500 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Recebido</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">{formatMoney(total(recebidas))}</p>
+          <p className="mt-1 text-xs text-muted">{recebidas.length} recebida(s)</p>
+        </Card>
+        <Card className="border-l-4 border-l-red-500 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Em atraso</p>
+          <p className="mt-2 text-2xl font-bold text-red-700">{formatMoney(total(vencidas))}</p>
+          <p className="mt-1 text-xs text-muted">{vencidas.length} vencida(s)</p>
+        </Card>
+      </div>
       <Card>
         <ul className="divide-y divide-slate-100">
           {faturas.map((f) => {
@@ -42,7 +70,7 @@ export default async function FaturasPage() {
                       Fatura Nº {f.numero}/{f.ano}
                       <span className="ml-2 font-normal text-muted">· {f.empresa.nomeFantasia || f.empresa.razaoSocial}</span>
                     </p>
-                    <p className="text-xs text-muted">{f.itens.length} item(ns){f.referencia ? ` · ${f.referencia}` : ""}</p>
+                    <p className="text-xs text-muted">{f.itens.length} item(ns){f.referencia ? ` · ${f.referencia}` : ""}{f.recebidoEm ? ` · Recebida em ${formatDateTime(f.recebidoEm)}` : ""}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-sm font-semibold text-navy-900">{formatMoney(total)}</span>
