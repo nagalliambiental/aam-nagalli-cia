@@ -71,7 +71,7 @@ export default async function ProcessoDetalhePage({
             <CardHeader title="Informações do processo" />
             <dl className="grid grid-cols-1 gap-4 px-5 py-4 text-sm md:grid-cols-2">
             {([
-              ["Número", `#${processo.numero}`],
+              ["Número", processo.numero],
               ["Natureza", processo.natureza === "ambiental" ? "Ambiental" : "Minerário"],
               ...(processo.natureza === "ambiental"
                 ? []
