@@ -6,14 +6,14 @@ import { Button, Input, Label, Modal, Select, Textarea } from "@/components/ui";
 import { Plus } from "lucide-react";
 
 export function CriarTarefaNotificacao({
-  notificacaoId,
+  notificacaoId = null,
   mensagem,
   processoId,
   processoNumero,
   pessoas,
   isAdmin = false,
 }: {
-  notificacaoId: number;
+  notificacaoId?: number | null;
   mensagem: string;
   processoId: number | null;
   processoNumero: string | null;
@@ -58,7 +58,9 @@ export function CriarTarefaNotificacao({
       setError(d.error ?? "Erro ao criar tarefa.");
       return;
     }
-    await fetch(`/api/notificacoes/${notificacaoId}/lida`, { method: "POST" }).catch(() => {});
+    if (notificacaoId) {
+      await fetch(`/api/notificacoes/${notificacaoId}/lida`, { method: "POST" }).catch(() => {});
+    }
     setLoading(false);
     setOpen(false);
     router.refresh();

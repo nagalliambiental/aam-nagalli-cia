@@ -26,7 +26,7 @@ export function LoginForm() {
     setLoading(false);
 
     if (res?.error) {
-      setError("E-mail ou senha inválidos.");
+      setError(res.error.includes("Muitas tentativas") ? res.error : "E-mail ou senha inválidos.");
       return;
     }
     router.push("/");

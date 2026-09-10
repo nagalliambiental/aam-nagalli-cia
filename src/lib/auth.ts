@@ -2,9 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { bloqueioRestanteMin, registrarFalha, limparTentativas } from "@/lib/login-rate-limit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 24 * 60 * 60, updateAge: 60 * 60 },
   pages: { signIn: "/login" },
   providers: [
     Credentials({
@@ -18,6 +19,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
+        const restante = bloqueioRestanteMin(email);
+        if (restante > 0) {
+          throw new Error(`Muitas tentativas de login. Tente novamente em ${restante} minuto(s).`);
+        }
+
         const usuario = await prisma.usuario.findUnique({
           where: { email: email.toLowerCase().trim() },
           include: {
@@ -26,9 +32,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
-        if (!usuario || !usuario.ativo) return null;
+        if (!usuario || !usuario.ativo) {
+          registrarFalha(email);
+          return null;
+        }
         const ok = await bcrypt.compare(password, usuario.senhaHash);
-        if (!ok) return null;
+        if (!ok) {
+          registrarFalha(email);
+          return null;
+        }
+        limparTentativas(email);
 
         return {
           id: String(usuario.id),

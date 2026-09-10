@@ -14,7 +14,17 @@ type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] 
 export default async function TarefasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
-  const verConcluidas = typeof sp.status === "string" && sp.status === "concluida";
+  const statusParam = typeof sp.status === "string" ? sp.status : "nao_iniciado";
+  const ABAS = [
+    { value: "nao_iniciado", label: "Não Iniciadas" },
+    { value: "em_andamento", label: "Em andamento" },
+    { value: "para_revisao", label: "Para Revisão" },
+    { value: "concluida", label: "Concluídas" },
+  ] as const;
+  type StatusAba = (typeof ABAS)[number]["value"];
+  const statusAtual: StatusAba = (ABAS as readonly { value: string }[]).some((a) => a.value === statusParam)
+    ? (statusParam as StatusAba)
+    : "nao_iniciado";
   const podeCriar = await usuarioTemPermissao("tarefa:criar");
   const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
   const user = await requireAuth();
@@ -22,17 +32,17 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const podeEditarTudo = user.perfilNome === "Administrador" || user.perfilNome === "Técnico Chefe";
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
-  const statusFilter = verConcluidas
-    ? { status: "concluida" as const }
-    : { status: { notIn: ["concluida"] as string[] } };
+  const statusFilter = { status: statusAtual };
 
   const escopoTarefa = scoped && responsavelPessoaId
     ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }] }
     : {};
 
-  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa] = await Promise.all([
+  const buscaTitulo = q ? { titulo: { contains: q, mode: "insensitive" as const } } : {};
+
+  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens] = await Promise.all([
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
+      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
       take: 200,
@@ -63,7 +73,14 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         licencas: { select: { licenca: { select: { empreendimento: { select: { nome: true, apelido: true } } } } } },
       },
     }),
+    prisma.tarefa.groupBy({
+      by: ["status"],
+      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...buscaTitulo },
+      _count: true,
+    }),
   ]);
+
+  const contagemPorStatus = new Map(contagens.map((c) => [c.status, c._count]));
 
   const empreendimentosOpt = empreendimentos.map((e) => {
     const vinculados = new Map<number, { id: number; numero: string; apelido: string | null; numeroLicenca: string | null }>();
@@ -122,14 +139,22 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       )}
 
       <Card>
-        <div className="flex items-center gap-2 border-b border-slate-200 p-4">
-          <Link href="/tarefas" className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${!verConcluidas ? "bg-navy-100 text-navy-800" : "text-muted hover:bg-slate-100"}`}>
-            Em aberto
-          </Link>
-          <Link href="/tarefas?status=concluida" className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${verConcluidas ? "bg-emerald-50 text-emerald-800" : "text-muted hover:bg-slate-100"}`}>
-            Concluídas
-          </Link>
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-4">
+          {ABAS.map((aba) => {
+            const ativo = statusAtual === aba.value;
+            const total = contagemPorStatus.get(aba.value) ?? 0;
+            return (
+              <Link
+                key={aba.value}
+                href={`/tarefas?status=${aba.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${ativo ? (aba.value === "concluida" ? "bg-emerald-50 text-emerald-800" : "bg-navy-100 text-navy-800") : "text-muted hover:bg-slate-100"}`}
+              >
+                {aba.label} ({total})
+              </Link>
+            );
+          })}
           <form method="get" className="ml-auto flex items-center gap-2">
+            <input type="hidden" name="status" value={statusAtual} />
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
@@ -175,7 +200,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
           ))}
           {tarefas.length === 0 && (
             <li className="px-5 py-12 text-center text-sm text-muted">
-              {verConcluidas ? "Nenhuma tarefa concluída." : "Nenhuma tarefa em aberto."}
+              {statusAtual === "concluida" ? "Nenhuma tarefa concluída." : `Nenhuma tarefa em "${ABAS.find((a) => a.value === statusAtual)?.label}".`}
             </li>
           )}
         </ul>

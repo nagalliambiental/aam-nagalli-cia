@@ -1,27 +1,31 @@
-import { requirePermissao } from "@/lib/perfil";
+import { requirePermissao, requireAuth } from "@/lib/perfil";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { PageHeader, Card, Badge } from "@/components/ui";
 import { safeExternalUrl } from "@/lib/urls";
 import { DouConfigForm } from "@/components/ferramentas/DouConfigForm";
 import { DouFiltroForm } from "@/components/ferramentas/DouFiltroForm";
+import { CriarTarefaNotificacao } from "@/components/notificacoes/CriarTarefaNotificacao";
 import { montarTermosDou } from "@/lib/dou-termos";
 
 type SearchParams = Promise<{ periodo?: string | string[]; inicio?: string | string[]; fim?: string | string[] }>;
 
 export default async function DouPage({ searchParams }: { searchParams: SearchParams }) {
   await requirePermissao("processo:ler");
+  const user = await requireAuth();
+  const isAdmin = user.perfilNome === "Administrador";
   const sp = await searchParams;
   const periodo = typeof sp.periodo === "string" ? sp.periodo : "30";
   const inicioParam = typeof sp.inicio === "string" ? sp.inicio : "";
   const fimParam = typeof sp.fim === "string" ? sp.fim : "";
 
-  const [avisos, config, empresas, empreendimentos, processos] = await Promise.all([
+  const [avisos, config, empresas, empreendimentos, processos, pessoas] = await Promise.all([
     prisma.notificacao.findMany({ where: { tipo: "dou_notificacao" }, orderBy: { criadoEm: "desc" }, take: 500, include: { processo: { select: { id: true, numero: true } } } }),
     prisma.douConfiguracao.findUnique({ where: { id: 1 } }),
     prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { cnpj: true, cpf: true, razaoSocial: true, nomeFantasia: true } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, select: { nome: true, apelido: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, select: { numero: true, nup: true } }),
+    prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
   ]);
   const termos = montarTermosDou(empresas, empreendimentos, processos, (config?.termosExtras ?? "").split(/\r?\n/).filter(Boolean));
 
@@ -56,15 +60,27 @@ export default async function DouPage({ searchParams }: { searchParams: SearchPa
           {filtrados.map((n) => {
             const url = safeExternalUrl(n.url);
             return (
-              <li key={n.id} className="px-5 py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="blue">DOU</Badge>
-                  <span className="text-sm font-medium text-navy-900">{n.mensagem}</span>
+              <li key={n.id} className="flex items-start justify-between gap-3 px-5 py-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="blue">DOU</Badge>
+                    <span className="text-sm font-medium text-navy-900">{n.mensagem}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
+                    <span>{formatDate(n.dataEvento ?? n.criadoEm)}</span>
+                    {n.processo && <a className="text-navy-600 hover:underline" href={`/processos/${n.processo.id}`}>Processo {n.processo.numero}</a>}
+                    {url && <a className="text-navy-600 underline" href={url} target="_blank" rel="noreferrer">Ver publicação ↗</a>}
+                  </div>
                 </div>
-                <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
-                  <span>{formatDate(n.dataEvento ?? n.criadoEm)}</span>
-                  {n.processo && <a className="text-navy-600 hover:underline" href={`/processos/${n.processo.id}`}>Processo {n.processo.numero}</a>}
-                  {url && <a className="text-navy-600 underline" href={url} target="_blank" rel="noreferrer">Ver publicação ↗</a>}
+                <div className="shrink-0">
+                  <CriarTarefaNotificacao
+                    notificacaoId={n.id}
+                    mensagem={n.mensagem}
+                    processoId={n.processo?.id ?? null}
+                    processoNumero={n.processo?.numero ?? null}
+                    pessoas={pessoas}
+                    isAdmin={isAdmin}
+                  />
                 </div>
               </li>
             );
