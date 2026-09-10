@@ -3,6 +3,7 @@
 // Uso: npx tsx worker/dou.ts  (com DATABASE_URL no ambiente)
 import { prisma } from "../src/lib/prisma";
 import { buscarDouTermo, dataOntemDmy } from "../src/lib/dou";
+import { montarTermosDou } from "../src/lib/dou-termos";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -10,27 +11,15 @@ async function main() {
   const data = dataOntemDmy();
   console.log(`[dou-worker] data=${data}`);
 
-  const [empresas, empreendimentos, processos] = await Promise.all([
+  const [empresas, empreendimentos, processos, config] = await Promise.all([
     prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, cnpj: true, razaoSocial: true, nomeFantasia: true } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, nome: true, apelido: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, numero: true, nup: true } }),
+    prisma.douConfiguracao.findUnique({ where: { id: 1 } }),
   ]);
-
-  const termos: { text: string; tipo: string; id: number }[] = [];
-  for (const e of empresas) {
-    if (e.cnpj) termos.push({ text: e.cnpj.replace(/\D/g, ""), tipo: "empresa", id: e.id });
-    if (e.razaoSocial) termos.push({ text: e.razaoSocial, tipo: "empresa", id: e.id });
-    if (e.nomeFantasia) termos.push({ text: e.nomeFantasia, tipo: "empresa", id: e.id });
-  }
-  for (const emp of empreendimentos) {
-    termos.push({ text: emp.nome, tipo: "empreendimento", id: emp.id });
-    if (emp.apelido) termos.push({ text: emp.apelido, tipo: "empreendimento", id: emp.id });
-  }
-  for (const p of processos) {
-    if (p.nup) termos.push({ text: p.nup, tipo: "processo", id: p.id });
-    termos.push({ text: p.numero, tipo: "processo", id: p.id });
-  }
-  const lista = termos.filter((t) => t.text.trim());
+  const automaticos = montarTermosDou(empresas, empreendimentos, processos, []).map((t) => ({ text: t.text, tipo: t.origem, id: t.id ?? 0 }));
+  const extras = (config?.termosExtras ?? "").split(/\r?\n/).map((text) => text.trim()).filter(Boolean).map((text) => ({ text, tipo: "manual", id: 0 }));
+  const lista = [...extras, ...automaticos];
   console.log(`[dou-worker] termos=${lista.length}`);
 
   let notificacoes = 0;

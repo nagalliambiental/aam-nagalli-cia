@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/perfil";
 import { Card, Badge } from "@/components/ui";
 import { formatDate, formatMoney, formatRelative } from "@/lib/format";
 import {
-  FolderOpen, CalendarClock, CheckSquare, BellRing, Wallet,
+  FolderOpen, CalendarClock, CheckSquare, Wallet,
   FilePlus2, ArrowRight, TrendingUp, FileSignature, AlertTriangle,
 } from "lucide-react";
 
@@ -33,7 +33,6 @@ export default async function DashboardPage() {
   const segTarefa = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
-    alertas,
     tarefasAlertas,
     tarefasAtencao,
     processosAtivos,
@@ -41,12 +40,6 @@ export default async function DashboardPage() {
     tarefasPendentes,
     contratosVigentes,
   ] = await Promise.all([
-    prisma.notificacao.findMany({
-      where: { lida: false, tipo: { in: ["prazo_vencido", "prazo_vencendo", "alerta", "sei_movimentacao", "dou_notificacao"] } },
-      orderBy: { criadoEm: "desc" },
-      take: 8,
-       select: { id: true, mensagem: true, tipo: true, criadoEm: true, dataEvento: true, processo: { select: { id: true, numero: true } } },
-    }),
     prisma.tarefa.findMany({
       where: {
         ativo: true,
@@ -281,45 +274,6 @@ export default async function DashboardPage() {
           </ul>
         </Card>
 
-        {/* Central de Avisos */}
-        <Card>
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                <BellRing className="h-4 w-4" />
-              </span>
-              Central de Avisos
-            </h2>
-            <Link href="/notificacoes" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
-              Ver todas <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <ul className="divide-y divide-slate-100">
-            {alertas.length === 0 && (
-              <li className="px-5 py-8 text-center text-sm text-muted">
-                Nenhum aviso não lido.
-              </li>
-            )}
-            {alertas.map((a) => (
-              <li key={a.id} className="px-5 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-navy-900">{a.mensagem}</p>
-                     <p className="mt-0.5 text-xs text-muted">{formatDate(a.dataEvento ?? a.criadoEm)}</p>
-                  </div>
-                  {a.processo && (
-                    <Link
-                      href={`/processos/${a.processo.id}`}
-                      className="inline-flex shrink-0 items-center gap-1 text-xs text-navy-600 hover:underline"
-                    >
-                      {a.processo.numero} <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
       </div>
 
     </div>

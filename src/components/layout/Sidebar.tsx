@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, FolderOpen, CalendarClock,
   LogOut, Menu, X, Mountain,
-   BellRing, CalendarDays, FileBarChart, Newspaper, Radio, FlaskConical,
+   CalendarDays, FileBarChart, Newspaper, Radio, FlaskConical,
   CheckSquare, FileSignature, Radar, Library,
   HandCoins, ChartPie, Settings2, Download,
 } from "lucide-react";
@@ -16,7 +16,6 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
 
 const DASHBOARD: NavItem = { href: "/", label: "Painel", icon: LayoutDashboard };
-const NOTIFICACOES: NavItem = { href: "/notificacoes", label: "Central de Avisos", icon: BellRing };
 
 const SECTIONS: NavGroup[] = [
   {
@@ -55,7 +54,6 @@ const SECTIONS: NavGroup[] = [
     label: "Ferramentas",
     icon: Settings2,
     items: [
-      NOTIFICACOES,
       { href: "/ferramentas/dou", label: "DOU", icon: Newspaper },
       { href: "/ferramentas/sei", label: "Movimentações SEI", icon: Radio },
       { href: "/ferramentas/iat", label: "Movimentações IAT", icon: FlaskConical },
@@ -74,20 +72,6 @@ const SECTIONS: NavGroup[] = [
 export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [avisosNaoLidos, setAvisosNaoLidos] = useState(0);
-
-  useEffect(() => {
-    let ativo = true;
-    async function carregarContagem() {
-      const response = await fetch("/api/notificacoes/contagem");
-      if (!response.ok || !ativo) return;
-      const data = await response.json();
-      setAvisosNaoLidos(Number(data.count) || 0);
-    }
-    carregarContagem();
-    const interval = setInterval(carregarContagem, 60_000);
-    return () => { ativo = false; clearInterval(interval); };
-  }, []);
 
   const isAdmin = user.perfilNome === "Administrador";
   const topLinks = [DASHBOARD];
@@ -117,11 +101,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
       >
         <Icon className="h-4 w-4 shrink-0" />
         <span className="min-w-0 flex-1 whitespace-nowrap">{item.label}</span>
-        {item.href === NOTIFICACOES.href && avisosNaoLidos > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
-            {avisosNaoLidos > 99 ? "99+" : avisosNaoLidos}
-          </span>
-        )}
       </Link>
     );
   };
@@ -224,11 +203,6 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                {item.href === NOTIFICACOES.href && avisosNaoLidos > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
-                    {avisosNaoLidos > 99 ? "99+" : avisosNaoLidos}
-                  </span>
-                )}
               </Link>
             );
           })}

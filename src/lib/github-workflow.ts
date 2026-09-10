@@ -2,7 +2,9 @@ const API = "https://api.github.com";
 
 function githubConfig() {
   const token = process.env.GITHUB_TOKEN;
-  const repository = process.env.GITHUB_REPOSITORY ?? "nagalliambiental/amm-nagalli-cia";
+  const repository = (process.env.GITHUB_REPOSITORY ?? "nagalliambiental/amm-nagalli-cia")
+    .replace(/^https?:\/\/github\.com\//, "")
+    .replace(/\.git$/, "");
   if (!token) throw new Error("GITHUB_TOKEN não configurado na Vercel.");
   return { token, repository };
 }
@@ -14,7 +16,10 @@ async function githubFetch(path: string, init?: RequestInit) {
     headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28", ...(init?.headers ?? {}) },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`GitHub API retornou ${response.status}.`);
+  if (!response.ok) {
+    if (response.status === 404) throw new Error("Repositório ou workflow não encontrado. Confira GITHUB_REPOSITORY e se o GITHUB_TOKEN tem acesso ao repositório nagalliambiental/amm-nagalli-cia.");
+    throw new Error(`GitHub API retornou ${response.status}.`);
+  }
   return response;
 }
 

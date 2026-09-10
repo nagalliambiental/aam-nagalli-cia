@@ -1145,6 +1145,12 @@ model BackupArquivo {
   @@index([criadoEm])
 }
 
+model DouConfiguracao {
+  id           Int      @id
+  termosExtras String?
+  atualizadoEm DateTime @updatedAt
+}
+
 // =====================================================================
 //  AUDITORIA (única exceção a entidadeTipo + entidadeId)
 // =====================================================================
