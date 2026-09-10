@@ -62,7 +62,7 @@ export async function POST(req: Request, { params }: Ctx) {
         exigenciaId: exigencia.id,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",
-        status: body.status ?? "pendente",
+        status: body.status ?? "nao_iniciado",
         prazoData,
         dataLimite,
         alertaDias,

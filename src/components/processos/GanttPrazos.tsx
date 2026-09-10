@@ -16,7 +16,7 @@ const inicioSemana = (d: Date) => { const x = inicioDia(d); x.setDate(x.getDate(
 const fimDia = (d: Date) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
 const fimSemana = (d: Date) => fimDia(new Date(inicioSemana(d).getTime() + 6 * UM_DIA));
 const fimMes = (ano: number, mes: number) => fimDia(new Date(ano, mes + 1, 0));
-const corBarra = (status: string) => status === "concluido" || status === "concluida" ? "#2f8ac1" : status === "em_andamento" || status === "ativo" ? "#24678f" : "#ff740d";
+const corBarra = (status: string) => status === "concluido" || status === "concluida" ? "#2f8ac1" : status === "em_andamento" || status === "ativo" ? "#24678f" : status === "para_revisao" ? "#b45309" : "#ff740d";
 
 export function GanttPrazos({ barras }: { barras: Barra[] }) {
   const hoje = inicioDia(new Date());

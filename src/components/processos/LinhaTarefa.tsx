@@ -26,11 +26,17 @@ type Tarefa = {
 };
 
 type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
+
+function rotuloAmbiental(p: ProcessoAmbientalOpt) {
+  return `${p.apelido || `Processo ${p.numero}`} · Licença ${p.numeroLicenca || "—"}`;
+}
 
 const STATUS_OPTS = [
-  { value: "pendente", label: "Pendente" },
-  { value: "em_andamento", label: "Iniciada" },
-  { value: "concluida", label: "Concluída" },
+  { value: "nao_iniciado", label: "Não Iniciado" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "concluida", label: "Concluído" },
+  { value: "para_revisao", label: "Para Revisão" },
 ];
 const PRIORIDADES = ["baixa", "media", "alta", "urgente"];
 
@@ -38,6 +44,7 @@ export function LinhaTarefa({
   tarefa,
   pessoas,
   empreendimentos = [],
+  processosAmbientais = [],
   isAdmin = false,
   podeEditarTudo = false,
   podeExcluir = false,
@@ -45,6 +52,7 @@ export function LinhaTarefa({
   tarefa: Tarefa;
   pessoas: { id: number; nome: string }[];
   empreendimentos?: EmpComProcessos[];
+  processosAmbientais?: ProcessoAmbientalOpt[];
   isAdmin?: boolean;
   podeEditarTudo?: boolean;
   podeExcluir?: boolean;
@@ -222,12 +230,21 @@ export function LinhaTarefa({
                     {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}{e.apelido ? ` (${e.apelido})` : ""}</option>)}
                   </Select>
                 </div>
-                {empreendimentoSel && (
+                {(empreendimentoSel || processosAmbientais.length > 0) && (
                   <div>
                     <Label htmlFor={`lp2-${tarefa.id}`}>Processo</Label>
                     <Select id={`lp2-${tarefa.id}`} value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
                       <option value="">— sem processo —</option>
-                      {empreendimentoSel.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                      {(empreendimentoSel?.processos ?? []).length > 0 && (
+                        <optgroup label="Minerários">
+                          {(empreendimentoSel?.processos ?? []).map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                        </optgroup>
+                      )}
+                      {processosAmbientais.length > 0 && (
+                        <optgroup label="Ambientais">
+                          {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                        </optgroup>
+                      )}
                     </Select>
                   </div>
                 )}

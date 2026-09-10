@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         exigenciaId,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",
-        status: body.status ?? "pendente",
+        status: body.status ?? "nao_iniciado",
         prazoData,
         dataLimite,
         alertaDias,

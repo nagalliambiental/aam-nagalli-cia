@@ -21,9 +21,10 @@ type TarefaRapida = {
 
 const PRIORIDADES = ["baixa", "media", "alta", "urgente"];
 const STATUS = [
-  { value: "pendente", label: "Pendente" },
-  { value: "em_andamento", label: "Iniciada" },
-  { value: "concluida", label: "Concluída" },
+  { value: "nao_iniciado", label: "Não Iniciado" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "concluida", label: "Concluído" },
+  { value: "para_revisao", label: "Para Revisão" },
 ];
 
 export function EdicaoRapidaTarefa({

@@ -7,10 +7,11 @@ import { TarefaEdicaoForm } from "@/components/processos/TarefaEdicaoForm";
 import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
 import { formatDate } from "@/lib/format";
 
-const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" }> = {
-  pendente: { label: "Pendente", tone: "amber" },
+const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" | "gray" | "gold" }> = {
+  nao_iniciado: { label: "Não Iniciado", tone: "gray" },
   em_andamento: { label: "Em andamento", tone: "blue" },
-  concluida: { label: "Concluída", tone: "green" },
+  concluida: { label: "Concluído", tone: "green" },
+  para_revisao: { label: "Para Revisão", tone: "gold" },
 };
 
 export default async function TarefaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +22,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
 
-  const [tarefa, pessoas, empreendimentos] = await Promise.all([
+  const [tarefa, pessoas, empreendimentos, processosAmbientais] = await Promise.all([
     prisma.tarefa.findFirst({
       where: { id: tarefaId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
       include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
@@ -31,6 +32,11 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
       where: { ativo: true, deletedAt: null },
       orderBy: { nome: "asc" },
       include: { processos: { where: { ativo: true, deletedAt: null }, select: { id: true, numero: true } } },
+    }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null, natureza: "ambiental" },
+      orderBy: { apelido: "asc" },
+      select: { id: true, numero: true, apelido: true, numeroLicenca: true },
     }),
   ]);
 
@@ -66,6 +72,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
               apelido: e.apelido,
               processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
             }))}
+            processosAmbientais={processosAmbientais}
             showVisibilidade={isAdmin}
             initial={{
               titulo: tarefa.titulo,

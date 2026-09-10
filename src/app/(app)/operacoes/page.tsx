@@ -59,8 +59,8 @@ export default async function OperacoesPage() {
                       {fim ? ` · Data Limite ${formatDate(new Date(fim))}` : ""}
                     </p>
                   </div>
-                  <Badge tone={x.status === "concluida" ? "green" : x.status === "em_andamento" ? "blue" : "amber"}>
-                    {x.status === "concluida" ? "Concluída" : x.status === "em_andamento" ? "Iniciada" : "Pendente"}
+                  <Badge tone={x.status === "concluida" ? "green" : x.status === "em_andamento" ? "blue" : x.status === "para_revisao" ? "gold" : "gray"}>
+                    {x.status === "concluida" ? "Concluído" : x.status === "em_andamento" ? "Em andamento" : x.status === "para_revisao" ? "Para Revisão" : "Não Iniciado"}
                   </Badge>
                 </li>
               );

@@ -6,6 +6,11 @@ import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 
 type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
+
+function rotuloAmbiental(p: ProcessoAmbientalOpt) {
+  return `${p.apelido || `Processo ${p.numero}`} · Licença ${p.numeroLicenca || "—"}`;
+}
 
 const PRIORIDADES = [
   { value: "baixa", label: "Baixa" },
@@ -18,12 +23,14 @@ export function TarefaEdicaoForm({
   tarefaId,
   pessoas,
   empreendimentos,
+  processosAmbientais = [],
   initial,
   showVisibilidade = false,
 }: {
   tarefaId: number;
   pessoas: { id: number; nome: string }[];
   empreendimentos: EmpreendimentoComProcessos[];
+  processosAmbientais?: ProcessoAmbientalOpt[];
   initial: {
     titulo: string;
     descricao: string | null;
@@ -132,7 +139,16 @@ export function TarefaEdicaoForm({
             <Label htmlFor="processoId">Processo</Label>
             <Select id="processoId" value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
               <option value="">— sem processo —</option>
-              {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+              {empreendimento.processos.length > 0 && (
+                <optgroup label="Minerários">
+                  {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                </optgroup>
+              )}
+              {processosAmbientais.length > 0 && (
+                <optgroup label="Ambientais">
+                  {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                </optgroup>
+              )}
             </Select>
           </div>
         )}
@@ -156,7 +172,7 @@ export function TarefaEdicaoForm({
           type="button"
           variant={concluida ? "secondary" : "primary"}
           disabled={loading}
-          onClick={() => salvar(concluida ? "pendente" : "concluida")}
+           onClick={() => salvar(concluida ? "nao_iniciado" : "concluida")}
         >
           {concluida ? (
             <><RotateCcw className="mr-1 h-4 w-4" /> Reabrir</>

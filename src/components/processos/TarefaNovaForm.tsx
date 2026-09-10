@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 
 type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
+
+function rotuloAmbiental(p: ProcessoAmbientalOpt) {
+  return `${p.apelido || `Processo ${p.numero}`} · Licença ${p.numeroLicenca || "—"}`;
+}
 
 export function TarefaNovaForm({
   pessoas,
   empreendimentos,
+  processosAmbientais = [],
   showVisibilidade = false,
   onClose,
 }: {
   pessoas: { id: number; nome: string }[];
   empreendimentos: EmpreendimentoComProcessos[];
+  processosAmbientais?: ProcessoAmbientalOpt[];
   showVisibilidade?: boolean;
   onClose: () => void;
 }) {
@@ -26,7 +33,7 @@ export function TarefaNovaForm({
     alertaDias: "30",
     dataLimite: "",
     alertaDataLimite: "",
-    status: "pendente",
+    status: "nao_iniciado",
     responsavelPessoaId: pessoas[0]?.id ?? "",
     empreendimentoId: "",
     processoId: "",
@@ -92,7 +99,16 @@ export function TarefaNovaForm({
             <Label htmlFor="processoId">Processo (opcional)</Label>
             <Select id="processoId" value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
               <option value="">— sem processo —</option>
-              {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+              {empreendimento.processos.length > 0 && (
+                <optgroup label="Minerários">
+                  {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                </optgroup>
+              )}
+              {processosAmbientais.length > 0 && (
+                <optgroup label="Ambientais">
+                  {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                </optgroup>
+              )}
             </Select>
           </div>
         )}
@@ -124,9 +140,10 @@ export function TarefaNovaForm({
         <div>
           <Label htmlFor="status">Status</Label>
           <Select id="status" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-            <option value="pendente">Pendente</option>
-            <option value="em_andamento">Iniciada</option>
-            <option value="concluida">Concluída</option>
+            <option value="nao_iniciado">Não Iniciado</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluida">Concluído</option>
+            <option value="para_revisao">Para Revisão</option>
           </Select>
         </div>
         {showVisibilidade && (

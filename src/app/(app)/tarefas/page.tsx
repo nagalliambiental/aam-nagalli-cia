@@ -29,7 +29,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }] }
     : {};
 
-  const [tarefas, pessoas, empreendimentos] = await Promise.all([
+  const [tarefas, pessoas, empreendimentos, processosAmbientais] = await Promise.all([
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
@@ -41,6 +41,11 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       where: { ativo: true, deletedAt: null },
       orderBy: { nome: "asc" },
       include: { processos: { where: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) }, select: { id: true, numero: true } } },
+    }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null, natureza: "ambiental" },
+      orderBy: { apelido: "asc" },
+      select: { id: true, numero: true, apelido: true, numeroLicenca: true },
     }),
   ]);
 
@@ -63,6 +68,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         <NovaTarefaBotao
           pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
           empreendimentos={empreendimentosOpt}
+          processosAmbientais={processosAmbientais}
           isAdmin={isAdmin}
         />
       )}
@@ -112,6 +118,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                 }}
                 pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
                 empreendimentos={empreendimentosOpt}
+                processosAmbientais={processosAmbientais}
                 isAdmin={isAdmin}
                 podeEditarTudo={podeEditarTudo}
                 podeExcluir={podeExcluir}

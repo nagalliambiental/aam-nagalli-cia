@@ -19,10 +19,11 @@ const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | 
   encerrado: { label: "Encerrado", tone: "gray" },
 };
 
-const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" }> = {
-  pendente: { label: "Pendente", tone: "amber" },
+const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" | "gray" | "gold" }> = {
+  nao_iniciado: { label: "Não Iniciado", tone: "gray" },
   em_andamento: { label: "Em andamento", tone: "blue" },
-  concluida: { label: "Concluída", tone: "green" },
+  concluida: { label: "Concluído", tone: "green" },
+  para_revisao: { label: "Para Revisão", tone: "gold" },
 };
 
 const AGORA = new Date();

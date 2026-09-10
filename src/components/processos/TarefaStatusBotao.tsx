@@ -20,7 +20,7 @@ export function TarefaStatusBotao({
     const res = await fetch(`/api/tarefas/${tarefaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: concluida ? "pendente" : "concluida" }),
+      body: JSON.stringify({ status: concluida ? "nao_iniciado" : "concluida" }),
     });
     setLoading(false);
     if (res.ok) router.refresh();

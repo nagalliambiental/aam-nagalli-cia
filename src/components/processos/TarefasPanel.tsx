@@ -52,7 +52,7 @@ export function TarefasPanel({
     dataLimite: "",
     alertaDataLimite: "",
     prioridade: "media",
-    status: "pendente",
+    status: "nao_iniciado",
     responsavelPessoaId: pessoas[0]?.id ? String(pessoas[0].id) : "",
     visibilidade: "publico",
   });
@@ -144,9 +144,10 @@ export function TarefasPanel({
             <div>
               <Label htmlFor="status">Status</Label>
               <Select id="status" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                <option value="pendente">Pendente</option>
-                <option value="em_andamento">Iniciada</option>
-                <option value="concluida">Concluída</option>
+                <option value="nao_iniciado">Não Iniciado</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="concluida">Concluído</option>
+                <option value="para_revisao">Para Revisão</option>
               </Select>
             </div>
             {isAdmin && (

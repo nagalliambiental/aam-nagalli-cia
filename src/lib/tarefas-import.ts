@@ -133,7 +133,7 @@ export async function importarTarefasXlsx(buffer: Buffer, importId: string) {
         exigenciaId,
         responsavelPessoaId: pessoa.id,
         prioridade,
-        status: "pendente",
+        status: "nao_iniciado",
         prazoData: prazo,
         alertaDias: isNaN(alerta) ? 30 : alerta,
         importId,
