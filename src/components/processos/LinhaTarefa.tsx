@@ -25,7 +25,7 @@ type Tarefa = {
   dataConclusao?: string | null;
 };
 
-type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
 type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
 
 function rotuloAmbiental(p: ProcessoAmbientalOpt) {
@@ -230,24 +230,38 @@ export function LinhaTarefa({
                     {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}{e.apelido ? ` (${e.apelido})` : ""}</option>)}
                   </Select>
                 </div>
-                {(empreendimentoSel || processosAmbientais.length > 0) && (
-                  <div>
-                    <Label htmlFor={`lp2-${tarefa.id}`}>Processo</Label>
-                    <Select id={`lp2-${tarefa.id}`} value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
-                      <option value="">— sem processo —</option>
-                      {(empreendimentoSel?.processos ?? []).length > 0 && (
-                        <optgroup label="Minerários">
-                          {(empreendimentoSel?.processos ?? []).map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
-                        </optgroup>
-                      )}
-                      {processosAmbientais.length > 0 && (
-                        <optgroup label="Ambientais">
-                          {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
-                        </optgroup>
-                      )}
-                    </Select>
-                  </div>
-                )}
+                {(() => {
+                  const vinculados = empreendimentoSel?.processosAmbientais ?? [];
+                  const atualForaDaLista = form.processoId &&
+                    !(empreendimentoSel?.processos ?? []).some((p) => p.id === Number(form.processoId)) &&
+                    !vinculados.some((p) => p.id === Number(form.processoId))
+                    ? processosAmbientais.find((p) => p.id === Number(form.processoId)) ?? null
+                    : null;
+                  if (!empreendimentoSel && !atualForaDaLista) return null;
+                  return (
+                    <div>
+                      <Label htmlFor={`lp2-${tarefa.id}`}>Processo</Label>
+                      <Select id={`lp2-${tarefa.id}`} value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
+                        <option value="">— sem processo —</option>
+                        {(empreendimentoSel?.processos ?? []).length > 0 && (
+                          <optgroup label="Minerários">
+                            {(empreendimentoSel?.processos ?? []).map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                          </optgroup>
+                        )}
+                        {vinculados.length > 0 && (
+                          <optgroup label="Ambientais">
+                            {vinculados.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                          </optgroup>
+                        )}
+                        {atualForaDaLista && (
+                          <optgroup label="Vinculado atualmente">
+                            <option value={atualForaDaLista.id}>{rotuloAmbiental(atualForaDaLista)}</option>
+                          </optgroup>
+                        )}
+                      </Select>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : (

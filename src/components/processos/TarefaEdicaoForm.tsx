@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 
-type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
 type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
 
 function rotuloAmbiental(p: ProcessoAmbientalOpt) {
@@ -64,6 +64,12 @@ export function TarefaEdicaoForm({
   const [error, setError] = useState<string | null>(null);
 
   const empreendimento = empreendimentos.find((e) => e.id === Number(form.empreendimentoId));
+  const vinculados = empreendimento?.processosAmbientais ?? [];
+  const atualForaDaLista = form.processoId &&
+    !(empreendimento?.processos ?? []).some((p) => p.id === Number(form.processoId)) &&
+    !vinculados.some((p) => p.id === Number(form.processoId))
+    ? processosAmbientais.find((p) => p.id === Number(form.processoId)) ?? null
+    : null;
   const concluida = form.status === "concluida";
 
   async function salvar(overrideStatus?: string) {
@@ -144,9 +150,14 @@ export function TarefaEdicaoForm({
                   {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
                 </optgroup>
               )}
-              {processosAmbientais.length > 0 && (
+              {vinculados.length > 0 && (
                 <optgroup label="Ambientais">
-                  {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                  {vinculados.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                </optgroup>
+              )}
+              {atualForaDaLista && (
+                <optgroup label="Vinculado atualmente">
+                  <option value={atualForaDaLista.id}>{rotuloAmbiental(atualForaDaLista)}</option>
                 </optgroup>
               )}
             </Select>

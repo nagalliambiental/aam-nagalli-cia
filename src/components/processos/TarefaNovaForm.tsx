@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 
-type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[] };
+type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
 type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
 
 function rotuloAmbiental(p: ProcessoAmbientalOpt) {
@@ -104,9 +104,9 @@ export function TarefaNovaForm({
                   {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
                 </optgroup>
               )}
-              {processosAmbientais.length > 0 && (
+              {(empreendimento.processosAmbientais ?? []).length > 0 && (
                 <optgroup label="Ambientais">
-                  {processosAmbientais.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
+                  {(empreendimento.processosAmbientais ?? []).map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
                 </optgroup>
               )}
             </Select>

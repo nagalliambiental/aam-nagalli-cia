@@ -40,7 +40,13 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     prisma.empreendimento.findMany({
       where: { ativo: true, deletedAt: null },
       orderBy: { nome: "asc" },
-      include: { processos: { where: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) }, select: { id: true, numero: true } } },
+      include: {
+        processos: { where: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) }, select: { id: true, numero: true, natureza: true } },
+        licencas: {
+          where: { ativo: true, deletedAt: null },
+          select: { processos: { select: { processo: { select: { id: true, numero: true, apelido: true, numeroLicenca: true, natureza: true, ativo: true, deletedAt: true } } } } },
+        },
+      },
     }),
     prisma.processo.findMany({
       where: { ativo: true, deletedAt: null, natureza: "ambiental" },
@@ -49,12 +55,27 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     }),
   ]);
 
-  const empreendimentosOpt = empreendimentos.map((e) => ({
-    id: e.id,
-    nome: e.nome,
-    apelido: e.apelido,
-    processos: e.processos.map((p) => ({ id: p.id, numero: p.numero })),
-  }));
+  const empreendimentosOpt = empreendimentos.map((e) => {
+    const vinculados = new Map<number, { id: number; numero: string; apelido: string | null; numeroLicenca: string | null }>();
+    for (const p of e.processos.filter((p) => p.natureza === "ambiental")) {
+      vinculados.set(p.id, { id: p.id, numero: p.numero, apelido: null, numeroLicenca: null });
+    }
+    for (const l of e.licencas) {
+      for (const x of l.processos) {
+        const p = x.processo;
+        if (p.ativo && !p.deletedAt && !vinculados.has(p.id)) {
+          vinculados.set(p.id, { id: p.id, numero: p.numero, apelido: p.apelido, numeroLicenca: p.numeroLicenca });
+        }
+      }
+    }
+    return {
+      id: e.id,
+      nome: e.nome,
+      apelido: e.apelido,
+      processos: e.processos.filter((p) => p.natureza !== "ambiental").map((p) => ({ id: p.id, numero: p.numero })),
+      processosAmbientais: [...vinculados.values()],
+    };
+  });
 
   return (
     <div>
