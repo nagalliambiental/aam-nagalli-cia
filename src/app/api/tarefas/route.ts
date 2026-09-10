@@ -16,6 +16,8 @@ export async function POST(req: Request) {
   const responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
   const processoId = body.processoId ? Number(body.processoId) : null;
   const empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
+  const condicionanteId = body.condicionanteId ? Number(body.condicionanteId) : null;
+  const licencaId = body.licencaId ? Number(body.licencaId) : null;
   if (!titulo) return NextResponse.json({ error: "Título é obrigatório" }, { status: 400 });
   if (!responsavelPessoaId) return NextResponse.json({ error: "Responsável é obrigatório" }, { status: 400 });
 
@@ -54,6 +56,8 @@ export async function POST(req: Request) {
         observacoes,
         processoId: processo?.id ?? null,
         empreendimentoId,
+        condicionanteId,
+        licencaId,
         exigenciaId,
         responsavelPessoaId,
         prioridade: body.prioridade ?? "media",

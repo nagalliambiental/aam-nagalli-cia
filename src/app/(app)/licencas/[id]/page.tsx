@@ -33,6 +33,9 @@ export default async function LicencaDetalhePage({
     },
   });
   if (!licenca) notFound();
+  const [pessoas] = await Promise.all([
+    prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
+  ]);
 
   const dados = (
     <Card>
@@ -101,7 +104,7 @@ export default async function LicencaDetalhePage({
         defaultId="dados"
       >
         {dados}
-        <CondicionantesPanel licencaId={licenca.id} condicionantes={licenca.condicionantes} />
+        <CondicionantesPanel licencaId={licenca.id} condicionantes={licenca.condicionantes} processoId={licenca.processos[0]?.processoId ?? null} empreendimentoId={licenca.empreendimentoId ?? null} pessoas={pessoas} />
       </Tabs>
     </div>
   );

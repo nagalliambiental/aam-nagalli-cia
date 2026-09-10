@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea, Badge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/processos/StatusBadge";
+import { CriarTarefaCondicionante } from "@/components/processos/CriarTarefaCondicionante";
 
 type CondicionanteItem = {
   id: number;
@@ -20,9 +21,15 @@ type CondicionanteItem = {
 export function CondicionantesPanel({
   licencaId,
   condicionantes,
+  processoId = null,
+  empreendimentoId = null,
+  pessoas = [],
 }: {
   licencaId: number;
   condicionantes: CondicionanteItem[];
+  processoId?: number | null;
+  empreendimentoId?: number | null;
+  pessoas?: { id: number; nome: string }[];
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -33,6 +40,13 @@ export function CondicionantesPanel({
   const [tipo, setTipo] = useState("exigencia");
   const [periodicidade, setPeriodicidade] = useState("");
   const [proximoVencimento, setProximoVencimento] = useState("");
+  const [savingType, setSavingType] = useState<number | null>(null);
+
+  async function alterarTipo(id: number, next: string) {
+    setSavingType(id);
+    await fetch(`/api/condicionantes/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo: next }) });
+    setSavingType(null); router.refresh();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,8 +157,13 @@ export function CondicionantesPanel({
                 {c.responsavel ? ` · ${c.responsavel.nome}` : ""}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
               {c.tipo === "informativo" && <Badge tone="gray">Informativo</Badge>}
+              <Select value={c.tipo ?? "exigencia"} onChange={(e) => alterarTipo(c.id, e.target.value)} disabled={savingType === c.id} className="w-auto py-1 text-xs">
+                <option value="exigencia">Exigência</option>
+                <option value="informativo">Informativo</option>
+              </Select>
+              {c.tipo !== "informativo" && <CriarTarefaCondicionante condicionanteId={c.id} licencaId={licencaId} processoId={processoId} empreendimentoId={empreendimentoId} titulo={c.codigo ? `${c.codigo} — ${c.descricao}` : c.descricao} descricao={c.descricao} prazoInicial={c.proximoVencimento ? new Date(c.proximoVencimento).toISOString().slice(0, 10) : ""} pessoas={pessoas} />}
               <StatusBadge status={c.status} />
             </div>
           </li>
