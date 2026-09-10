@@ -11,7 +11,7 @@ import { statusAmbiental } from "@/lib/status";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { SigminePanel } from "@/components/processos/SigminePanel";
-import { CadastroMineiroPanel } from "@/components/processos/CadastroMineiroPanel";
+import { CadastroMineiroPanel } from "@/components/processos/CadastroMineiroIframe";
 import { consultarSigmineGeo } from "@/lib/sigmine";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
