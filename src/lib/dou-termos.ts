@@ -9,7 +9,6 @@ export function montarTermosDou(empresas: { id?: number; cnpj: string | null; ra
   }
   for (const empreendimento of empreendimentos) {
     termos.push({ text: empreendimento.nome, origem: "Empreendimento", id: empreendimento.id });
-    if (empreendimento.apelido) termos.push({ text: empreendimento.apelido, origem: "Apelido do empreendimento", id: empreendimento.id });
   }
   for (const processo of processos) {
     if (processo.nup) termos.push({ text: processo.nup, origem: "NUP do processo", id: processo.id });
