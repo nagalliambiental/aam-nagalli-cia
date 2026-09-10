@@ -10,6 +10,8 @@ import { classificarListaCondicionantes } from "@/lib/condicionantes";
 import { statusAmbiental } from "@/lib/status";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
+import { SigminePanel } from "@/components/processos/SigminePanel";
+import { consultarSigmineGeo } from "@/lib/sigmine";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
@@ -51,6 +53,10 @@ export default async function ProcessoDetalhePage({
   const statusProcesso = processo.natureza === "ambiental"
     ? statusAmbiental(processo.validade, processo.status, processo.dataLimiteRenovacao, processo.dataProtocolo)
     : processo.status;
+
+  const geoSigmine = processo.natureza === "ambiental"
+    ? null
+    : await consultarSigmineGeo(processo.numero).catch(() => null);
 
   const [tarefas, pessoas] =
     await Promise.all([
@@ -125,7 +131,12 @@ export default async function ProcessoDetalhePage({
           {
             id: "movimentacoes-sei",
             label: "Movimentações SEI",
-             content: <SeiSyncPanel processoId={processo.id} nup={processo.nup} initialProtocolos={processo.seiProtocolos} />,
+            content: <SeiSyncPanel processoId={processo.id} nup={processo.nup} initialProtocolos={processo.seiProtocolos} />,
+          },
+          {
+            id: "sigmine",
+            label: "SIGMINE",
+            content: <SigminePanel numero={processo.numero} geo={geoSigmine} />,
           },
         ]
       : []),
