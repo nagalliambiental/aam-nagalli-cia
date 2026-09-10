@@ -1,5 +1,19 @@
 const API = "https://api.github.com";
 
+export function cronToHoraBrasilia(cron: string) {
+  const match = cron.match(/^(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*$/);
+  if (!match) return "07:00";
+  const hora = (Number(match[2]) + 21) % 24;
+  return `${String(hora).padStart(2, "0")}:${String(Number(match[1])).padStart(2, "0")}`;
+}
+
+export function horaBrasiliaToCron(hora: string) {
+  const match = hora.match(/^(\d{2}):(\d{2})$/);
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) throw new Error("Informe um horário válido.");
+  const utcHour = (Number(match[1]) + 3) % 24;
+  return `${Number(match[2])} ${utcHour} * * *`;
+}
+
 function githubConfig() {
   const token = process.env.GITHUB_TOKEN;
   const repository = (process.env.GITHUB_REPOSITORY ?? "nagalliambiental/amm-nagalli-cia")
