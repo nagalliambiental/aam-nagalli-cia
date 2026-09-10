@@ -110,6 +110,7 @@ export async function POST(req: Request, { params }: Ctx) {
   const processoId = Number(id);
   const processo = await prisma.processo.findUnique({ where: { id: processoId } });
   if (!processo) return NextResponse.json({ error: "Processo não encontrado" }, { status: 404 });
+  if (processo.natureza !== "minerario") return NextResponse.json({ error: "A consulta SEI está disponível somente para processos minerários." }, { status: 400 });
 
   const chave = processo.nup ?? processo.numero;
   if (!chave) return NextResponse.json({ error: "Processo sem NUP ou número" }, { status: 400 });

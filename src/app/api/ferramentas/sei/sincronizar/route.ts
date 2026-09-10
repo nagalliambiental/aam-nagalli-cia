@@ -10,7 +10,7 @@ export async function POST() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   if (!session.user.permissoes?.includes("processo:editar")) return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
-  const processos = await prisma.processo.findMany({ where: { ativo: true, deletedAt: null, seiUrl: { not: null } }, select: { id: true, numero: true, seiUrl: true, ultimoEventoSigmine: true, ultimoEventoData: true } });
+  const processos = await prisma.processo.findMany({ where: { ativo: true, deletedAt: null, natureza: "minerario", seiUrl: { not: null } }, select: { id: true, numero: true, seiUrl: true, ultimoEventoSigmine: true, ultimoEventoData: true } });
   let consultados = 0; let novosProtocolos = 0; let novasMovimentacoes = 0;
   for (const processo of processos) {
     if (!processo.seiUrl) continue;

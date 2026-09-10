@@ -128,7 +128,7 @@ export function ProcessosFiltro({
       <ul className="divide-y divide-slate-200">
         {filtrados.map((p) => (
           <li key={p.id}>
-            <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.notificacoes.length > 0} />
+             <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.natureza === "minerario" && p.notificacoes.length > 0} />
           </li>
         ))}
         {filtrados.length === 0 && (

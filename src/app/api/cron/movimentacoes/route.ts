@@ -44,7 +44,7 @@ export async function GET(req: Request) {
   }
 
   const processos = await prisma.processo.findMany({
-    where: { ativo: true, deletedAt: null },
+    where: { ativo: true, deletedAt: null, natureza: "minerario" },
     select: { id: true, numero: true, seiUrl: true, ultimoEventoSigmine: true, ultimoEventoData: true },
   });
 
