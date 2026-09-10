@@ -1,27 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button, Select } from "@/components/ui";
 
-type Barra = {
-  id: number;
-  titulo: string;
-  iniMs: number;
-  fimMs: number;
-  natureza: string;
-  status: string;
-  cliente: string;
-  empreendimento: string;
-};
+type Barra = { id: number; titulo: string; iniMs: number; fimMs: number; natureza: string; status: string; cliente: string; empreendimento: string };
+type Escala = "semana" | "mes" | "trimestre" | "ano";
+type Unidade = { label: string; start: number; end: number };
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const UM_DIA = 86400000;
 
-function inicioSemana(d: Date) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - x.getDay()); return x; }
-function fimSemana(d: Date) { const x = inicioSemana(d); return new Date(x.getTime() + 6 * UM_DIA + (UM_DIA - 1)); }
-function min(a: number, b: number) { return a < b ? a : b; }
+function inicioDia(d: Date) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function inicioSemana(d: Date) { const x = inicioDia(d); x.setDate(x.getDate() - x.getDay()); return x; }
+function fimDia(d: Date) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
+function fimSemana(d: Date) { return fimDia(new Date(inicioSemana(d).getTime() + 6 * UM_DIA)); }
+function fimMes(ano: number, mes: number) { return fimDia(new Date(ano, mes + 1, 0)); }
 function max(a: number, b: number) { return a > b ? a : b; }
 
 const COR = (natureza: string, status: string) => {
@@ -32,136 +26,79 @@ const COR = (natureza: string, status: string) => {
 };
 
 export function GanttPrazos({ barras }: { barras: Barra[] }) {
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const [month, setMonth] = useState(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const hoje = inicioDia(new Date());
+  const [cursor, setCursor] = useState(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const [escala, setEscala] = useState<Escala>("mes");
+  const arraste = useRef<{ x: number; cursor: Date } | null>(null);
   const anoAtual = hoje.getFullYear();
   const anos = Array.from({ length: 11 }, (_, i) => anoAtual - 5 + i);
 
-  // Agrupa por cliente -> empreendimento
-  const grupos = useMemo(() => {
-    const m = new Map<string, Map<string, Barra[]>>();
-    for (const b of barras) {
-      if (!m.has(b.cliente)) m.set(b.cliente, new Map());
-      const emps = m.get(b.cliente)!;
-      if (!emps.has(b.empreendimento)) emps.set(b.empreendimento, []);
-      emps.get(b.empreendimento)!.push(b);
+  const intervalo = useMemo(() => {
+    if (escala === "semana") return { start: inicioSemana(cursor), end: fimSemana(cursor) };
+    if (escala === "trimestre") {
+      const primeiroMes = Math.floor(cursor.getMonth() / 3) * 3;
+      return { start: new Date(cursor.getFullYear(), primeiroMes, 1), end: fimMes(cursor.getFullYear(), primeiroMes + 2) };
     }
-    return [...m.entries()].map(([cliente, emps]) => ({
-      cliente,
-      emps: [...emps.entries()].map(([nome, itens]) => ({ nome, itens })),
-    }));
-  }, [barras]);
-
-  // Range: em torno do mês selecionado (início da 1ª semana do mês até o fim da última)
-  const rangeStart = inicioSemana(new Date(month.getFullYear(), month.getMonth(), 1)).getTime();
-  const rangeEnd = fimSemana(new Date(month.getFullYear(), month.getMonth() + 1, 0)).getTime();
+    if (escala === "ano") return { start: new Date(cursor.getFullYear(), 0, 1), end: fimMes(cursor.getFullYear(), 11) };
+    return { start: inicioSemana(new Date(cursor.getFullYear(), cursor.getMonth(), 1)), end: fimSemana(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)) };
+  }, [cursor, escala]);
+  const rangeStart = intervalo.start.getTime();
+  const rangeEnd = intervalo.end.getTime();
   const rangeTotal = rangeEnd - rangeStart;
 
-  const rows = useMemo(() => {
-    const out: { tipo: "grupo" | "emp"; label: string; itens: Barra[] }[] = [];
-    for (const g of grupos) {
-      const empsVis = g.emps
-        .map((e) => ({ nome: e.nome, itens: e.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd) }))
-        .filter((e) => e.itens.length > 0);
-      if (empsVis.length === 0) continue;
-      out.push({ tipo: "grupo", label: g.cliente, itens: empsVis.flatMap((e) => e.itens) });
-      for (const e of empsVis) out.push({ tipo: "emp", label: e.nome, itens: e.itens });
+  const unidades = useMemo<Unidade[]>(() => {
+    const output: Unidade[] = [];
+    if (escala === "semana") {
+      for (let i = 0; i < 7; i++) { const d = new Date(rangeStart + i * UM_DIA); output.push({ label: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""), start: d.getTime(), end: fimDia(d).getTime() }); }
+    } else if (escala === "mes") {
+      for (let start = rangeStart; start <= rangeEnd; start += 7 * UM_DIA) { const end = Math.min(start + 7 * UM_DIA - 1, rangeEnd); output.push({ label: `Sem. ${output.length + 1}`, start, end }); }
+    } else {
+      const months = escala === "ano" ? 12 : 3;
+      const firstMonth = escala === "ano" ? 0 : Math.floor(cursor.getMonth() / 3) * 3;
+      for (let i = 0; i < months; i++) { const month = firstMonth + i; const start = new Date(cursor.getFullYear(), month, 1).getTime(); const end = fimMes(cursor.getFullYear(), month).getTime(); output.push({ label: MESES[month], start, end }); }
     }
-    return out;
-  }, [grupos, rangeStart, rangeEnd]);
+    return output;
+  }, [cursor, escala, rangeStart, rangeEnd]);
 
-  const days: Date[] = [];
-  for (let t = rangeStart; t <= rangeEnd; t += UM_DIA) days.push(new Date(t));
+  const grupos = useMemo(() => {
+    const map = new Map<string, Map<string, Barra[]>>();
+    for (const barra of barras) { if (!map.has(barra.cliente)) map.set(barra.cliente, new Map()); const empresas = map.get(barra.cliente)!; if (!empresas.has(barra.empreendimento)) empresas.set(barra.empreendimento, []); empresas.get(barra.empreendimento)!.push(barra); }
+    return [...map.entries()].map(([cliente, empresas]) => ({ cliente, empresas: [...empresas.entries()].map(([nome, itens]) => ({ nome, itens })) }));
+  }, [barras]);
 
-  const semanas = useMemo(() => {
-    const out: Date[][] = [];
-    for (let i = 0; i < days.length; i += 7) out.push(days.slice(i, i + 7));
-    return out;
-  }, [days]);
+  const rows = useMemo(() => grupos.flatMap((grupo) => {
+    const visiveis = grupo.empresas.map((empresa) => ({ nome: empresa.nome, itens: empresa.itens.filter((barra) => barra.fimMs >= rangeStart && barra.iniMs <= rangeEnd) })).filter((empresa) => empresa.itens.length > 0);
+    return visiveis.length ? [{ tipo: "grupo" as const, label: grupo.cliente, itens: visiveis.flatMap((empresa) => empresa.itens), }, ...visiveis.map((empresa) => ({ tipo: "emp" as const, label: empresa.nome, itens: empresa.itens }))] : [];
+  }), [grupos, rangeStart, rangeEnd]);
 
-  const navMes = (d: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + d, 1));
-
-  const numDia = rangeTotal / UM_DIA;
+  const titulo = escala === "semana"
+    ? `${intervalo.start.toLocaleDateString("pt-BR")} a ${intervalo.end.toLocaleDateString("pt-BR")}`
+    : escala === "trimestre"
+      ? `${Math.floor(cursor.getMonth() / 3) + 1}º trimestre de ${cursor.getFullYear()}`
+      : escala === "ano" ? String(cursor.getFullYear()) : `${MESES[cursor.getMonth()]} ${cursor.getFullYear()}`;
   const pct = (ms: number) => Math.max(0, Math.min(1, (ms - rangeStart) / rangeTotal)) * 100;
+  const navegar = (passos: number) => setCursor((atual) => { const d = new Date(atual); if (escala === "semana") d.setDate(d.getDate() + passos * 7); else if (escala === "ano") d.setFullYear(d.getFullYear() + passos); else if (escala === "trimestre") d.setMonth(d.getMonth() + passos * 3); else d.setMonth(d.getMonth() + passos); return d; });
+  const zoom = (direction: number) => { const niveis: Escala[] = ["semana", "mes", "trimestre", "ano"]; const atual = niveis.indexOf(escala); setEscala(niveis[Math.max(0, Math.min(niveis.length - 1, atual + direction))]); };
+  const iniciarArraste = (event: React.PointerEvent<HTMLDivElement>) => { event.currentTarget.setPointerCapture(event.pointerId); arraste.current = { x: event.clientX, cursor }; };
+  const moverArraste = (event: React.PointerEvent<HTMLDivElement>) => { if (!arraste.current) return; const delta = event.clientX - arraste.current.x; const dias = (delta / event.currentTarget.clientWidth) * (rangeTotal / UM_DIA); setCursor(new Date(arraste.current.cursor.getTime() - dias * UM_DIA)); };
+  const finalizarArraste = () => { arraste.current = null; };
+  const usarRoda = (event: React.WheelEvent<HTMLDivElement>) => { if (Math.abs(event.deltaY) < 2) return; event.preventDefault(); zoom(event.deltaY > 0 ? 1 : -1); };
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => navMes(-12)} title="Ano anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsLeft className="h-5 w-5" /></button>
-          <button type="button" onClick={() => navMes(-1)} title="Mês anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronLeft className="h-5 w-5" /></button>
-          <Select value={month.getMonth()} onChange={(e) => setMonth(new Date(month.getFullYear(), Number(e.target.value), 1))} className="w-auto text-sm">
-            {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-          </Select>
-          <Select value={month.getFullYear()} onChange={(e) => setMonth(new Date(Number(e.target.value), month.getMonth(), 1))} className="w-auto text-sm">
-            {anos.map((a) => <option key={a} value={a}>{a}</option>)}
-          </Select>
-          <button type="button" onClick={() => navMes(1)} title="Próximo mês" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronRight className="h-5 w-5" /></button>
-          <button type="button" onClick={() => navMes(12)} title="Próximo ano" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsRight className="h-5 w-5" /></button>
-          <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => setMonth(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}>Hoje</Button>
-        </div>
+  return <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-1">
+        <button type="button" onClick={() => navegar(escala === "ano" ? -1 : escala === "trimestre" ? -4 : escala === "mes" ? -12 : -52)} title="Anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsLeft className="h-5 w-5" /></button>
+        <button type="button" onClick={() => navegar(-1)} title="Anterior" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronLeft className="h-5 w-5" /></button>
+        <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => setCursor(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}>Hoje</Button>
+        <button type="button" onClick={() => navegar(1)} title="Próximo" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronRight className="h-5 w-5" /></button>
+        <button type="button" onClick={() => navegar(escala === "ano" ? 1 : escala === "trimestre" ? 4 : escala === "mes" ? 12 : 52)} title="Próximo" className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-700 text-white hover:bg-navy-800"><ChevronsRight className="h-5 w-5" /></button>
+        <Select value={cursor.getFullYear()} onChange={(e) => setCursor(new Date(Number(e.target.value), cursor.getMonth(), 1))} className="w-auto text-sm">{anos.map((ano) => <option key={ano} value={ano}>{ano}</option>)}</Select>
       </div>
-
-      <div className="flex">
-        {/* Coluna esquerda (congelada) */}
-        <div className="w-36 shrink-0 border-r border-slate-200 bg-slate-50 sm:w-56">
-          <div className="h-[87px] border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">Cliente / Empreendimento</div>
-          {rows.map((r, i) => (
-            <div key={i} className={`flex h-9 items-center px-3 text-xs ${r.tipo === "grupo" ? "border-b border-slate-200 bg-slate-100 font-semibold text-navy-900" : "border-b border-slate-100 font-medium text-slate-700"}`}>
-              <span className="truncate">{r.label}</span>
-            </div>
-          ))}
-          {rows.length === 0 && <div className="px-3 py-6 text-center text-xs text-muted">Sem dados no mês.</div>}
-        </div>
-
-        {/* Timeline */}
-        <div className="relative min-w-0 flex-1 overflow-hidden">
-          <div className="w-full">
-            {/* Mês */}
-            <div className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-bold text-navy-900">
-              {MESES[month.getMonth()]} {month.getFullYear()}
-            </div>
-            {/* Semanas */}
-            <div className="flex border-b border-slate-200 bg-slate-50">
-              {semanas.map((wk, i) => (
-                <div key={i} className="border-r border-slate-200 px-1 py-1 text-center text-[10px] font-semibold uppercase text-muted" style={{ flex: wk.length }}>
-                  Semana {i + 1}                </div>
-              ))}
-            </div>
-            {/* Dias */}
-            <div className="flex border-b border-slate-200">
-              {days.map((d) => {
-                const isHoje = d.toDateString() === hoje.toDateString();
-                return (
-                  <div key={d.getTime()} className="flex min-w-0 flex-1 items-center justify-center border-r border-slate-100 py-1 text-[10px]">
-                    <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isHoje ? "bg-navy-700 text-white font-bold" : "text-muted"}`}>{d.getDate()}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Linhas de barras (só as que cruzam o intervalo visível) */}
-            {rows.map((r, i) => (
-              <div key={`r${i}`} className="relative border-b border-slate-100" style={{ height: 36 }}>
-                {r.tipo !== "grupo" && (
-                  <div className="absolute bottom-0 top-0 w-px bg-navy-500/40" style={{ left: `${pct(hoje.getTime())}%` }} />
-                )}
-                {r.tipo === "emp" && r.itens.filter((b) => b.fimMs >= rangeStart && b.iniMs <= rangeEnd).map((b) => (
-                  <div
-                    key={b.id}
-                    className="absolute top-[3px] z-10 flex h-[30px] items-center overflow-hidden rounded px-1.5 text-[10px] font-medium text-white"
-                    style={{ left: `${pct(b.iniMs)}%`, width: `${max(pct(b.fimMs) - pct(b.iniMs), 2)}%`, backgroundColor: COR(b.natureza, b.status) }}
-                    title={`${b.cliente} · ${b.empreendimento}\n${b.titulo}`}
-                  >
-                    <span className="truncate whitespace-nowrap">{b.titulo}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div className="flex items-center gap-2"><span className="text-sm font-semibold text-navy-900">{titulo}</span><Select value={escala} onChange={(e) => setEscala(e.target.value as Escala)} className="w-auto text-sm"><option value="semana">Semana</option><option value="mes">Mês</option><option value="trimestre">Trimestre</option><option value="ano">Ano</option></Select></div>
     </div>
-  );
+    <div className="flex">
+      <div className="w-36 shrink-0 border-r border-slate-200 bg-slate-50 sm:w-56"><div className="h-[87px] border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">Cliente / Empreendimento</div>{rows.map((row, index) => <div key={index} className={`flex h-9 items-center border-b px-3 text-xs ${row.tipo === "grupo" ? "border-slate-200 bg-slate-100 font-semibold text-navy-900" : "border-slate-100 font-medium text-slate-700"}`}><span className="truncate">{row.label}</span></div>)}{rows.length === 0 && <div className="px-3 py-6 text-center text-xs text-muted">Sem dados no período.</div>}</div>
+      <div className="relative min-w-0 flex-1 cursor-grab select-none overflow-hidden active:cursor-grabbing" onPointerDown={iniciarArraste} onPointerMove={moverArraste} onPointerUp={finalizarArraste} onPointerCancel={finalizarArraste} onWheel={usarRoda}><div className="w-full"><div className="flex h-[29px] items-center border-b border-slate-200 bg-slate-50 px-2 text-xs font-bold text-navy-900">Escala: {escala} · arraste para navegar · roda para zoom</div><div className="flex h-[29px] border-b border-slate-200 bg-slate-50">{unidades.map((unidade) => <div key={unidade.start} className="min-w-0 flex-1 border-r border-slate-200 px-1 py-1 text-center text-[10px] font-semibold uppercase text-muted">{unidade.label}</div>)}</div><div className="flex h-[29px] border-b border-slate-200 bg-slate-50">{unidades.map((unidade) => <div key={unidade.end} className="min-w-0 flex-1 border-r border-slate-100 px-1 py-1 text-center text-[10px] text-muted">{new Date(unidade.start).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</div>)}</div>{rows.map((row, index) => <div key={`row-${index}`} className="relative h-9 border-b border-slate-100">{row.tipo === "emp" && <div className="absolute bottom-0 top-0 w-px bg-navy-500/40" style={{ left: `${pct(hoje.getTime())}%` }} />}{row.tipo === "emp" && row.itens.map((barra) => <div key={barra.id} className="absolute top-[3px] z-10 flex h-[30px] items-center overflow-hidden rounded px-1.5 text-[10px] font-medium text-white" style={{ left: `${pct(barra.iniMs)}%`, width: `${Math.max(pct(barra.fimMs) - pct(barra.iniMs), 2)}%`, backgroundColor: COR(barra.natureza, barra.status) }} title={`${barra.cliente} · ${barra.empreendimento}\n${barra.titulo}`}><span className="truncate whitespace-nowrap">{barra.titulo}</span></div>)}</div>)}</div></div>
+    </div>
+  </div>;
 }
