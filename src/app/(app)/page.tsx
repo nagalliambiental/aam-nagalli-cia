@@ -2,10 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/perfil";
 import { Card, Badge } from "@/components/ui";
-import { formatDate, formatRelative } from "@/lib/format";
+import { formatDate, formatMoney, formatRelative } from "@/lib/format";
 import {
   FolderOpen, CalendarClock, CheckSquare, Wallet,
-  FilePlus2, ArrowRight, TrendingUp, FileSignature, AlertTriangle, Newspaper,
+  FilePlus2, ArrowRight, TrendingUp, FileSignature, AlertTriangle, Newspaper, Radio,
 } from "lucide-react";
 
 const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | "gray" | "red" | "amber" }> = {
@@ -13,7 +13,7 @@ const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | 
   ativo: { label: "Ativo", tone: "green" },
   paralisado: { label: "Paralisado", tone: "amber" },
   morto: { label: "Morto", tone: "red" },
-  concluido: { label: "Conclu├¡do", tone: "green" },
+  concluido: { label: "Concluído", tone: "green" },
   arquivado: { label: "Arquivado", tone: "gray" },
   cancelado: { label: "Cancelado", tone: "red" },
   encerrado: { label: "Encerrado", tone: "gray" },
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
   const segProcesso = {};
-  const segTarefa = user.perfilNome === "T├®cnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
+  const segTarefa = user.perfilNome === "Técnico" && user.pessoaId ? { responsavelPessoaId: user.pessoaId } : {};
 
   const [
     tarefasAlertas,
@@ -44,6 +44,7 @@ export default async function DashboardPage() {
     tarefasPendentes,
     contratosVigentes,
     douAvisos,
+    seiAvisos,
   ] = await Promise.all([
     prisma.tarefa.findMany({
       where: {
@@ -103,8 +104,14 @@ export default async function DashboardPage() {
     prisma.notificacao.findMany({
       where: { tipo: "dou_notificacao" },
       orderBy: { criadoEm: "desc" },
-      take: 10,
+      take: 8,
       select: { id: true, mensagem: true, criadoEm: true, lida: true },
+    }),
+    prisma.notificacao.findMany({
+      where: { tipo: { in: ["sei_movimentacao", "sei_protocolo"] } },
+      orderBy: { criadoEm: "desc" },
+      take: 8,
+      select: { id: true, mensagem: true, criadoEm: true, lida: true, processo: { select: { id: true, numero: true } } },
     }),
   ]);
 
@@ -140,7 +147,7 @@ export default async function DashboardPage() {
   ];
   const cards = isAdmin ? allCards : allCards.filter((c) => c.label !== "Contratos");
 
-  // Tarefa entra em aten├º├úo quando (dataLimite ou prazoData) est├í vencida ou a Ôëñ 60 dias.
+  // Tarefa entra em atenção quando (dataLimite ou prazoData) está vencida ou a ≤ 60 dias.
   const fimDe = (t: { dataLimite: Date | null; prazoData: Date | null }) =>
     t.dataLimite ?? t.prazoData ?? null;
   const prazosAlertas = tarefasAlertas
@@ -159,10 +166,10 @@ export default async function DashboardPage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-navy-900">
               <TrendingUp className="h-4 w-4" />
             </span>
-            Painel de gest├úo
+            Painel de gestão
           </div>
           <h1 className="mt-3 text-2xl font-bold md:text-3xl">
-            O que precisa da sua aten├º├úo?
+            O que precisa da sua atenção?
           </h1>
           <p className="mt-1 text-white/70">
             {isAdmin
@@ -176,7 +183,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Cards de m├®tricas */}
+      {/* Cards de métricas */}
       <div className={`grid grid-cols-2 gap-4 ${cards.length === 3 ? "md:grid-cols-3" : cards.length === 5 ? "md:grid-cols-5" : cards.length === 6 ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
         {cards.map((c) => {
           const Icon = c.icon;
@@ -199,7 +206,7 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {/* Prazos perto do vencimento (definido pelo alerta de cada um) */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -233,13 +240,13 @@ export default async function DashboardPage() {
             })}
             {prazosAlertas.length === 0 && (
               <li className="px-5 py-10 text-center text-sm text-muted">
-                Nenhum prazo pr├│ximo do vencimento.
+                Nenhum prazo próximo do vencimento.
               </li>
             )}
           </ul>
         </Card>
 
-        {/* Tarefas que precisam de aten├º├úo */}
+        {/* Tarefas que precisam de atenção */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
@@ -261,9 +268,9 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <Link href={`/tarefas/${t.id}`} className="block truncate text-sm font-medium text-navy-900 hover:underline">{t.titulo}</Link>
                     <p className="truncate text-xs text-muted">
-                      {t.empreendimento ? `${t.empreendimento.apelido || t.empreendimento.nome} ┬À ` : ""}
+                      {t.empreendimento ? `${t.empreendimento.apelido || t.empreendimento.nome} · ` : ""}
                       {t.processo ? `Processo ${t.processo.numero}` : "Sem processo"}
-                      {t.responsavel?.nome ? ` ┬À ${t.responsavel.nome}` : ""}
+                      {t.responsavel?.nome ? ` · ${t.responsavel.nome}` : ""}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
@@ -285,7 +292,38 @@ export default async function DashboardPage() {
           </ul>
         </Card>
 
-        {/* DOU Notificações */}
+        {/* Movimentações SEI */}
+        <Card>
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                <Radio className="h-4 w-4" />
+              </span>
+              Movimentações SEI
+            </h2>
+            <Link href="/ferramentas/sei" className="flex items-center gap-1 text-xs text-navy-600 hover:underline">
+              Ver todas <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {seiAvisos.map((a) => (
+              <li key={a.id} className={`px-5 py-3 ${a.lida ? "opacity-60" : ""}`}>
+                <p className="truncate text-sm font-medium text-navy-900" title={a.mensagem}>{a.mensagem}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {a.processo ? `Processo ${a.processo.numero} · ` : ""}
+                  {formatDate(a.criadoEm)}
+                </p>
+              </li>
+            ))}
+            {seiAvisos.length === 0 && (
+              <li className="px-5 py-10 text-center text-sm text-muted">
+                Nenhuma movimentação recente.
+              </li>
+            )}
+          </ul>
+        </Card>
+
+        {/* Notificações DOU */}
         <Card>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
