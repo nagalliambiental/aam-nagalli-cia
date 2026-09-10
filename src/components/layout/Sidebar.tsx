@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, FolderOpen, CalendarClock,
   LogOut, Menu, X, Mountain,
-  BellRing, CalendarDays, FileBarChart,
+   BellRing, CalendarDays, FileBarChart, Newspaper, Radio, FlaskConical,
   CheckSquare, FileSignature, Radar, Library,
   HandCoins, ChartPie, Settings2, Download,
 } from "lucide-react";
@@ -52,6 +52,16 @@ const SECTIONS: NavGroup[] = [
     ],
   },
   {
+    label: "Ferramentas",
+    icon: Settings2,
+    items: [
+      NOTIFICACOES,
+      { href: "/ferramentas/dou", label: "DOU", icon: Newspaper },
+      { href: "/ferramentas/sei", label: "Movimentações SEI", icon: Radio },
+      { href: "/ferramentas/iat", label: "Movimentações IAT", icon: FlaskConical },
+    ],
+  },
+  {
     label: "Administrativo",
     icon: Settings2,
     items: [
@@ -80,7 +90,7 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   }, []);
 
   const isAdmin = user.perfilNome === "Administrador";
-  const topLinks = [DASHBOARD, NOTIFICACOES];
+  const topLinks = [DASHBOARD];
   const sections = isAdmin ? SECTIONS : SECTIONS.filter((s) => s.label !== "Financeiro" && s.label !== "Administrativo");
   const flatLinks = [...topLinks, ...sections.flatMap((s) => s.items)];
 
