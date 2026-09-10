@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermissao, usuarioTemPermissao } from "@/lib/perfil";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Button, Badge } from "@/components/ui";
-import { formatCNPJ } from "@/lib/format";
+import { formatCNPJ, formatCPF } from "@/lib/format";
 import { DeleteEmpresaButton } from "@/components/forms/DeleteEmpresaButton";
 import { EmpreendimentoDropdown } from "@/components/EmpreendimentoDropdown";
 import { ArrowRight } from "lucide-react";
@@ -39,7 +39,9 @@ export default async function EmpresaDetalhePage({
     <div>
       <PageHeader
         title={empresa.razaoSocial}
-        subtitle={empresa.apelido ? `${empresa.apelido} · ${empresa.nomeFantasia ?? "Sem nome fantasia"}` : empresa.nomeFantasia ?? "Sem nome fantasia"}
+        subtitle={(empresa as { tipoPessoa?: string }).tipoPessoa === "fisica"
+          ? (empresa.apelido ? `${empresa.apelido} · Pessoa Física` : "Pessoa Física")
+          : (empresa.apelido ? `${empresa.apelido} · ${empresa.nomeFantasia ?? "Sem nome fantasia"}` : empresa.nomeFantasia ?? "Sem nome fantasia")}
         actions={
           <div className="flex items-center gap-2">
             {empreendimentos.length > 0 && (
@@ -63,9 +65,14 @@ export default async function EmpresaDetalhePage({
           <CardHeader title="Dados gerais" />
           <dl className="space-y-3 px-5 py-4 text-sm">
             {[
+              ["Tipo", (empresa as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "Pessoa Física" : "Pessoa Jurídica"],
               ["Apelido", empresa.apelido ?? "—"],
-              ["CNPJ", empresa.cnpj ? formatCNPJ(empresa.cnpj) : "—"],
-              ["Inscrição estadual", empresa.inscricaoEstadual ?? "—"],
+              ...((empresa as { tipoPessoa?: string }).tipoPessoa === "fisica"
+                ? [["CPF", empresa.cpf ? formatCPF(empresa.cpf) : "—"] as [string, string]]
+                : [
+                    ["CNPJ", empresa.cnpj ? formatCNPJ(empresa.cnpj) : "—"] as [string, string],
+                    ["Inscrição estadual", empresa.inscricaoEstadual ?? "—"] as [string, string],
+                  ]),
               ["Município/UF", empresa.municipio && empresa.uf ? `${empresa.municipio}/${empresa.uf}` : "—"],
               ["Endereço", `${empresa.endereco ?? "—"}${empresa.numeroEndereco ? `, ${empresa.numeroEndereco}` : ""}`],
               ["Status", <Badge key="s" tone={empresa.ativo ? "green" : "gray"}>{empresa.ativo ? "ativo" : "inativo"}</Badge>],

@@ -34,15 +34,17 @@ export async function GET(req: Request) {
 
   addSheet("Clientes_Empresas", [
     { header: "ID", key: "id", width: 8 },
+    { header: "Tipo", key: "tipo", width: 8 },
     { header: "Razão Social", key: "razaoSocial", width: 35 },
     { header: "Nome Fantasia", key: "nomeFantasia", width: 25 },
     { header: "Apelido", key: "apelido", width: 18 },
     { header: "CNPJ", key: "cnpj", width: 20 },
+    { header: "CPF", key: "cpf", width: 18 },
     { header: "Município", key: "municipio", width: 18 },
     { header: "UF", key: "uf", width: 6 },
     { header: "E-mail", key: "email", width: 25 },
     { header: "Telefone", key: "telefone", width: 16 },
-  ], empresas.map((e) => ({ id: e.id, razaoSocial: e.razaoSocial, nomeFantasia: e.nomeFantasia, apelido: (e as unknown as { apelido?: string }).apelido, cnpj: e.cnpj, municipio: e.municipio, uf: e.uf, email: e.email, telefone: e.telefone })));
+  ], empresas.map((e) => ({ id: e.id, tipo: (e as unknown as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "PF" : "PJ", razaoSocial: e.razaoSocial, nomeFantasia: e.nomeFantasia, apelido: (e as unknown as { apelido?: string }).apelido, cnpj: e.cnpj, cpf: (e as unknown as { cpf?: string }).cpf, municipio: e.municipio, uf: e.uf, email: e.email, telefone: e.telefone })));
 
   addSheet("Empreendimentos", [
     { header: "ID", key: "id", width: 8 },

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Button, Card, Badge } from "@/components/ui";
 import { PageHeader } from "@/components/ui";
-import { formatCNPJ } from "@/lib/format";
+import { formatDocumento } from "@/lib/format";
 import { Search } from "lucide-react";
 import { ImportarClientes } from "@/components/empresas/ImportarClientes";
 
@@ -23,6 +23,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
               { nomeFantasia: { contains: q, mode: "insensitive" as const } },
               { apelido: { contains: q, mode: "insensitive" as const } },
               { cnpj: { contains: q, mode: "insensitive" as const } },
+              { cpf: { contains: q, mode: "insensitive" as const } },
               { municipio: { contains: q, mode: "insensitive" as const } },
             ],
           }
@@ -65,7 +66,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
             <input
               name="q"
               defaultValue={q}
-              placeholder="Buscar por razão social, apelido, CNPJ ou município..."
+              placeholder="Buscar por nome, apelido, CPF/CNPJ ou município..."
               className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
             />
           </div>
@@ -82,9 +83,12 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
                   <p className="font-medium text-navy-900">
                     {e.razaoSocial}
                     {e.apelido ? <span className="ml-2 text-xs font-normal text-navy-600">· {e.apelido}</span> : null}
+                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted">
+                      {(e as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "PF" : "PJ"}
+                    </span>
                   </p>
                   <p className="text-sm text-muted">
-                    {e.cnpj ? formatCNPJ(e.cnpj) : "sem CNPJ"}
+                    {formatDocumento(e as { tipoPessoa?: string | null; cnpj?: string | null; cpf?: string | null })}
                     {e.municipio && e.uf ? ` · ${e.municipio}/${e.uf}` : ""}
                   </p>
                 </div>

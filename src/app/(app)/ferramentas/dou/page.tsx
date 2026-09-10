@@ -11,7 +11,7 @@ export default async function DouPage() {
   const [avisos, config, empresas, empreendimentos, processos] = await Promise.all([
     prisma.notificacao.findMany({ where: { tipo: "dou_notificacao" }, orderBy: { criadoEm: "desc" }, take: 200, include: { processo: { select: { id: true, numero: true } } } }),
     prisma.douConfiguracao.findUnique({ where: { id: 1 } }),
-    prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { cnpj: true, razaoSocial: true, nomeFantasia: true } }),
+    prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { cnpj: true, cpf: true, razaoSocial: true, nomeFantasia: true } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, select: { nome: true, apelido: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, select: { numero: true, nup: true } }),
   ]);

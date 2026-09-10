@@ -18,10 +18,13 @@ export async function GET() {
 
   const ws = wb.addWorksheet("Clientes");
   ws.columns = [
+    { header: "Tipo", key: "tipo", width: 10 },
     { header: "Razão Social", key: "razaoSocial", width: 40 },
+    { header: "Nome Completo", key: "nomeCompleto", width: 32 },
     { header: "Nome Fantasia", key: "nomeFantasia", width: 28 },
     { header: "Apelido", key: "apelido", width: 22 },
     { header: "CNPJ", key: "cnpj", width: 20 },
+    { header: "CPF", key: "cpf", width: 20 },
     { header: "IE", key: "ie", width: 18 },
     { header: "CEP", key: "cep", width: 12 },
     { header: "Endereço", key: "endereco", width: 40 },
@@ -32,11 +35,15 @@ export async function GET() {
     { header: "Telefone", key: "telefone", width: 18 },
   ];
   clientes.forEach((c) => {
+    const tipo = (c as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "PF" : "PJ";
     ws.addRow({
-      razaoSocial: c.razaoSocial,
+      tipo,
+      razaoSocial: tipo === "PJ" ? c.razaoSocial : "",
+      nomeCompleto: tipo === "PF" ? c.razaoSocial : "",
       nomeFantasia: c.nomeFantasia ?? "",
       apelido: c.apelido ?? "",
       cnpj: c.cnpj ?? "",
+      cpf: (c as { cpf?: string | null }).cpf ?? "",
       ie: c.inscricaoEstadual ?? "",
       cep: c.cep ?? "",
       endereco: c.endereco ?? "",
@@ -54,13 +61,13 @@ export async function GET() {
 
   const contatos = wb.addWorksheet("Contatos");
   contatos.columns = [
-    { header: "CNPJ", key: "cnpj", width: 22 },
+    { header: "CPF/CNPJ", key: "documento", width: 22 },
     { header: "Nome", key: "nome", width: 28 },
     { header: "E-mail", key: "email", width: 32 },
     { header: "Telefone", key: "telefone", width: 20 },
     { header: "Assunto", key: "assunto", width: 28 },
   ];
-  clientes.forEach((c) => c.contatos.forEach((contato) => contatos.addRow({ cnpj: c.cnpj ?? "", nome: contato.nome ?? "", email: contato.email ?? "", telefone: contato.telefone ?? "", assunto: contato.assunto ?? "" })));
+  clientes.forEach((c) => c.contatos.forEach((contato) => contatos.addRow({ documento: (c as { cpf?: string | null }).cpf ?? c.cnpj ?? "", nome: contato.nome ?? "", email: contato.email ?? "", telefone: contato.telefone ?? "", assunto: contato.assunto ?? "" })));
   contatos.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
   contatos.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF021E4C" } };
   contatos.views = [{ state: "frozen", ySplit: 1 }];

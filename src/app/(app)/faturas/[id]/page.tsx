@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader, Badge } from "@/components/ui";
-import { formatDate, formatDateTime, formatMoney, formatCNPJ } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney, formatDocumento } from "@/lib/format";
 import { RecebimentoFatura } from "@/components/comercial/RecebimentoFatura";
 import { ExcluirFatura } from "@/components/comercial/ExcluirFatura";
 
@@ -64,8 +64,8 @@ export default async function FaturaDetalhePage({ params }: { params: Promise<{ 
            <div className="grid grid-cols-2 border-t border-slate-300 text-sm">
           <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">CLIENTE</div>
           <div className="border-b border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">{fatura.empresa.razaoSocial}</div>
-          <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">CNPJ</div>
-          <div className="border-b border-slate-300 px-4 py-2 text-center">{fatura.empresa.cnpj ? formatCNPJ(fatura.empresa.cnpj) : "—"}</div>
+          <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">{(fatura.empresa as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "CPF" : "CNPJ"}</div>
+          <div className="border-b border-slate-300 px-4 py-2 text-center">{formatDocumento(fatura.empresa as { tipoPessoa?: string | null; cnpj?: string | null; cpf?: string | null })}</div>
           <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">REFERÊNCIA</div>
           <div className="border-b border-slate-300 px-4 py-2 text-center font-semibold">{fatura.referencia || fatura.empreendimento?.nome || "—"}</div>
           <div className="border-b border-r border-slate-300 bg-slate-50 px-4 py-2 text-center font-bold text-navy-900">PERÍODO / VENCIMENTO</div>

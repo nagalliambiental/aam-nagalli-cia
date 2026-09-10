@@ -37,10 +37,12 @@ datasource db {
 
 model Empresa {
   id                Int     @id @default(autoincrement())
+  tipoPessoa        String  @default("juridica")
   razaoSocial       String
   nomeFantasia      String?
   apelido           String?
   cnpj              String? @unique
+  cpf               String? @unique
   inscricaoEstadual String?
   email             String?
   telefone          String?

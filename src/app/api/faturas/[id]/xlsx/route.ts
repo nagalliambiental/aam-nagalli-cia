@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ExcelJS from "exceljs";
-import { formatCNPJ } from "@/lib/format";
+import { formatDocumento } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   ws.getCell("A1").alignment = { vertical: "middle" };
   ws.getRow(1).height = 32;
   ws.getCell("A3").value = "Cliente"; ws.getCell("B3").value = fatura.empresa.nomeFantasia || fatura.empresa.razaoSocial;
-  ws.getCell("A4").value = "CNPJ"; ws.getCell("B4").value = formatCNPJ(fatura.empresa.cnpj);
+  ws.getCell("A4").value = (fatura.empresa as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "CPF" : "CNPJ"; ws.getCell("B4").value = formatDocumento(fatura.empresa as { tipoPessoa?: string | null; cnpj?: string | null; cpf?: string | null });
   ws.getCell("D3").value = "Referência"; ws.getCell("E3").value = fatura.referencia || fatura.empreendimento?.apelido || fatura.empreendimento?.nome || "";
   ws.getCell("D4").value = "Vencimento"; ws.getCell("E4").value = fatura.vencimento ?? "";
   for (const cell of ["A3", "A4", "D3", "D4"]) { ws.getCell(cell).font = { bold: true, color: { argb: "FF021E4C" } }; }

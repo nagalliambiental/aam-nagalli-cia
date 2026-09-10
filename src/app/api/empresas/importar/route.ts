@@ -34,23 +34,37 @@ export async function POST(req: Request) {
   const erros: string[] = [];
   const porCnpj = new Map<string, number>();
 
+  const porCpf = new Map<string, number>();
+  const porDoc = new Map<string, number>();
+
   for (let i = 2; i <= clientesWs.rowCount; i++) {
     const row = clientesWs.getRow(i);
-    const razaoSocial = valor(row, headers, "Razão Social", 1);
-    const nomeFantasia = valor(row, headers, "Nome Fantasia", 2) || null;
+    const tipoRaw = valor(row, headers, "Tipo", 0).toLowerCase();
+    const isPF = tipoRaw.startsWith("fis") || tipoRaw === "pf";
+    const tipoPessoa = isPF ? "fisica" : "juridica";
+    const nomeCompleto = valor(row, headers, "Nome Completo", 0);
+    const razaoSocial = isPF ? nomeCompleto : valor(row, headers, "Razão Social", 1);
+    const nomeFantasia = isPF ? null : valor(row, headers, "Nome Fantasia", 2) || null;
     const apelido = valor(row, headers, "Apelido", 3) || null;
-    const cnpj = valor(row, headers, "CNPJ", 4).replace(/\D/g, "") || null;
-    if (!razaoSocial) { if (cnpj || nomeFantasia) erros.push(`Linha ${i}: sem Razão Social.`); continue; }
+    const cnpj = !isPF ? valor(row, headers, "CNPJ", 4).replace(/\D/g, "") || null : null;
+    const cpf = isPF ? (valor(row, headers, "CPF", 0) || valor(row, headers, "CNPJ", 4)).replace(/\D/g, "") || null : null;
+    const labelNome = isPF ? "Nome Completo" : "Razão Social";
+    if (!razaoSocial) { if (cnpj || cpf || nomeFantasia) erros.push(`Linha ${i}: sem ${labelNome}.`); continue; }
+    if (cpf && cpf.length !== 11) { erros.push(`Linha ${i}: CPF inválido.`); continue; }
     try {
       let empresaId: number;
-      const existente = cnpj ? await prisma.empresa.findUnique({ where: { cnpj }, select: { id: true } }) : null;
+      const existente = cnpj
+        ? await prisma.empresa.findUnique({ where: { cnpj }, select: { id: true } })
+        : cpf
+          ? await prisma.empresa.findUnique({ where: { cpf }, select: { id: true } })
+          : null;
       if (existente) {
         empresaId = existente.id;
-        erros.push(`Linha ${i}: cliente com CNPJ ${cnpj} já existe; contatos serão vinculados a ele.`);
+        erros.push(`Linha ${i}: cliente com documento já existe; contatos serão vinculados a ele.`);
       } else {
         const emp = await prisma.empresa.create({ data: {
-          razaoSocial, nomeFantasia, apelido, cnpj,
-          inscricaoEstadual: valor(row, headers, "IE", 5) || null,
+          tipoPessoa, razaoSocial, nomeFantasia, apelido, cnpj, cpf,
+          inscricaoEstadual: !isPF ? valor(row, headers, "IE", 5) || null : null,
           cep: valor(row, headers, "CEP", 6) || null,
           endereco: valor(row, headers, "Endereço", 7) || null,
           numeroEndereco: valor(row, headers, "Nº", 8) || null,
@@ -64,17 +78,19 @@ export async function POST(req: Request) {
         await audit({ tipoEntidade: "empresa", entidadeId: emp.id, acao: "criar", usuarioId: Number(session.user.id), valorNovo: emp.razaoSocial });
       }
       if (cnpj) porCnpj.set(cnpj, empresaId);
+      if (cpf) porCpf.set(cpf, empresaId);
+      if (cnpj || cpf) porDoc.set(((cnpj ?? cpf) as string), empresaId);
     } catch { erros.push(`Linha ${i}: erro ao criar ou localizar cliente.`); }
   }
 
   if (contatosWs) {
     for (let i = 2; i <= contatosWs.rowCount; i++) {
       const row = contatosWs.getRow(i);
-      const cnpj = valor(row, contatosHeaders, "CNPJ", 1).replace(/\D/g, "");
+      const doc = (valor(row, contatosHeaders, "CPF/CNPJ", 0) || valor(row, contatosHeaders, "CNPJ", 1) || valor(row, contatosHeaders, "CPF", 1)).replace(/\D/g, "");
       const nome = valor(row, contatosHeaders, "Nome", 2);
-      if (!nome && !cnpj) continue;
-      const empresaId = cnpj && porCnpj.get(cnpj);
-      if (!empresaId) { erros.push(`Contatos, linha ${i}: cliente não encontrado pelo CNPJ.`); continue; }
+      if (!nome && !doc) continue;
+      const empresaId = doc && (porDoc.get(doc) ?? porCnpj.get(doc) ?? porCpf.get(doc));
+      if (!empresaId) { erros.push(`Contatos, linha ${i}: cliente não encontrado pelo CPF/CNPJ.`); continue; }
       try {
         await prisma.contatoCliente.create({ data: { empresaId, nome: nome || null, email: valor(row, contatosHeaders, "E-mail", 3) || null, telefone: valor(row, contatosHeaders, "Telefone", 4) || null, assunto: valor(row, contatosHeaders, "Assunto", 5) || null } });
         contatosCriados++;

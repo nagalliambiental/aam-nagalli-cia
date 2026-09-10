@@ -20,19 +20,22 @@ export default async function EditarEmpresaPage({
 
   if (!empresa) notFound();
 
+  const tipoLabel = (empresa as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "Pessoa Física" : "Pessoa Jurídica";
   return (
     <div>
-      <PageHeader title="Editar cliente" subtitle={empresa.razaoSocial} />
+      <PageHeader title="Editar cliente" subtitle={`${empresa.razaoSocial} · ${tipoLabel}`} />
       <Card>
         <CardHeader title="Dados do cliente" />
         <div className="p-5">
           <EmpresaForm
             empresaId={empresa.id}
             initial={{
+              tipoPessoa: (empresa as { tipoPessoa?: string }).tipoPessoa ?? "juridica",
               razaoSocial: empresa.razaoSocial,
               nomeFantasia: empresa.nomeFantasia ?? undefined,
               apelido: empresa.apelido ?? undefined,
               cnpj: empresa.cnpj ?? undefined,
+              cpf: (empresa as { cpf?: string | null }).cpf ?? undefined,
               inscricaoEstadual: empresa.inscricaoEstadual ?? undefined,
               email: empresa.email ?? undefined,
               telefone: empresa.telefone ?? undefined,

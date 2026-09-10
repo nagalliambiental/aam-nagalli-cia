@@ -1,9 +1,10 @@
 export type DouTermo = { text: string; origem: string; id?: number };
 
-export function montarTermosDou(empresas: { id?: number; cnpj: string | null; razaoSocial: string; nomeFantasia: string | null }[], empreendimentos: { id?: number; nome: string; apelido: string | null }[], processos: { id?: number; numero: string; nup: string | null }[], extras: string[] = []) {
+export function montarTermosDou(empresas: { id?: number; cnpj: string | null; cpf?: string | null; razaoSocial: string; nomeFantasia: string | null }[], empreendimentos: { id?: number; nome: string; apelido: string | null }[], processos: { id?: number; numero: string; nup: string | null }[], extras: string[] = []) {
   const termos: DouTermo[] = [];
   for (const empresa of empresas) {
     if (empresa.cnpj) termos.push({ text: empresa.cnpj.replace(/\D/g, ""), origem: "CNPJ do cliente", id: empresa.id });
+    if (empresa.cpf) termos.push({ text: empresa.cpf.replace(/\D/g, ""), origem: "CPF do cliente", id: empresa.id });
     termos.push({ text: empresa.razaoSocial, origem: "Razão social", id: empresa.id });
     if (empresa.nomeFantasia) termos.push({ text: empresa.nomeFantasia, origem: "Nome fantasia", id: empresa.id });
   }

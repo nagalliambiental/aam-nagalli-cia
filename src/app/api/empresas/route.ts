@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 
 const CAMPOS = [
-  "razaoSocial", "nomeFantasia", "apelido", "cnpj", "inscricaoEstadual", "email",
+  "tipoPessoa", "razaoSocial", "nomeFantasia", "apelido", "cnpj", "cpf", "inscricaoEstadual", "email",
   "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
 ] as const;
 
@@ -45,12 +45,31 @@ export async function POST(req: Request) {
   for (const c of CAMPOS) {
     if (c in body) data[c] = (body[c] as string) ?? null;
   }
-  if (!data.razaoSocial) {
-    return NextResponse.json({ error: "Razão social é obrigatória" }, { status: 400 });
-  }
-  if (data.cnpj) {
-    const cnpj = String(data.cnpj).replace(/\D/g, "");
-    data.cnpj = cnpj || null;
+  const tipoPessoa = data.tipoPessoa === "fisica" ? "fisica" : "juridica";
+  data.tipoPessoa = tipoPessoa;
+  if (tipoPessoa === "fisica") {
+    data.cnpj = null;
+    data.nomeFantasia = null;
+    data.inscricaoEstadual = null;
+    if (data.cpf) {
+      const cpf = String(data.cpf).replace(/\D/g, "");
+      if (cpf && cpf.length !== 11) {
+        return NextResponse.json({ error: "CPF deve ter 11 dígitos." }, { status: 400 });
+      }
+      data.cpf = cpf || null;
+    }
+    if (!data.razaoSocial) {
+      return NextResponse.json({ error: "Nome completo é obrigatório" }, { status: 400 });
+    }
+  } else {
+    data.cpf = null;
+    if (!data.razaoSocial) {
+      return NextResponse.json({ error: "Razão social é obrigatória" }, { status: 400 });
+    }
+    if (data.cnpj) {
+      const cnpj = String(data.cnpj).replace(/\D/g, "");
+      data.cnpj = cnpj || null;
+    }
   }
 
   try {
@@ -76,9 +95,11 @@ export async function POST(req: Request) {
     if (isDup) {
       const existente = data.cnpj
         ? await prisma.empresa.findUnique({ where: { cnpj: data.cnpj as string }, select: { id: true } })
-        : null;
+        : data.cpf
+          ? await prisma.empresa.findUnique({ where: { cpf: data.cpf as string }, select: { id: true } })
+          : null;
       return NextResponse.json(
-        { error: "Empresa já cadastrada com este CNPJ.", existingId: existente?.id ?? undefined },
+        { error: tipoPessoa === "fisica" ? "Cliente já cadastrado com este CPF." : "Empresa já cadastrada com este CNPJ.", existingId: existente?.id ?? undefined },
         { status: 409 }
       );
     }

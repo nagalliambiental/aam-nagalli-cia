@@ -16,10 +16,11 @@ export async function GET() {
   const { doc, fonts } = await createReportDocument();
   let page = addReportPage(doc);
   const cols = [
-    { w: 200, label: "Razão Social" },
-    { w: 80, label: "CNPJ" },
+    { w: 170, label: "Nome" },
+    { w: 60, label: "Tipo" },
+    { w: 90, label: "CPF/CNPJ" },
     { w: 80, label: "Município/UF" },
-    { w: 155, label: "Contatos" },
+    { w: 115, label: "Contatos" },
   ];
   const rowH = 24;
   let y = 690;
@@ -34,9 +35,11 @@ export async function GET() {
       drawReportChrome(page, fonts, "Clientes", clientes.length, pageNumber);
       y = drawReportTableHeader(page, fonts, 690, cols);
     }
+    const tipo = (c as { tipoPessoa?: string }).tipoPessoa === "fisica" ? "PF" : "PJ";
     y = drawReportTableRow(page, fonts, y, cols, [
       c.razaoSocial,
-      c.cnpj ?? "",
+      tipo,
+      (c as { cpf?: string | null }).cpf ?? c.cnpj ?? "",
       c.municipio && c.uf ? `${c.municipio}/${c.uf}` : "",
       c.contatos.map((x) => x.nome).filter(Boolean).join(", "),
     ], index);

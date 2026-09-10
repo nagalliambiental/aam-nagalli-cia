@@ -93,6 +93,24 @@ export function formatCNPJ(cnpj?: string | null) {
   return `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12, 14)}`;
 }
 
+export function formatCPF(cpf?: string | null) {
+  if (!cpf) return "—";
+  const c = cpf.replace(/\D/g, "");
+  if (c.length !== 11) return cpf;
+  return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9, 11)}`;
+}
+
+export function formatDocumento(empresa?: { tipoPessoa?: string | null; cnpj?: string | null; cpf?: string | null } | null) {
+  if (!empresa) return "—";
+  if ((empresa.tipoPessoa ?? "juridica") === "fisica") return formatCPF(empresa.cpf);
+  return formatCNPJ(empresa.cnpj);
+}
+
+export function nomeCliente(empresa?: { tipoPessoa?: string | null; razaoSocial?: string | null; nomeFantasia?: string | null } | null) {
+  if (!empresa) return "—";
+  return empresa.nomeFantasia || empresa.razaoSocial || "—";
+}
+
 export function formatBytes(b?: number | null) {
   if (b == null) return "—";
   if (b < 1024) return `${b} B`;

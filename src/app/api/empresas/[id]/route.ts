@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 
 const CAMPOS = [
-  "razaoSocial", "nomeFantasia", "apelido", "cnpj", "inscricaoEstadual", "email",
+  "tipoPessoa", "razaoSocial", "nomeFantasia", "apelido", "cnpj", "cpf", "inscricaoEstadual", "email",
   "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
 ] as const;
 
@@ -27,9 +27,27 @@ export async function PATCH(req: Request, { params }: Ctx) {
   for (const c of CAMPOS) {
     if (c in body) data[c] = (body[c] as string) ?? null;
   }
+  if ("tipoPessoa" in data) {
+    data.tipoPessoa = data.tipoPessoa === "fisica" ? "fisica" : "juridica";
+  }
   if (data.cnpj) {
     const cnpj = String(data.cnpj).replace(/\D/g, "");
     data.cnpj = cnpj || null;
+  }
+  if (data.cpf) {
+    const cpf = String(data.cpf).replace(/\D/g, "");
+    if (cpf && cpf.length !== 11) {
+      return NextResponse.json({ error: "CPF deve ter 11 dígitos." }, { status: 400 });
+    }
+    data.cpf = cpf || null;
+  }
+  if (data.tipoPessoa === "fisica") {
+    data.cnpj = null;
+    data.nomeFantasia = null;
+    data.inscricaoEstadual = null;
+  }
+  if (data.tipoPessoa === "juridica") {
+    data.cpf = null;
   }
 
   try {
@@ -53,7 +71,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ id: empresa.id });
   } catch (e) {
     const msg = e instanceof Error && e.message.includes("Unique")
-      ? "Já existe empresa com este CNPJ."
+      ? "Já existe cliente com este documento."
       : "Erro ao atualizar.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

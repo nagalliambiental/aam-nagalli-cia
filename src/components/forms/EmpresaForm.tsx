@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Textarea, ConfirmPopup } from "@/components/ui";
+import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
 
 type Contato = { nome: string; email: string; telefone: string; assunto: string };
 
 export type EmpresaInput = {
+  tipoPessoa?: string;
   razaoSocial: string;
   nomeFantasia?: string;
   apelido?: string;
   cnpj?: string;
+  cpf?: string;
   inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
@@ -34,6 +36,15 @@ function mascaraCNPJ(v: string): string {
   return out;
 }
 
+function mascaraCPF(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  let out = d.slice(0, 3);
+  if (d.length > 3) out += "." + d.slice(3, 6);
+  if (d.length > 6) out += "." + d.slice(6, 9);
+  if (d.length > 9) out += "-" + d.slice(9, 11);
+  return out;
+}
+
 function mascaraCEP(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 8);
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
@@ -50,10 +61,12 @@ export function EmpresaForm({
 }) {
   const router = useRouter();
   const [form, setForm] = useState<EmpresaInput>({
+    tipoPessoa: initial?.tipoPessoa ?? "juridica",
     razaoSocial: initial?.razaoSocial ?? "",
     nomeFantasia: initial?.nomeFantasia ?? "",
     apelido: initial?.apelido ?? "",
     cnpj: initial?.cnpj ?? "",
+    cpf: initial?.cpf ?? "",
     inscricaoEstadual: initial?.inscricaoEstadual ?? "",
     email: initial?.email ?? "",
     telefone: initial?.telefone ?? "",
@@ -114,16 +127,29 @@ export function EmpresaForm({
     }
   }
 
+  const isPF = (form.tipoPessoa ?? "juridica") === "fisica";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (isPF) {
+      const cpfDigits = (form.cpf ?? "").replace(/\D/g, "");
+      if (cpfDigits && cpfDigits.length !== 11) {
+        setError("CPF deve ter 11 dígitos.");
+        return;
+      }
+    }
     setLoading(true);
+
+    const payload = isPF
+      ? { ...form, tipoPessoa: "fisica", nomeFantasia: null, cnpj: null, inscricaoEstadual: null }
+      : { ...form, tipoPessoa: "juridica", cpf: null };
 
     const res = await fetch(empresaId ? `/api/empresas/${empresaId}` : "/api/empresas", {
       method: empresaId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
+        ...payload,
         contatos: contatos.filter((c) => c.nome || c.email || c.telefone || c.assunto),
       }),
     });
@@ -132,7 +158,7 @@ export function EmpresaForm({
     setLoading(false);
 
     if (!res.ok) {
-      setDup(res.status === 409 ? { message: data?.error ?? "Já existe um cadastro com este CNPJ.", existingId: data?.existingId } : null);
+      setDup(res.status === 409 ? { message: data?.error ?? "Já existe um cadastro com este documento.", existingId: data?.existingId } : null);
       setError(res.status === 409 ? null : (data?.error ?? "Erro ao salvar."));
       return;
     }
@@ -148,44 +174,76 @@ export function EmpresaForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={grid}>
         <div className="md:col-span-2">
+          <Label htmlFor="tipoPessoa" required>Tipo de cadastro</Label>
+          <Select
+            id="tipoPessoa"
+            value={form.tipoPessoa ?? "juridica"}
+            onChange={(e) => set("tipoPessoa", e.target.value)}
+          >
+            <option value="juridica">Pessoa Jurídica</option>
+            <option value="fisica">Pessoa Física</option>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
           <Label htmlFor="apelido">Apelido</Label>
           <Input id="apelido" value={form.apelido} onChange={(e) => set("apelido", e.target.value)} placeholder="Ex.: Nagalli Matriz" />
         </div>
 
-        <div>
-          <Label htmlFor="razaoSocial" required>Razão Social</Label>
-          <Input id="razaoSocial" value={form.razaoSocial} onChange={(e) => set("razaoSocial", e.target.value)} required />
-        </div>
-        <div>
-          <Label htmlFor="nomeFantasia">Nome Fantasia</Label>
-          <Input id="nomeFantasia" value={form.nomeFantasia} onChange={(e) => set("nomeFantasia", e.target.value)} />
-        </div>
+        {isPF ? (
+          <>
+            <div>
+              <Label htmlFor="razaoSocial" required>Nome Completo</Label>
+              <Input id="razaoSocial" value={form.razaoSocial} onChange={(e) => set("razaoSocial", e.target.value)} required placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                value={form.cpf}
+                onChange={(e) => set("cpf", mascaraCPF(e.target.value))}
+                placeholder="000.000.000-00"
+              />
+              <p className="mt-1 text-xs text-muted">Sem busca automática.</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <Label htmlFor="razaoSocial" required>Razão Social</Label>
+              <Input id="razaoSocial" value={form.razaoSocial} onChange={(e) => set("razaoSocial", e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="nomeFantasia">Nome Fantasia</Label>
+              <Input id="nomeFantasia" value={form.nomeFantasia} onChange={(e) => set("nomeFantasia", e.target.value)} />
+            </div>
 
-        <div>
-          <Label htmlFor="cnpj">CNPJ</Label>
-          <div className="flex gap-2">
-            <Input
-              id="cnpj"
-              value={form.cnpj}
-              onChange={(e) => {
-                const m = mascaraCNPJ(e.target.value);
-                set("cnpj", m);
-                if (m.replace(/\D/g, "").length === 14) buscarCNPJ(m);
-              }}
-              placeholder="00.000.000/0000-00"
-              className="flex-1"
-            />
-            <Button type="button" variant="secondary" onClick={() => buscarCNPJ()} disabled={cnpjLoading}>
-              {cnpjLoading ? "Buscando..." : "Buscar"}
-            </Button>
-          </div>
-          {cnpjError && <p className="mt-1 text-xs text-red-600">{cnpjError}</p>}
-          <p className="mt-1 text-xs text-muted">Preenche razão social, nome fantasia e endereço.</p>
-        </div>
-        <div>
-          <Label htmlFor="inscricaoEstadual">Inscrição Estadual</Label>
-          <Input id="inscricaoEstadual" value={form.inscricaoEstadual} onChange={(e) => set("inscricaoEstadual", e.target.value)} />
-        </div>
+            <div>
+              <Label htmlFor="cnpj">CNPJ</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="cnpj"
+                  value={form.cnpj}
+                  onChange={(e) => {
+                    const m = mascaraCNPJ(e.target.value);
+                    set("cnpj", m);
+                    if (m.replace(/\D/g, "").length === 14) buscarCNPJ(m);
+                  }}
+                  placeholder="00.000.000/0000-00"
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary" onClick={() => buscarCNPJ()} disabled={cnpjLoading}>
+                  {cnpjLoading ? "Buscando..." : "Buscar"}
+                </Button>
+              </div>
+              {cnpjError && <p className="mt-1 text-xs text-red-600">{cnpjError}</p>}
+              <p className="mt-1 text-xs text-muted">Preenche razão social, nome fantasia e endereço.</p>
+            </div>
+            <div>
+              <Label htmlFor="inscricaoEstadual">Inscrição Estadual</Label>
+              <Input id="inscricaoEstadual" value={form.inscricaoEstadual} onChange={(e) => set("inscricaoEstadual", e.target.value)} />
+            </div>
+          </>
+        )}
 
         <div>
           <Label htmlFor="cep">CEP</Label>

@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   const data = dataOntemDmy();
 
   const [empresas, empreendimentos, processos, config] = await Promise.all([
-    prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, cnpj: true, razaoSocial: true, nomeFantasia: true } }),
+    prisma.empresa.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, cnpj: true, cpf: true, razaoSocial: true, nomeFantasia: true } }),
     prisma.empreendimento.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, nome: true, apelido: true } }),
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, numero: true, nup: true } }),
     prisma.douConfiguracao.findUnique({ where: { id: 1 } }),

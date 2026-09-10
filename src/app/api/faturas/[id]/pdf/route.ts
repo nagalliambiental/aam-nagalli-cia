@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from "pdf-lib";
-import { formatCNPJ, formatDate, formatDateTime, formatMoney } from "@/lib/format";
+import { formatDocumento, formatDate, formatDateTime, formatMoney } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 type Fonts = { regular: PDFFont; bold: PDFFont };
@@ -50,7 +50,7 @@ function wrap(value: string, font: PDFFont, size: number, maxWidth: number) {
   return lines;
 }
 
-function drawHeader(page: PDFPage, fonts: Fonts, logo: PDFImage, fatura: { numero: string; ano: number; status: string; empresa: { razaoSocial: string; nomeFantasia: string | null; cnpj: string | null }; recebidoEm: Date | null }, pageNumber: number) {
+function drawHeader(page: PDFPage, fonts: Fonts, logo: PDFImage, fatura: { numero: string; ano: number; status: string; empresa: { razaoSocial: string; nomeFantasia: string | null; cnpj: string | null; cpf?: string | null; tipoPessoa?: string | null }; recebidoEm: Date | null }, pageNumber: number) {
   page.drawRectangle({ x: 0, y: H - 82, width: W, height: 82, color: NAVY });
   page.drawImage(logo, { x: M + 4, y: H - 72, width: 128, height: 69 });
   page.drawText(`FATURA Nº ${fatura.numero} / ${fatura.ano}`, { x: W - M - 205, y: H - 45, size: 16, font: fonts.bold, color: rgb(1, 1, 1) });
@@ -60,10 +60,11 @@ function drawHeader(page: PDFPage, fonts: Fonts, logo: PDFImage, fatura: { numer
   page.drawText("AAM Nagalli & Cia LTDA · Documento gerado pelo sistema", { x: M, y: 20, size: 7.5, font: fonts.regular, color: MUTED });
 }
 
-function drawInfoGrid(page: PDFPage, fonts: Fonts, fatura: { empresa: { razaoSocial: string; cnpj: string | null }; referencia: string | null; periodo: string | null; vencimento: Date | null }) {
+function drawInfoGrid(page: PDFPage, fonts: Fonts, fatura: { empresa: { razaoSocial: string; cnpj: string | null; cpf?: string | null; tipoPessoa?: string | null }; referencia: string | null; periodo: string | null; vencimento: Date | null }) {
   const half = CONTENT_W / 2;
+  const docLabel = fatura.empresa.tipoPessoa === "fisica" ? "CPF" : "CNPJ";
   const rows = [
-    ["CLIENTE", fatura.empresa.razaoSocial], ["CNPJ", formatCNPJ(fatura.empresa.cnpj)], ["REFERÊNCIA", fatura.referencia || "—"],
+    ["CLIENTE", fatura.empresa.razaoSocial], [docLabel, formatDocumento(fatura.empresa)], ["REFERÊNCIA", fatura.referencia || "—"],
     ["PERÍODO / VENCIMENTO", `${fatura.periodo || "—"} · Venc.: ${formatDate(fatura.vencimento)}`],
     ["PAGAMENTO", "Nagalli & Cia LTDA.\nChave PIX: CNPJ 02.836.099/0001-91\nBanco do Brasil: 001; Agência 4500-4; Conta Corrente 27.366-0"],
   ];
