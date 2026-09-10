@@ -50,7 +50,6 @@ export async function consultarSigmineGeo(numero: string): Promise<SigmineGeo | 
     returnGeometry: "true",
     outSR: "4326",
     geometryPrecision: "5",
-    maxAllowableOffset: "0.001",
     resultRecordCount: "1",
     f: "json",
   });
