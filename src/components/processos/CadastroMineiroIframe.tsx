@@ -7,8 +7,7 @@ const URL_CM = "https://sistemas.anm.gov.br/SCM/extra/site/admin/dadosProcesso.a
 /**
  * Espelho da página do Cadastro Mineiro (ANM) num iframe.
  * - Sem barra de rolagem horizontal: o conteúdo se ajusta à largura disponível.
- * - Altura dinâmica, lida de dentro do iframe quando o navegador permite.
- * - Fallback: altura fixa com aviso para abrir na ANM.
+ * - Altura generosa com rolagem vertical interna.
  */
 export function CadastroMineiroPanel({ numero }: { numero: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -45,14 +44,6 @@ export function CadastroMineiroPanel({ numero }: { numero: string }) {
 
   return (
     <div>
-      {acesso === "bloqueado" && (
-        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          <span>A ANM não permite exibir a página embutida aqui (X-Frame-Options). Abra-a em outra guia:</span>
-          <a href={URL_CM} target="_blank" rel="noreferrer" className="font-medium underline">
-            Abrir Cadastro Mineiro ↗
-          </a>
-        </div>
-      )}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <iframe
           ref={iframeRef}
