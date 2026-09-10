@@ -11,6 +11,7 @@ import { statusAmbiental } from "@/lib/status";
 import { TarefasPanel } from "@/components/processos/TarefasPanel";
 import { SeiSyncPanel } from "@/components/processos/SeiSyncPanel";
 import { SigminePanel } from "@/components/processos/SigminePanel";
+import { CadastroMineiroPanel } from "@/components/processos/CadastroMineiroPanel";
 import { consultarSigmineGeo } from "@/lib/sigmine";
 import { DeleteProcessoButton } from "@/components/forms/DeleteProcessoButton";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
@@ -137,6 +138,11 @@ export default async function ProcessoDetalhePage({
             id: "sigmine",
             label: "SIGMINE",
             content: <SigminePanel numero={processo.numero} geo={geoSigmine} />,
+          },
+          {
+            id: "cadastro-mineiro",
+            label: "Cadastro Mineiro",
+            content: <CadastroMineiroPanel numero={processo.numero} />,
           },
         ]
       : []),

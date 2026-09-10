@@ -167,6 +167,30 @@ function extrairSubstanciasGrid(html: string): string {
   return [...new Set(itens)].join(", ");
 }
 
+function extraiCssDoCm(html: string): string[] {
+  const links: string[] = [];
+  const re = /<link[^>]+rel=["']?stylesheet["']?[^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const href = m[0].match(/href=["']([^"']+)["']/i)?.[1];
+    if (!href) continue;
+    links.push(href.startsWith("http") ? href : `${BASE}${href.startsWith("/") ? "" : "/"}${href}`);
+  }
+  return [...new Set(links)];
+}
+
+/** Prepara o HTML do SCM para espelhamento: URL absolutas e sem scripts. */
+function prepararMirror(postHtml: string): { css: string[]; body: string } {
+  const css = extraiCssDoCm(postHtml);
+  const bodyMatch = postHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let body = bodyMatch?.[1] ?? postHtml;
+  body = body
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/src=["'](?!https?:|data:)(\/[^"']+)["']/gi, `src="${BASE}$1"`)
+    .replace(/href=["'](?!https?:|data:|mailto:)(\/[^"']+)["']/gi, `href="${BASE}$1"`);
+  return { css, body };
+}
+
 /** Interpreta a resposta do SCM e devolve os dados estruturados. */
 function parseRespostaCM(postHtml: string, numCompleto: string) {
   const areaTxt = extrairValor(postHtml, "Área (ha)");
@@ -248,7 +272,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "Código incorreto. Tente novamente." }, { status: 422 });
       }
       const d = parseRespostaCM(postHtml, numCompleto);
-      if (d) return NextResponse.json({ ok: true, modo: "cm", ...d, mensagem: "Dados do Cadastro Mineiro." });
+      if (d) {
+        return NextResponse.json({ ok: true, modo: "cm", ...d, ...prepararMirror(postHtml), mensagem: "Dados do Cadastro Mineiro." });
+      }
       return NextResponse.json({ ok: false, error: "Processo não encontrado ou sem dados." }, { status: 404 });
     } catch (e) {
       return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Erro ao consultar Cadastro Mineiro" }, { status: 500 });
