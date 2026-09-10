@@ -7,11 +7,25 @@ import type { LatLngExpression } from "leaflet";
 
 function AjustarZoom({ posicoes }: { posicoes: LatLngExpression[][] }) {
   const map = useMap();
+  const pontos = useMemo(() => {
+    const lista: [number, number][] = [];
+    for (const anel of posicoes) for (const p of anel) lista.push(p as [number, number]);
+    return lista;
+  }, [posicoes]);
+
   useEffect(() => {
-    const pontos: LatLngExpression[] = [];
-    for (const anel of posicoes) for (const p of anel) pontos.push(p);
-    if (pontos.length > 0) map.fitBounds(pontos as [number, number][], { padding: [24, 24] });
-  }, [map, posicoes]);
+    const ajustar = () => {
+      map.invalidateSize();
+      if (pontos.length > 0) map.fitBounds(pontos, { padding: [24, 24] });
+    };
+    ajustar();
+    const obs = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) ajustar();
+    });
+    obs.observe(map.getContainer());
+    return () => obs.disconnect();
+  }, [map, pontos]);
+
   return null;
 }
 
