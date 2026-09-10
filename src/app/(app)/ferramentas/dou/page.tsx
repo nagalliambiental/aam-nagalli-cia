@@ -1,9 +1,10 @@
 import { requirePermissao } from "@/lib/perfil";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
-import { PageHeader, Card, Badge, Button } from "@/components/ui";
+import { PageHeader, Card, Badge } from "@/components/ui";
 import { safeExternalUrl } from "@/lib/urls";
 import { DouConfigForm } from "@/components/ferramentas/DouConfigForm";
+import { DouFiltroForm } from "@/components/ferramentas/DouFiltroForm";
 import { montarTermosDou } from "@/lib/dou-termos";
 
 type SearchParams = Promise<{ periodo?: string | string[]; inicio?: string | string[]; fim?: string | string[] }>;
@@ -31,7 +32,7 @@ export default async function DouPage({ searchParams }: { searchParams: SearchPa
     : new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59, 999);
   const inicioDt = periodo === "personalizado"
     ? (inicioParam ? new Date(`${inicioParam}T00:00:00`) : new Date(0))
-    : new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - (dias - 1), 0, 0, 0, 0);
+    : new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - dias, 0, 0, 0, 0);
   const filtrados = avisos.filter((n) => {
     const d = new Date(n.dataEvento ?? n.criadoEm);
     return d >= inicioDt && d <= fimDt;
@@ -50,26 +51,7 @@ export default async function DouPage({ searchParams }: { searchParams: SearchPa
           <h2 className="text-base font-semibold text-navy-900">Publicações encontradas</h2>
           <Badge tone="blue">{filtrados.length} em {periodoLabel}</Badge>
         </div>
-        <form method="get" className="flex flex-wrap items-end gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <div>
-            <label htmlFor="dou-periodo" className="mb-1 block text-xs font-medium text-slate-700">Período</label>
-            <select id="dou-periodo" name="periodo" defaultValue={periodo} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
-              <option value="30">Últimos 30 dias</option>
-              <option value="60">Últimos 60 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="personalizado">Personalizado</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="dou-inicio" className="mb-1 block text-xs font-medium text-slate-700">Data inicial</label>
-            <input id="dou-inicio" name="inicio" type="date" defaultValue={inicioParam} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label htmlFor="dou-fim" className="mb-1 block text-xs font-medium text-slate-700">Data final</label>
-            <input id="dou-fim" name="fim" type="date" defaultValue={fimParam} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-          </div>
-          <Button type="submit" variant="secondary">Filtrar</Button>
-        </form>
+        <DouFiltroForm periodoInicial={periodo} inicioInicial={inicioParam} fimInicial={fimParam} />
         <ul className="divide-y divide-slate-100">
           {filtrados.map((n) => {
             const url = safeExternalUrl(n.url);
