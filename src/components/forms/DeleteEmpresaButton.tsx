@@ -9,7 +9,7 @@ export function DeleteEmpresaButton({ id }: { id: number }) {
   const [loading, setLoading] = useState(false);
 
   async function handleDelete() {
-    if (!confirm("Excluir (inativar) esta empresa?")) return;
+    if (!confirm("Excluir (inativar) este cliente?")) return;
     setLoading(true);
     const res = await fetch(`/api/empresas/${id}`, { method: "DELETE" });
     if (res.ok) {

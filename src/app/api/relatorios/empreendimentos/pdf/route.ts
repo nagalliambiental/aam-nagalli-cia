@@ -18,7 +18,7 @@ export async function GET() {
   const cols = [
     { w: 150, label: "Nome" },
     { w: 90, label: "Tipo" },
-    { w: 150, label: "Empresa" },
+    { w: 150, label: "Cliente" },
     { w: 125, label: "Município/UF" },
   ];
   const rowH = 24;

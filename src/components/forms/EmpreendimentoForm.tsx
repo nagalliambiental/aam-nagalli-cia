@@ -151,7 +151,7 @@ export function EmpreendimentoForm({
           </div>
         )}
         <div>
-          <Label htmlFor="empresaPrincipalId" required>Empresa principal</Label>
+          <Label htmlFor="empresaPrincipalId" required>Cliente principal</Label>
           <Select
             id="empresaPrincipalId"
             value={form.empresaPrincipalId}

@@ -113,7 +113,7 @@ export function ProcessoForm({
     natureza: initial?.natureza ?? "minerario",
     fase: ehFaseCustom ? "outro" : (initial?.fase ?? ""),
     faseOutra: ehFaseCustom ? (initial?.fase ?? "") : "",
-    status: initial?.status ?? "em_andamento",
+    status: initial?.status ?? "ativo",
     areaValor: initial?.areaValor != null ? String(initial.areaValor) : "",
     areaUnidade: initial?.areaUnidade ?? "ha",
     substancias: initial?.substancias ?? "",
@@ -350,8 +350,8 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               <Select id="status" value={form.status} onChange={set("status")}>
                 <option value="ativo">Ativo</option>
                 <option value="paralisado">Paralisado</option>
-                <option value="encerrado">Encerrado</option>
-                {!["ativo", "paralisado", "encerrado"].includes(form.status) && <option value={form.status}>{form.status}</option>}
+                <option value="morto">Morto</option>
+                {!["ativo", "paralisado", "morto"].includes(form.status) && <option value={form.status}>{form.status}</option>}
               </Select>
             </div>
             <div>
@@ -471,7 +471,8 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
                 <option value="proximo_vencimento">Próximo do Vencimento</option>
                 <option value="em_renovacao">Em Renovação</option>
                 <option value="encerrado">Encerrado</option>
-                {!["ativo","proximo_vencimento","em_renovacao","encerrado"].includes(form.status) && <option value={form.status}>{form.status}</option>}
+                <option value="morto">Morto</option>
+                {!["ativo","proximo_vencimento","em_renovacao","encerrado","morto"].includes(form.status) && <option value={form.status}>{form.status}</option>}
               </Select>
             </div>
             <div>

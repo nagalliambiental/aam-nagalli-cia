@@ -46,11 +46,11 @@ export async function POST(req: Request) {
     const status = normalizar(r.getCell(9).value) || "ativo";
 
     if (!nome) continue;
-    if (!empresaNome) { erros.push(`Linha ${i}: sem Empresa Principal.`); continue; }
+    if (!empresaNome) { erros.push(`Linha ${i}: sem Cliente Principal.`); continue; }
 
     const ne = norm(empresaNome);
     const empresa = empresas.find((e) => norm(e.razaoSocial) === ne || (e.nomeFantasia && norm(e.nomeFantasia) === ne) || (e.apelido && norm(e.apelido) === ne));
-    if (!empresa) { erros.push(`Linha ${i}: Empresa "${empresaNome}" não encontrada.`); continue; }
+    if (!empresa) { erros.push(`Linha ${i}: Cliente "${empresaNome}" não encontrado.`); continue; }
 
     const existente = await prisma.empreendimento.findFirst({
       where: { empresaPrincipalId: empresa.id, nome: { equals: nome, mode: "insensitive" }, ativo: true, deletedAt: null },

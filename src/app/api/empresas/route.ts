@@ -99,10 +99,10 @@ export async function POST(req: Request) {
           ? await prisma.empresa.findUnique({ where: { cpf: data.cpf as string }, select: { id: true } })
           : null;
       return NextResponse.json(
-        { error: tipoPessoa === "fisica" ? "Cliente já cadastrado com este CPF." : "Empresa já cadastrada com este CNPJ.", existingId: existente?.id ?? undefined },
+        { error: tipoPessoa === "fisica" ? "Cliente já cadastrado com este CPF." : "Cliente já cadastrado com este CNPJ.", existingId: existente?.id ?? undefined },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: "Erro ao criar empresa." }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao criar cliente." }, { status: 500 });
   }
 }

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   if (!nome || !empresaPrincipalId) {
     return NextResponse.json(
-      { error: "Nome e empresa principal são obrigatórios" },
+      { error: "Nome e cliente principal são obrigatórios" },
       { status: 400 }
     );
   }

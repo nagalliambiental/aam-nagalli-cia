@@ -8,8 +8,11 @@ import {
   FilePlus2, ArrowRight, TrendingUp, FileSignature, AlertTriangle,
 } from "lucide-react";
 
-const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | "gray" | "red" }> = {
+const PROCESSO_STATUS: Record<string, { label: string; tone: "blue" | "green" | "gray" | "red" | "amber" }> = {
   em_andamento: { label: "Em andamento", tone: "blue" },
+  ativo: { label: "Ativo", tone: "green" },
+  paralisado: { label: "Paralisado", tone: "amber" },
+  morto: { label: "Morto", tone: "red" },
   concluido: { label: "Concluído", tone: "green" },
   arquivado: { label: "Arquivado", tone: "gray" },
   cancelado: { label: "Cancelado", tone: "red" },

@@ -41,7 +41,7 @@ export function statusAmbiental(
   agora: Date = new Date()
 ): string {
   if (statusSalvo === "em_renovacao") return "em_renovacao";
-  if (statusSalvo && ["cancelado", "arquivado", "encerrado"].includes(statusSalvo)) return statusSalvo;
+  if (statusSalvo && ["cancelado", "arquivado", "encerrado", "morto", "paralisado"].includes(statusSalvo)) return statusSalvo;
   if (validade) {
     const v = new Date(validade).getTime();
     if (agora.getTime() > v) return "vencido";

@@ -39,7 +39,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
     <div>
       <PageHeader
         title="Clientes"
-        subtitle="Cadastro de clientes (empresas)"
+        subtitle="Cadastro de clientes"
         actions={
           <div className="flex items-center gap-2">
             <ImportarClientes />
@@ -53,7 +53,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
               <Button variant="ghost">Modelo</Button>
             </Link>
             <Link href="/empresas/nova">
-              <Button>Nova empresa</Button>
+              <Button>Novo cliente</Button>
             </Link>
           </div>
         }
@@ -105,7 +105,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
           ))}
           {empresas.length === 0 && (
             <li className="px-5 py-12 text-center text-sm text-muted">
-              Nenhuma empresa cadastrada ainda.
+              Nenhum cliente cadastrado ainda.
             </li>
           )}
         </ul>

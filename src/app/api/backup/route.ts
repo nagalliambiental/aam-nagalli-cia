@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     ws.autoFilter = { from: "A1", to: { row: 1, column: columns.length } };
   };
 
-  addSheet("Clientes_Empresas", [
+  addSheet("Clientes", [
     { header: "ID", key: "id", width: 8 },
     { header: "Tipo", key: "tipo", width: 8 },
     { header: "Razão Social", key: "razaoSocial", width: 35 },
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     { header: "Nome", key: "nome", width: 30 },
     { header: "Apelido", key: "apelido", width: 18 },
     { header: "Tipo", key: "tipo", width: 12 },
-    { header: "Empresa Principal", key: "empresa", width: 30 },
+    { header: "Cliente Principal", key: "empresa", width: 30 },
     { header: "Município", key: "municipio", width: 18 },
     { header: "UF", key: "uf", width: 6 },
     { header: "Status", key: "status", width: 12 },
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
   addSheet("Contratos", [
     { header: "ID", key: "id", width: 8 },
     { header: "Número", key: "numero", width: 18 },
-    { header: "Empresa", key: "empresa", width: 30 },
+    { header: "Cliente", key: "empresa", width: 30 },
     { header: "Validade", key: "validade", width: 14 },
   ], contratos.map((c) => ({ id: c.id, numero: c.numero, empresa: c.empresa.razaoSocial, validade: c.dataValidade ? new Date(c.dataValidade).toLocaleDateString("pt-BR") : "" })));
 

@@ -20,7 +20,7 @@ export async function GET() {
     { header: "Nome", key: "nome", width: 40 },
     { header: "Apelido", key: "apelido", width: 24 },
     { header: "Tipo", key: "tipo", width: 22 },
-    { header: "Empresa Principal", key: "empresa", width: 40 },
+    { header: "Cliente Principal", key: "empresa", width: 40 },
     { header: "Município", key: "municipio", width: 24 },
     { header: "UF", key: "uf", width: 8 },
     { header: "CEP", key: "cep", width: 12 },

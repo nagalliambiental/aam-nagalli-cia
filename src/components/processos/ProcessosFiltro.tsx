@@ -34,6 +34,7 @@ const STATUS_OPTS = [
   { value: "em_renovacao", label: "Em Renovação" },
   { value: "proximo_vencimento", label: "Próximo do Vencimento" },
   { value: "paralisado", label: "Paralisado" },
+  { value: "morto", label: "Morto" },
 ];
 
 function norm(s: string | null | undefined) {

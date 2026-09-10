@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         seiUrl, orgaoId: (natureza === "ambiental" ? orgaoAmb?.id : orgaoMin?.id) ?? orgaoMin?.id,
         tipoProcessoId: (natureza === "ambiental" ? tipoAmb?.id : tipoMin?.id) ?? tipoMin?.id,
         empreendimentoId, responsavelPessoaId, natureza,
-        status: normalizar(r.getCell(9).value) || (natureza === "ambiental" ? "ativo" : "em_andamento"),
+        status: normalizar(r.getCell(9).value) || "ativo",
         observacoes: normalizar(r.getCell(22).value) || null,
       };
       let data: Record<string, unknown>;

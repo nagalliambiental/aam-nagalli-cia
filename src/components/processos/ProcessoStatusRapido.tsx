@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/processos/StatusBadge";
 const MINERARIO = [
   { value: "ativo", label: "Ativo" },
   { value: "paralisado", label: "Paralisado" },
-  { value: "encerrado", label: "Encerrado" },
+  { value: "morto", label: "Morto" },
 ];
 
 const AMBIENTAL = [
@@ -16,6 +16,7 @@ const AMBIENTAL = [
   { value: "proximo_vencimento", label: "Próximo do Vencimento" },
   { value: "em_renovacao", label: "Em Renovação" },
   { value: "encerrado", label: "Encerrado" },
+  { value: "morto", label: "Morto" },
 ];
 
 export function ProcessoStatusRapido({

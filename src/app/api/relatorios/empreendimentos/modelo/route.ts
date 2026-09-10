@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import ExcelJS from "exceljs";
 
-const CABECALHOS = ["Nome", "Apelido", "Tipo", "Empresa Principal", "Município", "UF", "CEP", "Endereço", "Status"];
+const CABECALHOS = ["Nome", "Apelido", "Tipo", "Cliente Principal", "Município", "UF", "CEP", "Endereço", "Status"];
 
 export async function GET() {
   const session = await auth();
@@ -11,7 +11,7 @@ export async function GET() {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Empreendimentos");
   ws.addRow(CABECALHOS);
-  ws.addRow(["Pedreira Exemplo", "Matriz", "Pedreira", "Razão Social da Empresa", "Cascavel", "PR", "85800-000", "Rua Exemplo, 123", "ativo"]);
+  ws.addRow(["Pedreira Exemplo", "Matriz", "Pedreira", "Nome do Cliente", "Cascavel", "PR", "85800-000", "Rua Exemplo, 123", "ativo"]);
   ws.getRow(1).font = { bold: true };
   const larguras = [40, 24, 22, 40, 24, 8, 12, 40, 12];
   ws.columns.forEach((col, i) => { if (col && "width" in col) (col as { width: number }).width = larguras[i] ?? 20; });

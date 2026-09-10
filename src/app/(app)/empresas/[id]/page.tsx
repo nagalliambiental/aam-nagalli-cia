@@ -25,7 +25,7 @@ export default async function EmpresaDetalhePage({
 
   if (!empresa) notFound();
 
-  // Empreendimentos da empresa (vínculo via empresaPrincipalId) + contagem de processos
+  // Empreendimentos do cliente (vínculo via empresaPrincipalId) + contagem de processos
   const empreendimentos = await prisma.empreendimento.findMany({
     where: { empresaPrincipalId: empresaId, ativo: true, deletedAt: null },
     orderBy: { nome: "asc" },
@@ -119,7 +119,7 @@ export default async function EmpresaDetalhePage({
             ))}
             {empreendimentos.length === 0 && (
               <li className="px-5 py-8 text-center text-sm text-muted">
-                Nenhum empreendimento vinculado a esta empresa.
+                Nenhum empreendimento vinculado a este cliente.
               </li>
             )}
           </ul>
