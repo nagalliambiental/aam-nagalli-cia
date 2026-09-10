@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, Card, Button } from "@/components/ui";
 import { Search } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
+import { TarefaEmMassa } from "@/components/processos/TarefaEmMassa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
@@ -29,7 +30,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }] }
     : {};
 
-  const [tarefas, pessoas, empreendimentos, processosAmbientais] = await Promise.all([
+  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa] = await Promise.all([
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...(q ? { titulo: { contains: q, mode: "insensitive" as const } } : {}) },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
@@ -52,6 +53,15 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       where: { ativo: true, deletedAt: null, natureza: "ambiental" },
       orderBy: { apelido: "asc" },
       select: { id: true, numero: true, apelido: true, numeroLicenca: true },
+    }),
+    prisma.processo.findMany({
+      where: { ativo: true, deletedAt: null },
+      orderBy: { numero: "asc" },
+      select: {
+        id: true, numero: true, apelido: true, natureza: true, numeroLicenca: true,
+        empreendimento: { select: { nome: true, apelido: true } },
+        licencas: { select: { licenca: { select: { empreendimento: { select: { nome: true, apelido: true } } } } } },
+      },
     }),
   ]);
 
@@ -86,12 +96,29 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       />
 
       {podeCriar && (
-        <NovaTarefaBotao
-          pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
-          empreendimentos={empreendimentosOpt}
-          processosAmbientais={processosAmbientais}
-          isAdmin={isAdmin}
-        />
+        <>
+          <NovaTarefaBotao
+            pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+            empreendimentos={empreendimentosOpt}
+            processosAmbientais={processosAmbientais}
+            isAdmin={isAdmin}
+          />
+          <TarefaEmMassa
+            pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+            processos={processosMassa.map((p) => {
+              const emp = p.empreendimento ?? p.licencas.map((x) => x.licenca.empreendimento).find(Boolean);
+              return {
+                id: p.id,
+                numero: p.numero,
+                apelido: p.apelido,
+                natureza: p.natureza,
+                numeroLicenca: p.numeroLicenca,
+                empreendimento: emp ? (emp.apelido || emp.nome) : "Sem empreendimento",
+              };
+            })}
+            showVisibilidade={isAdmin}
+          />
+        </>
       )}
 
       <Card>
