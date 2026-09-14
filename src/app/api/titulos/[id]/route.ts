@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,8 +28,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("orgaoId" in body) data.orgaoId = Number(body.orgaoId);
   if ("responsavelPessoaId" in body)
     data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
-  if ("dataEmissao" in body) data.dataEmissao = body.dataEmissao ? new Date(body.dataEmissao) : null;
-  if ("validade" in body) data.validade = body.validade ? new Date(body.validade) : null;
+  if ("dataEmissao" in body) data.dataEmissao = dataLocal(body.dataEmissao);
+  if ("validade" in body) data.validade = dataLocal(body.validade);
 
   try {
     const titulo = await prisma.tituloMinerario.update({

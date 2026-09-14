@@ -39,7 +39,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       const base = qtde * hora;
       const desc = round2(base * (Math.min(100, pct) / 100));
       const adm = round2((base - desc + outros) * 0.18);
-      return { data: (it.data as string) ? new Date(it.data as string) : null, identificacao: String(it.identificacao ?? ""), descricao: (it.descricao as string) || null, qtde, horaTecnica: hora, descontoPct: pct || null, descontoValor: desc, outrosCustos: outros, custosAdmFiscais: adm, total: round2((base - desc + outros) * 1.18) };
+      return { data: (it.data as string) ? dataLocal(it.data as string) : null, identificacao: String(it.identificacao ?? ""), descricao: (it.descricao as string) || null, qtde, horaTecnica: hora, descontoPct: pct || null, descontoValor: desc, outrosCustos: outros, custosAdmFiscais: adm, total: round2((base - desc + outros) * 1.18) };
     }) : [];
     const fatura = await prisma.$transaction(async (tx) => {
       const updated = await tx.fatura.update({
@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
           ...(body.empresaId ? { empresaId: Number(body.empresaId) } : {}),
           ...(body.empreendimentoId !== undefined ? { empreendimentoId: body.empreendimentoId ? Number(body.empreendimentoId) : null } : {}),
           ...(body.referencia !== undefined ? { referencia: body.referencia || null } : {}),
-          ...(body.periodoInicio !== undefined ? { periodoInicio: dataLocal(body.periodoInicio), periodoFim: dataLocal(body.periodoFim), periodo: body.periodoInicio && body.periodoFim ? `${dataLocal(body.periodoInicio)?.toLocaleDateString("pt-BR")} a ${dataLocal(body.periodoFim)?.toLocaleDateString("pt-BR")}` : null } : {}),
+           ...(body.periodoInicio !== undefined ? { periodoInicio: dataLocal(body.periodoInicio), periodoFim: dataLocal(body.periodoFim), periodo: body.periodoInicio && body.periodoFim ? `${dataLocal(body.periodoInicio)?.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })} a ${dataLocal(body.periodoFim)?.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : null } : {}),
           ...(body.vencimento !== undefined ? { vencimento: dataLocal(body.vencimento) } : {}),
           ...(body.status ? { status: body.status } : {}),
           ...(body.recebido === true ? { recebidoEm: new Date(), recebidoPor: Number(session.user.id), status: "paga" } : {}),

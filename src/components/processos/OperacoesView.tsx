@@ -113,7 +113,7 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
                 <div>
                   <p className="font-medium text-navy-900">{p.descricao}</p>
                   <p className="text-xs text-muted">
-                    {p.processoNumero ? `Processo ${p.processoNumero}` : "Sem processo"} · até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR") : "—"}
+                    {p.processoNumero ? `Processo ${p.processoNumero}` : "Sem processo"} · até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}
                   </p>
                 </div>
                 <Badge tone={p.status === "vencido" ? "red" : p.status === "vencendo" ? "amber" : "blue"}>{p.status}</Badge>
@@ -193,7 +193,7 @@ export function OperacoesView({ prazos, tarefas }: { prazos: Prazo[]; tarefas: T
               <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="red">vencido</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""}</p></li>
             ))}
             {dentroAlerta.map((p) => (
-              <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""} — até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR") : "—"}</p></li>
+              <li key={p.id} className="px-5 py-3"><p className="text-sm text-navy-900"><Badge tone="amber">próx. do venc.</Badge> {p.descricao} {p.processoNumero ? `· ${p.processoNumero}` : ""} — até {p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}</p></li>
             ))}
             {vencidos.length === 0 && dentroAlerta.length === 0 && <li className="px-5 py-10 text-center text-sm text-muted">Tudo em dia. Nenhum alerta de prazo.</li>}
           </ul>

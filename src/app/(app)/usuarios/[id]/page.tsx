@@ -48,7 +48,7 @@ export default async function UsuarioDetalhePage({
                   ["Pessoa vinculada", usuario.pessoa?.nome ?? "—"],
                   ["Perfil", usuario.perfil.nome],
                   ["Status", usuario.ativo ? "Ativo" : "Inativo"],
-                  ["Criado em", usuario.criadoEm.toLocaleDateString("pt-BR")],
+                  ["Criado em", usuario.criadoEm.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })],
                   ["Último acesso", usuario.ultimoLoginEm ? usuario.ultimoLoginEm.toLocaleString("pt-BR") : "Nunca"],
                 ].map(([k, v]) => (
                   <div key={k as string} className="flex justify-between gap-3">

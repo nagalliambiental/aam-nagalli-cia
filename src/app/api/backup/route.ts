@@ -21,6 +21,9 @@ export async function GET(req: Request) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "AAM Nagalli";
 
+  const fmtData = (d: Date | string) => new Date(d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const fmtDataHora = (d: Date | string) => new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
   const addSheet = (name: string, columns: { header: string; key: string; width: number }[], rows: Record<string, unknown>[]) => {
     const ws = wb.addWorksheet(name);
     ws.columns = columns;
@@ -75,7 +78,7 @@ export async function GET(req: Request) {
     { header: "Processo", key: "processo", width: 18 },
     { header: "Vencimento", key: "vencimento", width: 14 },
     { header: "Status", key: "status", width: 12 },
-  ], prazos.map((p) => ({ id: p.id, descricao: p.descricao, processo: p.processo?.numero, vencimento: p.dataCalculadaAtual ? new Date(p.dataCalculadaAtual).toLocaleDateString("pt-BR") : "", status: p.status })));
+  ], prazos.map((p) => ({ id: p.id, descricao: p.descricao, processo: p.processo?.numero, vencimento: p.dataCalculadaAtual ? fmtData(p.dataCalculadaAtual) : "", status: p.status })));
 
   addSheet("Tarefas", [
     { header: "ID", key: "id", width: 8 },
@@ -86,14 +89,14 @@ export async function GET(req: Request) {
     { header: "Empreendimento", key: "empreendimento", width: 28 },
     { header: "Prazo", key: "prazo", width: 14 },
     { header: "Status", key: "status", width: 12 },
-  ], tarefas.map((t) => ({ id: t.id, titulo: t.titulo, descricao: t.descricao, responsavel: t.responsavel?.nome, processo: t.processo?.numero, empreendimento: t.empreendimento?.apelido || t.empreendimento?.nome || "", prazo: t.prazoData ? new Date(t.prazoData).toLocaleDateString("pt-BR") : "", status: t.status })));
+  ], tarefas.map((t) => ({ id: t.id, titulo: t.titulo, descricao: t.descricao, responsavel: t.responsavel?.nome, processo: t.processo?.numero, empreendimento: t.empreendimento?.apelido || t.empreendimento?.nome || "", prazo: t.prazoData ? fmtData(t.prazoData) : "", status: t.status })));
 
   addSheet("Contratos", [
     { header: "ID", key: "id", width: 8 },
     { header: "Número", key: "numero", width: 18 },
     { header: "Cliente", key: "empresa", width: 30 },
     { header: "Validade", key: "validade", width: 14 },
-  ], contratos.map((c) => ({ id: c.id, numero: c.numero, empresa: c.empresa.razaoSocial, validade: c.dataValidade ? new Date(c.dataValidade).toLocaleDateString("pt-BR") : "" })));
+  ], contratos.map((c) => ({ id: c.id, numero: c.numero, empresa: c.empresa.razaoSocial, validade: c.dataValidade ? fmtData(c.dataValidade) : "" })));
 
   addSheet("Faturas", [
     { header: "ID", key: "id", width: 8 },
@@ -113,9 +116,9 @@ export async function GET(req: Request) {
     cliente: f.empresa.nomeFantasia || f.empresa.razaoSocial,
     empreendimento: f.empreendimento?.apelido || f.empreendimento?.nome || "",
     referencia: f.referencia || "",
-    vencimento: f.vencimento ? new Date(f.vencimento).toLocaleDateString("pt-BR") : "",
+    vencimento: f.vencimento ? fmtData(f.vencimento) : "",
     status: f.status,
-    recebidoEm: f.recebidoEm ? new Date(f.recebidoEm).toLocaleString("pt-BR") : "",
+    recebidoEm: f.recebidoEm ? fmtDataHora(f.recebidoEm) : "",
     total: f.itens.reduce((sum, item) => sum + Number(item.total), 0),
   })));
 

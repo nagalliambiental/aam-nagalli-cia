@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,8 +25,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (c in body) data[c] = body[c] ?? null;
   }
   if ("empresaId" in body) data.empresaId = Number(body.empresaId);
-  if ("dataAssinatura" in body) data.dataAssinatura = body.dataAssinatura ? new Date(body.dataAssinatura) : null;
-  if ("dataValidade" in body) data.dataValidade = body.dataValidade ? new Date(body.dataValidade) : null;
+  if ("dataAssinatura" in body) data.dataAssinatura = dataLocal(body.dataAssinatura);
+  if ("dataValidade" in body) data.dataValidade = dataLocal(body.dataValidade);
 
   try {
     const contrato = await prisma.contrato.update({ where: { id: contratoId }, data: data as never });

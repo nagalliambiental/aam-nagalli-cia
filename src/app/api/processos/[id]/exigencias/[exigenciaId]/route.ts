@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string; exigenciaId: string }> };
 
@@ -15,7 +16,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const data: Record<string, unknown> = {};
   if ("descricao" in body) data.descricao = body.descricao;
-  if ("prazoResposta" in body) data.prazoResposta = body.prazoResposta ? new Date(body.prazoResposta) : null;
+  if ("prazoResposta" in body) data.prazoResposta = dataLocal(body.prazoResposta);
   if ("alertaDias" in body) data.alertaDias = body.alertaDias != null ? Number(body.alertaDias) : null;
   if ("status" in body) data.status = body.status;
   if ("resposta" in body) data.resposta = body.resposta ?? null;

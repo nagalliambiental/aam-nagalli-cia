@@ -53,7 +53,7 @@ export function drawReportChrome(
 ) {
   const { margin, width, height } = REPORT_PAGE;
   const right = width - margin;
-  const today = new Date().toLocaleDateString("pt-BR");
+  const today = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
   page.drawRectangle({ x: 0, y: height - 92, width, height: 92, color: REPORT_COLORS.navy });
   page.drawImage(fonts.logo, { x: margin, y: height - 75, width: 92, height: 50 });

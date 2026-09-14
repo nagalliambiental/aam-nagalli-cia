@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -28,8 +29,8 @@ export async function POST(req: Request) {
         tipoLicencaId,
         orgaoId,
         empreendimentoId: body.empreendimentoId ? Number(body.empreendimentoId) : null,
-        dataEmissao: body.dataEmissao ? new Date(body.dataEmissao) : null,
-        dataValidade: body.dataValidade ? new Date(body.dataValidade) : null,
+        dataEmissao: dataLocal(body.dataEmissao),
+        dataValidade: dataLocal(body.dataValidade),
         situacao: body.situacao ?? "ativa",
         observacoes: body.observacoes ?? null,
         responsavelPessoaId: body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null,

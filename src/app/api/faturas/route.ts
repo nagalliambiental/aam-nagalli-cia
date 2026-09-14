@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const adm = round2((base - desc + outros) * 0.18);
     const tot = round2((base - desc + outros) * 1.18);
     return {
-      data: (it.data as string) ? new Date(it.data as string) : null,
+      data: (it.data as string) ? dataLocal(it.data as string) : null,
       identificacao: String(it.identificacao ?? ""),
       descricao: (it.descricao as string) || null,
       qtde,
@@ -55,14 +55,14 @@ export async function POST(req: Request) {
     };
   });
 
-  const ano = new Date().getFullYear();
+  const ano = Number(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric" }).format(new Date()));
   const count = await prisma.fatura.count({ where: { ano } });
   const numero = String(count + 1).padStart(3, "0");
 
   const periodoInicio = dataLocal(body.periodoInicio);
   const periodoFim = dataLocal(body.periodoFim);
   const periodoTexto = periodoInicio && periodoFim
-    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
+    ? `${periodoInicio.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })} a ${periodoFim.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
     : (body.periodo ?? null);
 
   try {

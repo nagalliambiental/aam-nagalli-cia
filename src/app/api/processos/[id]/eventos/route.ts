@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -31,7 +32,7 @@ export async function POST(req: Request, { params }: Ctx) {
         processoId,
         tipoEventoId,
         descricao,
-        data: body.data ? new Date(body.data) : new Date(),
+        data: dataLocal(body.data) ?? new Date(),
         criadoPor: Number(session.user.id),
       },
     });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -38,8 +39,8 @@ export async function POST(req: Request, { params }: Ctx) {
         processoId,
         orgaoId: processo.orgaoId,
         descricao,
-        dataRecebimento: body.dataRecebimento ? new Date(body.dataRecebimento) : new Date(),
-        prazoResposta: body.prazoResposta ? new Date(body.prazoResposta) : null,
+        dataRecebimento: dataLocal(body.dataRecebimento) ?? new Date(),
+        prazoResposta: dataLocal(body.prazoResposta),
         alertaDias: body.alertaDias != null ? Number(body.alertaDias) : 30,
         status: "pendente",
         responsavelPessoaId: body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null,

@@ -27,9 +27,13 @@ export function CriarTarefaNotificacao({
   const [form, setForm] = useState({
     titulo: mensagem.slice(0, 90),
     descricao: mensagem,
+    observacoes: "",
+    status: "nao_iniciado",
     responsavelPessoaId: pessoas[0]?.id ? String(pessoas[0].id) : "",
     prazoData: "",
     alertaDias: "30",
+    dataLimite: "",
+    alertaDataLimite: "",
     prioridade: "media",
     visibilidade: "publico",
   });
@@ -44,10 +48,14 @@ export function CriarTarefaNotificacao({
       body: JSON.stringify({
         titulo: form.titulo,
         descricao: form.descricao,
+        observacoes: form.observacoes,
+        status: form.status,
         responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
         processoId,
         prazoData: form.prazoData || null,
         alertaDias: form.alertaDias !== "" ? Number(form.alertaDias) : 30,
+        dataLimite: form.dataLimite || null,
+        alertaDataLimite: form.alertaDataLimite !== "" ? Number(form.alertaDataLimite) : null,
         prioridade: form.prioridade,
         visibilidade: form.visibilidade,
       }),
@@ -82,6 +90,19 @@ export function CriarTarefaNotificacao({
             <Label htmlFor="nt-desc">Descrição</Label>
             <Textarea id="nt-desc" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} rows={2} />
           </div>
+          <div>
+            <Label htmlFor="nt-obs">Observações</Label>
+            <Textarea id="nt-obs" value={form.observacoes} onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))} rows={2} />
+          </div>
+          <div>
+            <Label htmlFor="nt-status">Status</Label>
+            <Select id="nt-status" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+              <option value="nao_iniciado">Não Iniciado</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="concluida">Concluído</option>
+              <option value="para_revisao">Para Revisão</option>
+            </Select>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="nt-resp" required>Responsável pela Execução</Label>
@@ -92,6 +113,18 @@ export function CriarTarefaNotificacao({
             <div>
               <Label htmlFor="nt-prazo">Prazo</Label>
               <Input id="nt-prazo" type="date" value={form.prazoData} onChange={(e) => setForm((f) => ({ ...f, prazoData: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="nt-alerta">Alerta prazo (dias antes)</Label>
+              <Input id="nt-alerta" type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="nt-limite">Data Limite</Label>
+              <Input id="nt-limite" type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="nt-alerta-limite">Alerta data limite (dias antes)</Label>
+              <Input id="nt-alerta-limite" type="number" min="1" value={form.alertaDataLimite} onChange={(e) => setForm((f) => ({ ...f, alertaDataLimite: e.target.value }))} />
             </div>
             <div>
               <Label htmlFor="nt-prio">Prioridade</Label>

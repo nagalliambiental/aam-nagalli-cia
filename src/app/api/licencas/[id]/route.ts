@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { dataLocal } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -29,8 +30,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     data.empreendimentoId = body.empreendimentoId ? Number(body.empreendimentoId) : null;
   if ("responsavelPessoaId" in body)
     data.responsavelPessoaId = body.responsavelPessoaId ? Number(body.responsavelPessoaId) : null;
-  if ("dataEmissao" in body) data.dataEmissao = body.dataEmissao ? new Date(body.dataEmissao) : null;
-  if ("dataValidade" in body) data.dataValidade = body.dataValidade ? new Date(body.dataValidade) : null;
+  if ("dataEmissao" in body) data.dataEmissao = dataLocal(body.dataEmissao);
+  if ("dataValidade" in body) data.dataValidade = dataLocal(body.dataValidade);
 
   try {
     const licenca = await prisma.licenca.update({ where: { id: licencaId }, data: data as never });
