@@ -43,8 +43,8 @@ export async function POST(req: Request) {
   }
 
   const nup = body.nup ? String(body.nup).replace(/\s/g, "").trim() || null : null;
-  if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
-    return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
+  if (nup && !/^\d{5}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
+    return NextResponse.json({ error: "NUP inválido. Formato esperado: 00000.000000/AAAA-DV" }, { status: 400 });
   }
 
   // Se o NUP já existe, não duplica: informa o processo existente.

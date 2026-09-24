@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
     try {
       const base = {
-        numero, apelido, nup: nup && /^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup) ? nup : null,
+        numero, apelido, nup: nup && /^\d{5}\.\d{6}\/\d{4}-\d{2}$/.test(nup) ? nup : null,
         seiUrl, orgaoId: (natureza === "ambiental" ? orgaoAmb?.id : orgaoMin?.id) ?? orgaoMin?.id,
         tipoProcessoId: (natureza === "ambiental" ? tipoAmb?.id : tipoMin?.id) ?? tipoMin?.id,
         empreendimentoId, responsavelPessoaId, natureza,

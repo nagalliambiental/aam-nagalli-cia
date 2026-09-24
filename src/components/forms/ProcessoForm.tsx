@@ -367,7 +367,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             <div>
               <Label htmlFor="nup">NUP (SEI)</Label>
               <Input id="nup" value={form.nup} onChange={set("nup")} placeholder="48051.000000/0000-00" />
-              <p className="mt-1 text-xs text-muted">17 dígitos: 48xxx.000000/AAAA-DV</p>
+              <p className="mt-1 text-xs text-muted">17 dígitos: 00000.000000/AAAA-DV</p>
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="seiUrl" required>URL vinculado ao SEI</Label>

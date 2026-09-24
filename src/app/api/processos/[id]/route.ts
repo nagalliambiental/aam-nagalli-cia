@@ -24,8 +24,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("seiUrl" in body) data.seiUrl = body.seiUrl ?? null;
   if ("nup" in body) {
     const nup = body.nup ? String(body.nup).trim() || null : null;
-    if (nup && !/^48\d{3}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
-      return NextResponse.json({ error: "NUP inválido. Formato esperado: 48xxx.000000/AAAA-DV" }, { status: 400 });
+    if (nup && !/^\d{5}\.\d{6}\/\d{4}-\d{2}$/.test(nup)) {
+      return NextResponse.json({ error: "NUP inválido. Formato esperado: 00000.000000/AAAA-DV" }, { status: 400 });
     }
     if (nup) {
       const outro = await prisma.processo.findUnique({ where: { nup }, select: { id: true, ativo: true, deletedAt: true } });
