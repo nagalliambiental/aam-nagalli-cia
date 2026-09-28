@@ -37,6 +37,8 @@ export function TarefaEmMassa({
   const [descricao, setDescricao] = useState("");
   const [responsavel, setResponsavel] = useState(pessoas[0] ? String(pessoas[0].id) : "");
   const [prazo, setPrazo] = useState("");
+  const [dataLimite, setDataLimite] = useState("");
+  const [alertaDataLimite, setAlertaDataLimite] = useState("");
   const [prioridade, setPrioridade] = useState("media");
   const [visibilidade, setVisibilidade] = useState("publico");
   const [loading, setLoading] = useState(false);
@@ -68,6 +70,8 @@ export function TarefaEmMassa({
         responsavelPessoaId: responsavel ? Number(responsavel) : null,
         processoIds: selecionados,
         prazoData: prazo || null,
+        dataLimite: dataLimite || null,
+        alertaDataLimite: alertaDataLimite !== "" ? Number(alertaDataLimite) : null,
         prioridade,
         visibilidade,
       }),
@@ -83,6 +87,8 @@ export function TarefaEmMassa({
     setTitulo("");
     setDescricao("");
     setPrazo("");
+    setDataLimite("");
+    setAlertaDataLimite("");
     router.refresh();
   }
 
@@ -167,6 +173,14 @@ export function TarefaEmMassa({
               <div>
                 <Label htmlFor="tm-prazo">Prazo</Label>
                 <Input id="tm-prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="tm-limite">Limite de Execução Serviço</Label>
+                <Input id="tm-limite" type="date" value={dataLimite} onChange={(e) => setDataLimite(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="tm-alerta-limite">Alerta limite de execução (dias antes)</Label>
+                <Input id="tm-alerta-limite" type="number" min="1" value={alertaDataLimite} onChange={(e) => setAlertaDataLimite(e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="tm-prio">Prioridade</Label>
