@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
 import { Pencil, X, Trash2, Paperclip } from "lucide-react";
@@ -125,12 +126,25 @@ export function LinhaTarefa({
 
   const empreendimentoSel = empreendimentos.find((e) => e.id === Number(form.empreendimentoId));
 
+  function abrirTarefa(e: React.MouseEvent) {
+    if (openEdit) return;
+    const alvo = e.target as HTMLElement;
+    if (alvo.closest("button, a, select, input, textarea, label")) return;
+    router.push(`/tarefas/${tarefa.id}`);
+  }
+
   return (
-    <div className="px-5 py-3">
+    <div className="cursor-pointer px-5 py-3 hover:bg-slate-50" onClick={abrirTarefa}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-medium text-navy-900">
-            {tarefa.titulo} <span className="text-muted font-normal">- {tarefa.responsavelNome}</span>
+            <Link
+              href={`/tarefas/${tarefa.id}`}
+              className="underline-offset-2 hover:text-navy-700 hover:underline"
+            >
+              {tarefa.titulo}
+            </Link>{" "}
+            <span className="text-muted font-normal">- {tarefa.responsavelNome}</span>
           </p>
           <p className="mt-0.5 text-xs text-muted">
             {tarefa.dataLimite ? `Limite de Execução Serviço: ${formatDate(new Date(tarefa.dataLimite))}` : ""}

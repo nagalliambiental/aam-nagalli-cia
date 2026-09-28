@@ -6,15 +6,18 @@ import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { TarefaEmMassa } from "@/components/processos/TarefaEmMassa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
+import { FiltroResponsavelTarefas } from "@/components/processos/FiltroResponsavelTarefas";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
-type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; status?: string | string[]; responsavel?: string | string[] }>;
 
 export default async function TarefasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const statusParam = typeof sp.status === "string" ? sp.status : "nao_iniciado";
+  const responsavelParam = typeof sp.responsavel === "string" ? Number(sp.responsavel) : 0;
+  const responsavelFiltro = Number.isFinite(responsavelParam) && responsavelParam > 0 ? responsavelParam : null;
   const ABAS = [
     { value: "nao_iniciado", label: "Não Iniciadas" },
     { value: "em_andamento", label: "Em andamento" },
@@ -40,10 +43,11 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     : {};
 
   const buscaTitulo = q ? { titulo: { contains: q, mode: "insensitive" as const } } : {};
+  const filtroResponsavel = responsavelFiltro ? { responsavelPessoaId: responsavelFiltro } : {};
 
   const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens] = await Promise.all([
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo },
+      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo, ...filtroResponsavel },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true, _count: { select: { anexos: true } } },
       take: 200,
@@ -76,7 +80,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     }),
     prisma.tarefa.groupBy({
       by: ["status"],
-      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...buscaTitulo },
+      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...buscaTitulo, ...filtroResponsavel },
       _count: true,
     }),
   ]);
@@ -108,7 +112,16 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const exportParams = new URLSearchParams();
   exportParams.set("status", statusAtual);
   if (q) exportParams.set("q", q);
+  if (responsavelFiltro) exportParams.set("responsavel", String(responsavelFiltro));
   const exportQuery = `?${exportParams.toString()}`;
+
+  const paramsAba = (status: string) => {
+    const p = new URLSearchParams();
+    p.set("status", status);
+    if (q) p.set("q", q);
+    if (responsavelFiltro) p.set("responsavel", String(responsavelFiltro));
+    return `?${p.toString()}`;
+  };
 
   return (
     <div>
@@ -162,15 +175,17 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
             return (
               <Link
                 key={aba.value}
-                href={`/tarefas?status=${aba.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                href={`/tarefas${paramsAba(aba.value)}`}
                 className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${ativo ? (aba.value === "concluida" ? "bg-emerald-50 text-emerald-800" : "bg-navy-100 text-navy-800") : "text-muted hover:bg-slate-100"}`}
               >
                 {aba.label} ({total})
               </Link>
             );
           })}
+          <FiltroResponsavelTarefas pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))} valor={responsavelFiltro} />
           <form method="get" className="ml-auto flex items-center gap-2">
             <input type="hidden" name="status" value={statusAtual} />
+            {responsavelFiltro ? <input type="hidden" name="responsavel" value={responsavelFiltro} /> : null}
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
