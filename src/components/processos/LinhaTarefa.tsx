@@ -139,6 +139,16 @@ export function LinhaTarefa({
             {!tarefa.dataLimite && !tarefa.prazoData ? "—" : ""}
           </p>
           <p className="text-xs text-muted">{tarefa.processoLabel}</p>
+          {(tarefa.anexosCount ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpenAnexos(true)}
+              className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-navy-600 underline-offset-2 hover:underline"
+            >
+              <Paperclip className="h-3 w-3" />
+              {tarefa.anexosCount} arquivo{tarefa.anexosCount === 1 ? "" : "s"} anexado{tarefa.anexosCount === 1 ? "" : "s"}
+            </button>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {tarefa.status === "concluida" && tarefa.dataConclusao && (
@@ -152,15 +162,12 @@ export function LinhaTarefa({
           <button
             type="button"
             onClick={() => setOpenAnexos((o) => !o)}
-            title="Anexos"
-            className={`relative rounded-md p-1.5 hover:bg-slate-100 ${openAnexos ? "bg-slate-100 text-navy-800" : "text-navy-600"}`}
+            title="Ver anexos da tarefa"
+            aria-label="Anexos da tarefa"
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium ring-1 ring-slate-200 hover:bg-slate-100 ${openAnexos ? "bg-slate-100 text-navy-800 ring-slate-300" : "text-navy-600"}`}
           >
-            <Paperclip className="h-4 w-4" />
-            {tarefa.anexosCount ? (
-              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-navy-700 px-1 text-[10px] font-medium text-white">
-                {tarefa.anexosCount}
-              </span>
-            ) : null}
+            <Paperclip className="h-3.5 w-3.5" />
+            Anexos{tarefa.anexosCount ? ` (${tarefa.anexosCount})` : ""}
           </button>
           {podeEditarTudo && (
             <button type="button" onClick={() => setOpenEdit((o) => !o)} title="Edição rápida" className="rounded-md p-1.5 text-emerald-600 hover:bg-emerald-50" style={{ color: "#16a34a" }}>

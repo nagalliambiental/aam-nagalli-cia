@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { ArquivosSelecao } from "@/components/processos/ArquivosSelecao";
+import { enviarAnexosTarefa } from "@/lib/anexos-cliente";
 
 type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
 type ProcessoAmbientalOpt = { id: number; numero: string; apelido: string | null; numeroLicenca: string | null };
@@ -41,6 +43,7 @@ export function TarefaNovaForm({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [arquivos, setArquivos] = useState<File[]>([]);
 
   const empreendimento = empreendimentos.find((e) => e.id === Number(form.empreendimentoId));
 
@@ -61,11 +64,22 @@ export function TarefaNovaForm({
       }),
     });
     const d = await res.json().catch(() => ({}));
-    setLoading(false);
     if (!res.ok) {
+      setLoading(false);
       setError(d.error ?? "Erro ao criar tarefa.");
       return;
     }
+
+    if (arquivos.length > 0 && d.id) {
+      const { enviados, falhas } = await enviarAnexosTarefa(Number(d.id), arquivos);
+      if (falhas.length > 0) {
+        alert(
+          `Tarefa criada${enviados > 0 ? ` com ${enviados} arquivo(s) enviado(s)` : ""}, mas falhou em:\n${falhas.join("\n")}`,
+        );
+      }
+    }
+
+    setLoading(false);
     onClose();
     router.refresh();
   }
@@ -156,6 +170,7 @@ export function TarefaNovaForm({
           </div>
         )}
       </div>
+      <ArquivosSelecao arquivos={arquivos} onChange={setArquivos} disabled={loading} />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Criar tarefa"}</Button>

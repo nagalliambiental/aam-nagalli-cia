@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Modal, Select, Textarea } from "@/components/ui";
 import { Plus } from "lucide-react";
+import { ArquivosSelecao } from "@/components/processos/ArquivosSelecao";
+import { enviarAnexosTarefa } from "@/lib/anexos-cliente";
 
 export function CriarTarefaNotificacao({
   notificacaoId = null,
@@ -37,6 +39,7 @@ export function CriarTarefaNotificacao({
     prioridade: "media",
     visibilidade: "publico",
   });
+  const [arquivos, setArquivos] = useState<File[]>([]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +72,17 @@ export function CriarTarefaNotificacao({
     if (notificacaoId) {
       await fetch(`/api/notificacoes/${notificacaoId}/lida`, { method: "POST" }).catch(() => {});
     }
+
+    if (arquivos.length > 0 && d.id) {
+      const { enviados, falhas } = await enviarAnexosTarefa(Number(d.id), arquivos);
+      if (falhas.length > 0) {
+        alert(
+          `Tarefa criada${enviados > 0 ? ` com ${enviados} arquivo(s) enviado(s)` : ""}, mas falhou em:\n${falhas.join("\n")}`,
+        );
+      }
+      setArquivos([]);
+    }
+
     setLoading(false);
     setOpen(false);
     router.refresh();
@@ -145,6 +159,7 @@ export function CriarTarefaNotificacao({
               </div>
             )}
           </div>
+          <ArquivosSelecao arquivos={arquivos} onChange={setArquivos} disabled={loading} id="nt-arquivos" />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>

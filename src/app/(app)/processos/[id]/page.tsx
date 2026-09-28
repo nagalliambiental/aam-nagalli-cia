@@ -65,7 +65,7 @@ export default async function ProcessoDetalhePage({
       prisma.tarefa.findMany({
         where: { processoId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
         orderBy: { dataCriacao: "desc" },
-        include: { responsavel: true },
+        include: { responsavel: true, _count: { select: { anexos: true } } },
       }),
       prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
     ]);

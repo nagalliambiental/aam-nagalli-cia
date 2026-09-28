@@ -6,6 +6,8 @@ import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/comp
 import { formatDate } from "@/lib/format";
 import { ImportarTarefasPdf } from "@/components/processos/ImportarTarefasPdf";
 import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
+import { ArquivosSelecao } from "@/components/processos/ArquivosSelecao";
+import { enviarAnexosTarefa } from "@/lib/anexos-cliente";
 
 type TarefaItem = {
   id: number;
@@ -21,6 +23,8 @@ type TarefaItem = {
   visibilidade: string;
   dataConclusao: Date | null;
   responsavel: { nome: string };
+  anexosCount?: number;
+  _count?: { anexos: number };
 };
 
 export function TarefasPanel({
@@ -58,6 +62,7 @@ export function TarefasPanel({
     responsavelPessoaId: pessoas[0]?.id ? String(pessoas[0].id) : "",
     visibilidade: "publico",
   });
+  const [arquivos, setArquivos] = useState<File[]>([]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,6 +83,17 @@ export function TarefasPanel({
     const d = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) { setError(d.error ?? "Erro ao adicionar tarefa."); return; }
+
+    if (arquivos.length > 0 && d.id) {
+      const { enviados, falhas } = await enviarAnexosTarefa(Number(d.id), arquivos);
+      if (falhas.length > 0) {
+        alert(
+          `Tarefa criada${enviados > 0 ? ` com ${enviados} arquivo(s) enviado(s)` : ""}, mas falhou em:\n${falhas.join("\n")}`,
+        );
+      }
+      setArquivos([]);
+    }
+
     setForm((f) => ({ ...f, titulo: "", descricao: "" }));
     setShow(false);
     router.refresh();
@@ -162,6 +178,7 @@ export function TarefasPanel({
               </div>
             )}
           </div>
+          <ArquivosSelecao arquivos={arquivos} onChange={setArquivos} disabled={loading} />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Adicionar tarefa"}</Button>
         </form>
@@ -185,6 +202,7 @@ export function TarefasPanel({
                 visibilidade: t.visibilidade,
                 dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
                 responsavelNome: t.responsavel.nome,
+                anexosCount: t._count?.anexos ?? 0,
                 processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
               }}
               pessoas={pessoas}
@@ -220,6 +238,7 @@ export function TarefasPanel({
                   visibilidade: t.visibilidade,
                   dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString() : null,
                   responsavelNome: t.responsavel.nome,
+                  anexosCount: t._count?.anexos ?? 0,
                   processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
                 }}
                 pessoas={pessoas}
