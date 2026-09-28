@@ -56,7 +56,7 @@ const SECTIONS: NavGroup[] = [
     items: [
       { href: "/ferramentas/dou", label: "DOU", icon: Newspaper },
       { href: "/ferramentas/sei", label: "Movimentações SEI", icon: Radio },
-      { href: "/ferramentas/iat", label: "Movimentações IAT", icon: FlaskConical },
+      { href: "/ferramentas/iat", label: "Legislação IAT", icon: FlaskConical },
     ],
   },
   {

@@ -32,7 +32,7 @@ interface Notificacao {
 }
 
 function notificacaoLink(n: Notificacao): string | null {
-  if (n.url) return safeExternalUrl(n.url);
+  if (n.url) return n.url.startsWith("/") ? n.url : safeExternalUrl(n.url);
   if (n.processoId) return `/processos/${n.processoId}`;
   if (n.licencaId) return `/licencas/${n.licencaId}`;
   if (n.prazoId) return `/prazos`;

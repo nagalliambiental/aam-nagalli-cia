@@ -1003,6 +1003,28 @@ model Notificacao {
   @@index([prazoId])
 }
 
+// Legislação IAT (Instruções Normativas / Orientações Técnicas do Instituto Água e Terra)
+model LegislacaoIat {
+  id                 Int      @id @default(autoincrement())
+  tipo               String // "IN" | "OT"
+  numero             Int
+  ano                Int
+  titulo             String
+  ementa             String
+  url                String?
+  anexosUrl          String?
+  situacao           String   @default("vigente") // vigente | revogada
+  revogadaPor        String?
+  hash               String
+  fonteUrl           String
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
+  ultimaVerificacao  DateTime @default(now())
+
+  @@unique([tipo, numero, ano])
+  @@index([situacao, ano])
+}
+
 // =====================================================================
 //  FINANCEIRO / CONTRATOS / PROJETOS (estrutura mínima para evolução)
 // =====================================================================
