@@ -34,9 +34,27 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
     take: 100,
   });
 
+  const exportParams = new URLSearchParams();
+  if (verConcluidos) exportParams.set("status", "concluido");
+  if (q) exportParams.set("q", q);
+  const exportQuery = exportParams.toString() ? `?${exportParams.toString()}` : "";
+
   return (
     <div>
-      <PageHeader title="Prazos" subtitle="Prazos calculados por processo e status" />
+      <PageHeader
+        title="Prazos"
+        subtitle="Prazos calculados por processo e status"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={`/api/prazos/exportar${exportQuery}${exportQuery ? "&" : "?"}formato=pdf`} target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar PDF</Button>
+            </a>
+            <a href={`/api/prazos/exportar${exportQuery}${exportQuery ? "&" : "?"}formato=xlsx`} target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar XLSX</Button>
+            </a>
+          </div>
+        }
+      />
 
       <Card>
         <form method="get" className="flex items-center gap-2 border-b border-slate-200 p-4">

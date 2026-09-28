@@ -104,12 +104,27 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     };
   });
 
+  const exportParams = new URLSearchParams();
+  exportParams.set("status", statusAtual);
+  if (q) exportParams.set("q", q);
+  const exportQuery = `?${exportParams.toString()}`;
+
   return (
     <div>
       <PageHeader
         title="Tarefas"
         subtitle="Tarefas e suas exigências vinculadas"
-        actions={podeCriar ? <ImportarTarefas /> : undefined}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={`/api/tarefas/exportar${exportQuery}&formato=pdf`} target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar PDF</Button>
+            </a>
+            <a href={`/api/tarefas/exportar${exportQuery}&formato=xlsx`} target="_blank" rel="noreferrer">
+              <Button variant="secondary">Exportar XLSX</Button>
+            </a>
+            {podeCriar && <ImportarTarefas />}
+          </div>
+        }
       />
 
       {podeCriar && (
