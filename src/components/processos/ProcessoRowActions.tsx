@@ -31,23 +31,20 @@ export function ProcessoRowActions({ processo, podeExcluir = false, temNovaMovim
       <Link href={`/processos/${processo.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="truncate font-medium text-navy-900">
-            {processo.natureza === "ambiental"
-              ? <>{processo.apelido || processo.empreendimento?.apelido || processo.empreendimento?.nome || processo.numero}{processo.numeroLicenca ? ` · ${processo.numeroLicenca}` : ""}</>
-              : <>{processo.numero}</>}
-            <span className="text-muted font-normal"> · {processo.orgao.sigla}</span>
-            {processo.nup ? <span className="ml-2 text-xs font-normal text-navy-600">NUP {processo.nup}</span> : null}
+            {processo.numero}
+            <span className="font-normal text-navy-700">
+              {" · "}
+              {processo.empreendimento
+                ? processo.empreendimento.apelido || processo.empreendimento.nome
+                : <span className="text-muted">sem empreendimento</span>}
+            </span>
+            {processo.natureza === "ambiental" && processo.numeroLicenca ? (
+              <span className="text-muted font-normal"> · {processo.numeroLicenca}</span>
+            ) : null}
           </p>
           <p className="truncate text-sm text-muted">
             {processo.modalidade ? `Fase: ${processo.modalidade}` : (processo.fase ? `Fase: ${processo.fase}` : "—")}
           </p>
-          {processo.empreendimento ? (
-            <p className="truncate text-xs">
-              <span className="text-muted">Empreendimento:</span>{" "}
-              <span className="font-medium text-navy-700">{processo.empreendimento.apelido || processo.empreendimento.nome}</span>
-            </p>
-          ) : (
-            <p className="text-xs text-muted">Empreendimento: — sem vínculo —</p>
-          )}
         </div>
         <div className="hidden items-center gap-4 sm:flex">
           <div className="text-right text-sm text-muted">
