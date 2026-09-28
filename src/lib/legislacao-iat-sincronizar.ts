@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { buscarLegislacaoIat, FONTE_LEGISLACAO_IAT } from "@/lib/legislacao-iat";
+import {
+  buscarLegislacaoIat,
+  buscarDataAtoPdf,
+  extrairDataPublicacao,
+  FONTE_LEGISLACAO_IAT,
+} from "@/lib/legislacao-iat";
 
 export type ResultadoSincronizacaoLegislacao = {
   lidas: number;
@@ -7,7 +12,56 @@ export type ResultadoSincronizacaoLegislacao = {
   atualizadas: number;
   revogadas: number;
   semMudanca: number;
+  dataAtoPreenchidas: number;
+  dataAtoPendentes: number;
 };
+
+/** Limite de PDFs consultados por lote (para a rota manual não estourar o tempo). */
+const LOTE_DATA_ATO = 10;
+const MAX_TENTATIVAS_DATA_ATO = 5;
+/** O site do IAT responde 404 intermitente sob rajada — espera entre downloads. */
+const ESPERA_ENTRE_PDFS = 400;
+
+/**
+ * Preenche a data do ato (CreationDate/ModDate do PDF) das normas ainda sem ela.
+ * Falha (inclusive 404 intermitente do site) conta tentativa; só marca como consultada
+ * quando o arquivo é baixado com sucesso — sem data a tela usa o mês da pasta do PDF.
+ */
+export async function preencherDataAto(limite = LOTE_DATA_ATO): Promise<{ preenchidas: number; pendentes: number }> {
+  const filtro = {
+    url: { not: null as null },
+    dataAtoConsultada: false,
+    dataAtoTentativas: { lt: MAX_TENTATIVAS_DATA_ATO },
+  };
+  const lote = await prisma.legislacaoIat.findMany({
+    where: filtro,
+    orderBy: [{ ano: "desc" }, { numero: "desc" }],
+    take: limite,
+    select: { id: true, url: true },
+  });
+
+  let preenchidas = 0;
+  for (const [indice, norma] of lote.entries()) {
+    if (!norma.url) continue;
+    if (indice > 0) await new Promise((r) => setTimeout(r, ESPERA_ENTRE_PDFS));
+    try {
+      const dataAto = await buscarDataAtoPdf(norma.url);
+      await prisma.legislacaoIat.update({
+        where: { id: norma.id },
+        data: { dataAto, dataAtoConsultada: true, dataAtoTentativas: 0 },
+      });
+      preenchidas++;
+    } catch {
+      await prisma.legislacaoIat.update({
+        where: { id: norma.id },
+        data: { dataAtoTentativas: { increment: 1 } },
+      });
+    }
+  }
+
+  const pendentes = await prisma.legislacaoIat.count({ where: filtro });
+  return { preenchidas, pendentes };
+}
 
 function resumir(texto: string, limite = 140): string {
   const limpo = texto.replace(/\s+/g, " ").trim();
@@ -44,6 +98,8 @@ export async function sincronizarLegislacaoIat(): Promise<ResultadoSincronizacao
     atualizadas: 0,
     revogadas: 0,
     semMudanca: 0,
+    dataAtoPreenchidas: 0,
+    dataAtoPendentes: 0,
   };
 
   for (const item of itens) {
@@ -61,6 +117,7 @@ export async function sincronizarLegislacaoIat(): Promise<ResultadoSincronizacao
       revogadaPor: item.revogadaPor,
       hash: item.hash,
       fonteUrl: FONTE_LEGISLACAO_IAT,
+      dataPublicacao: extrairDataPublicacao(item.url),
       ultimaVerificacao: agora,
     };
 
@@ -77,8 +134,12 @@ export async function sincronizarLegislacaoIat(): Promise<ResultadoSincronizacao
     }
 
     if (atual.hash === item.hash) {
-      if (atual.ultimaVerificacao.getTime() !== agora.getTime()) {
-        await prisma.legislacaoIat.update({ where: { id: atual.id }, data: { ultimaVerificacao: agora } });
+      const dataPublicacao = extrairDataPublicacao(item.url);
+      if (atual.dataPublicacao !== dataPublicacao || atual.ultimaVerificacao.getTime() !== agora.getTime()) {
+        await prisma.legislacaoIat.update({
+          where: { id: atual.id },
+          data: { dataPublicacao, ultimaVerificacao: agora },
+        });
       }
       resultado.semMudanca++;
       continue;
@@ -96,6 +157,10 @@ export async function sincronizarLegislacaoIat(): Promise<ResultadoSincronizacao
       );
     }
   }
+
+  const dataAto = await preencherDataAto();
+  resultado.dataAtoPreenchidas = dataAto.preenchidas;
+  resultado.dataAtoPendentes = dataAto.pendentes;
 
   return resultado;
 }

@@ -1017,6 +1017,10 @@ model LegislacaoIat {
   revogadaPor        String?
   hash               String
   fonteUrl           String
+  dataAto            DateTime? // data do ato (metadado CreationDate/ModDate do PDF oficial)
+  dataAtoConsultada  Boolean  @default(false)
+  dataAtoTentativas  Int      @default(0)
+  dataPublicacao     String? // "YYYY-MM" extraido da pasta do PDF no site
   criadoEm           DateTime @default(now())
   atualizadoEm       DateTime @updatedAt
   ultimaVerificacao  DateTime @default(now())

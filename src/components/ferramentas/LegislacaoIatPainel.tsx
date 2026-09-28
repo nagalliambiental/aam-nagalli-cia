@@ -16,11 +16,16 @@ export type LegislacaoIatLinha = {
   anexosUrl: string | null;
   situacao: string;
   revogadaPor: string | null;
-  criadoEm: string;
-  atualizadoEm: string;
+  dataAto: string | null;
+  dataPublicacao: string | null;
 };
 
 const TRINTA_DIAS = 30 * 24 * 60 * 60 * 1000;
+
+function mesPublicacao(p: string): string {
+  const [ano, mes] = p.split("-");
+  return mes && ano ? `${mes}/${ano}` : p;
+}
 
 export function LegislacaoIatPainel({
   itens,
@@ -116,7 +121,13 @@ export function LegislacaoIatPainel({
             <ul className="divide-y divide-slate-100">
               {lista.map((i) => {
                 const link = fonteNorma(i);
-                const novo = Date.now() - new Date(i.criadoEm).getTime() < TRINTA_DIAS;
+                // "Novo" usa a data oficial do ato (ou o mês de publicação), não a data do cadastro.
+                const referencia = i.dataAto
+                  ? new Date(i.dataAto).getTime()
+                  : i.dataPublicacao
+                    ? Date.parse(`${i.dataPublicacao}-01T00:00:00Z`)
+                    : null;
+                const novo = referencia !== null && Date.now() - referencia < TRINTA_DIAS;
                 return (
                   <li key={i.id} className="px-5 py-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -131,7 +142,6 @@ export function LegislacaoIatPainel({
                         {i.situacao === "revogada" ? <Badge tone="red">Revogada</Badge> : novo ? <Badge tone="green">Novo</Badge> : null}
                         <Badge tone="gray">{i.tipo}</Badge>
                       </p>
-                      <span className="shrink-0 text-xs text-muted">Cadastrada em {formatDate(new Date(i.criadoEm))}</span>
                     </div>
                     <p className="mt-1 text-sm text-muted">{i.ementa}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
@@ -148,7 +158,10 @@ export function LegislacaoIatPainel({
                       {i.situacao === "revogada" && i.revogadaPor && (
                         <span className="font-medium text-red-600">Revogada pela {i.revogadaPor}</span>
                       )}
-                      <span className="text-muted">Atualizado em {formatDateTime(i.atualizadoEm)}</span>
+                      {i.dataAto && <span className="text-muted">Data do ato: {formatDate(new Date(i.dataAto))}</span>}
+                      {!i.dataAto && i.dataPublicacao && (
+                        <span className="text-muted">Publicada em {mesPublicacao(i.dataPublicacao)}</span>
+                      )}
                     </div>
                   </li>
                 );

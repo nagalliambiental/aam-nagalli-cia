@@ -189,3 +189,45 @@ export async function buscarLegislacaoIat(): Promise<LegislacaoIatItem[]> {
   if (itens.length === 0) throw new Error("Nenhuma norma encontrada na página do IAT (estrutura pode ter mudado).");
   return itens;
 }
+
+/** Extrai "YYYY-MM" da pasta do arquivo no site (mês de publicação/envio no IAT). */
+export function extrairDataPublicacao(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/\/(\d{4})-(\d{2})\/[^/]+$/);
+  return m ? `${m[1]}-${m[2]}` : null;
+}
+
+function dataDoPdf(texto: string): Date | null {
+  for (const campo of ["CreationDate", "ModDate"]) {
+    const m = texto.match(new RegExp(`/${campo}\\s*\\(D:(\\d{4})(\\d{2})(\\d{2})`));
+    if (m) return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  }
+  return null;
+}
+
+async function baixarPartePdf(url: string, range: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, Accept: "application/pdf", Range: range },
+    signal: AbortSignal.timeout(30000),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`PDF do IAT respondeu ${res.status}`);
+  return (Buffer.from(await res.arrayBuffer())).toString("latin1");
+}
+
+/**
+ * Lê a data do ato no PDF da norma (metadado CreationDate/ModDate).
+ * Começa pelo fim do arquivo (xref/Info costuma estar lá), depois o início
+ * e, por último, o arquivo completo — evita baixar tudo sempre.
+ * Lança erro em falha de rede/status para a chamada decidir se tenta depois.
+ */
+export async function buscarDataAtoPdf(url: string): Promise<Date | null> {
+  const tentativas = ["bytes=-65536", "bytes=0-131071", "bytes=0-"];
+  for (const range of tentativas) {
+    const texto = await baixarPartePdf(url, range);
+    const data = dataDoPdf(texto);
+    if (data) return data;
+    if (range === "bytes=0-") return null;
+  }
+  return null;
+}

@@ -27,8 +27,8 @@ export default async function LegislacaoIatPage() {
       anexosUrl: r.anexosUrl,
       situacao: r.situacao,
       revogadaPor: r.revogadaPor,
-      criadoEm: r.criadoEm.toISOString(),
-      atualizadoEm: r.atualizadoEm.toISOString(),
+      dataAto: r.dataAto ? r.dataAto.toISOString() : null,
+      dataPublicacao: r.dataPublicacao,
     }));
     const verificacao = registros.reduce<string | null>((max, r) => {
       const iso = r.ultimaVerificacao.toISOString();
