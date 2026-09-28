@@ -39,7 +39,7 @@ export function ProcessoRowActions({ processo, podeExcluir = false, temNovaMovim
                 : <span className="text-muted">sem empreendimento</span>}
             </span>
             {processo.natureza === "ambiental" && processo.numeroLicenca ? (
-              <span className="text-muted font-normal"> · {processo.numeroLicenca}</span>
+              <span className="font-normal text-muted"> · nº da licença: {processo.numeroLicenca}</span>
             ) : null}
           </p>
           <p className="truncate text-sm text-muted">
