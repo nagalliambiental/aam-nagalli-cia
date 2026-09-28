@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
-import { Pencil, X, Trash2 } from "lucide-react";
+import { Pencil, X, Trash2, Paperclip } from "lucide-react";
+import { TarefaAnexos } from "@/components/processos/TarefaAnexos";
 
 type Tarefa = {
   id: number;
@@ -23,6 +24,7 @@ type Tarefa = {
   empreendimentoId?: number | null;
   processoId?: number | null;
   dataConclusao?: string | null;
+  anexosCount?: number;
 };
 
 type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
@@ -48,6 +50,7 @@ export function LinhaTarefa({
   isAdmin = false,
   podeEditarTudo = false,
   podeExcluir = false,
+  podeAnexar = false,
 }: {
   tarefa: Tarefa;
   pessoas: { id: number; nome: string }[];
@@ -56,10 +59,12 @@ export function LinhaTarefa({
   isAdmin?: boolean;
   podeEditarTudo?: boolean;
   podeExcluir?: boolean;
+  podeAnexar?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
+  const [openAnexos, setOpenAnexos] = useState(false);
   const [form, setForm] = useState({
     titulo: tarefa.titulo,
     descricao: tarefa.descricao ?? "",
@@ -144,6 +149,19 @@ export function LinhaTarefa({
           <Select value={tarefa.status} onChange={(e) => mudarStatus(e.target.value)} className="w-32 text-xs" style={{ borderColor: "#2563eb", color: "#2563eb" }}>
             {STATUS_OPTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </Select>
+          <button
+            type="button"
+            onClick={() => setOpenAnexos((o) => !o)}
+            title="Anexos"
+            className={`relative rounded-md p-1.5 hover:bg-slate-100 ${openAnexos ? "bg-slate-100 text-navy-800" : "text-navy-600"}`}
+          >
+            <Paperclip className="h-4 w-4" />
+            {tarefa.anexosCount ? (
+              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-navy-700 px-1 text-[10px] font-medium text-white">
+                {tarefa.anexosCount}
+              </span>
+            ) : null}
+          </button>
           {podeEditarTudo && (
             <button type="button" onClick={() => setOpenEdit((o) => !o)} title="Edição rápida" className="rounded-md p-1.5 text-emerald-600 hover:bg-emerald-50" style={{ color: "#16a34a" }}>
               {openEdit ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
@@ -284,6 +302,18 @@ export function LinhaTarefa({
             <Button type="button" variant="ghost" onClick={() => setOpenEdit(false)}>Cancelar</Button>
             <Button type="button" onClick={salvar} disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
           </div>
+        </div>
+      )}
+
+      {openAnexos && (
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-semibold text-navy-900">Anexos</span>
+            <button type="button" onClick={() => setOpenAnexos(false)} className="rounded p-1 text-slate-400 hover:text-slate-700">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <TarefaAnexos tarefaId={tarefa.id} podeEditar={podeAnexar} />
         </div>
       )}
     </div>

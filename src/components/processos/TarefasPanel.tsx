@@ -31,6 +31,7 @@ export function TarefasPanel({
   isAdmin = false,
   podeEditarTudo = false,
   podeExcluir = false,
+  podeAnexar = false,
 }: {
   processoId: number;
   tarefas: TarefaItem[];
@@ -39,6 +40,7 @@ export function TarefasPanel({
   isAdmin?: boolean;
   podeEditarTudo?: boolean;
   podeExcluir?: boolean;
+  podeAnexar?: boolean;
 }) {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -189,6 +191,7 @@ export function TarefasPanel({
               isAdmin={isAdmin}
               podeEditarTudo={podeEditarTudo}
               podeExcluir={podeExcluir}
+              podeAnexar={podeAnexar}
             />
           </li>
         ))}
@@ -223,6 +226,7 @@ export function TarefasPanel({
                 isAdmin={isAdmin}
                 podeEditarTudo={podeEditarTudo}
                 podeExcluir={podeExcluir}
+                podeAnexar={podeAnexar}
               />
             </li>
           ))}

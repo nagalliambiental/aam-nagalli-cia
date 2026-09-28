@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Card, CardHeader, PageHeader, Badge } from "@/components/ui";
 import { TarefaEdicaoForm } from "@/components/processos/TarefaEdicaoForm";
 import { TarefaExcluirBotao } from "@/components/processos/TarefaExcluirBotao";
+import { TarefaAnexos } from "@/components/processos/TarefaAnexos";
 import { formatDate } from "@/lib/format";
 
 const TAREFA_STATUS: Record<string, { label: string; tone: "blue" | "green" | "amber" | "gray" | "gold" }> = {
@@ -109,6 +110,13 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
               alertaDias: tarefa.alertaDias,
             }}
           />
+        </div>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader title="Anexos" subtitle="Arquivos enviados para esta tarefa" />
+        <div className="p-4">
+          <TarefaAnexos tarefaId={tarefa.id} />
         </div>
       </Card>
     </div>

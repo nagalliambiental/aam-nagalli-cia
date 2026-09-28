@@ -27,6 +27,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     : "nao_iniciado";
   const podeCriar = await usuarioTemPermissao("tarefa:criar");
   const podeExcluir = await usuarioTemPermissao("tarefa:excluir");
+  const podeAnexar = await usuarioTemPermissao("tarefa:editar");
   const user = await requireAuth();
   const isAdmin = user.perfilNome === "Administrador";
   const podeEditarTudo = user.perfilNome === "Administrador" || user.perfilNome === "Técnico Chefe";
@@ -44,7 +45,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
-      include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
+      include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true, _count: { select: { anexos: true } } },
       take: 200,
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
@@ -203,6 +204,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   processoLabel: t.processo ? `Processo: #${t.processo.numero} (${t.processo.orgao.sigla})` : "Processo: — sem vínculo —",
                   empreendimentoId: t.empreendimentoId,
                   processoId: t.processoId,
+                  anexosCount: t._count.anexos,
                 }}
                 pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
                 empreendimentos={empreendimentosOpt}
@@ -210,6 +212,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                 isAdmin={isAdmin}
                 podeEditarTudo={podeEditarTudo}
                 podeExcluir={podeExcluir}
+                podeAnexar={podeAnexar}
               />
             </li>
           ))}

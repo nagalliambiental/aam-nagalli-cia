@@ -951,10 +951,26 @@ model Tarefa {
   exigencia       Exigencia?       @relation(fields: [exigenciaId], references: [id], onDelete: SetNull)
 
   notificacoes      Notificacao[]
+  anexos            TarefaAnexo[]
 
   @@index([responsavelPessoaId, status])
   @@index([processoId])
   @@index([prazoData, status])
+}
+
+model TarefaAnexo {
+  id        Int      @id @default(autoincrement())
+  tarefaId  Int
+  nome      String
+  mime      String   @default("application/octet-stream")
+  tamanho   Int
+  conteudo  Bytes
+  criadoPor Int?
+  criadoEm  DateTime @default(now())
+
+  tarefa Tarefa @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+
+  @@index([tarefaId])
 }
 
 model Notificacao {
