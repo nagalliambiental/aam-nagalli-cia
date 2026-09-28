@@ -134,7 +134,7 @@ export function EdicaoRapidaTarefa({
                   <Input id={`qap-${tarefa.id}`} type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
                 </div>
                 <div>
-                  <Label htmlFor={`ql-${tarefa.id}`}>Data Limite</Label>
+                  <Label htmlFor={`ql-${tarefa.id}`}>Limite de Execução Serviço</Label>
                   <Input id={`ql-${tarefa.id}`} type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
                 </div>
                 <div>

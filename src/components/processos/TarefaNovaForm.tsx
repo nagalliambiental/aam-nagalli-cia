@@ -121,7 +121,7 @@ export function TarefaNovaForm({
           <Input id="alertaDias" type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
         </div>
         <div>
-          <Label htmlFor="dataLimite">Data Limite</Label>
+          <Label htmlFor="dataLimite">Limite de Execução Serviço</Label>
           <Input id="dataLimite" type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
         </div>
         <div>

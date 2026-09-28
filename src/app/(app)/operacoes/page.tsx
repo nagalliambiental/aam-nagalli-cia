@@ -56,7 +56,7 @@ export default async function OperacoesPage() {
                     <p className="truncate text-sm font-medium text-navy-900">{x.titulo}</p>
                     <p className="text-xs text-muted">
                       {x.processo ? `Processo ${x.processo.numero}` : "Sem processo"}
-                      {fim ? ` · Data Limite ${formatDate(new Date(fim))}` : ""}
+                      {fim ? ` · Limite de Execução Serviço ${formatDate(new Date(fim))}` : ""}
                     </p>
                   </div>
                   <Badge tone={x.status === "concluida" ? "green" : x.status === "em_andamento" ? "blue" : x.status === "para_revisao" ? "gold" : "gray"}>

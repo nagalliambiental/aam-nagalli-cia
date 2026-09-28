@@ -14,7 +14,8 @@ export async function GET(req: Request, { params }: Ctx) {
   const url = new URL(req.url);
   const status = url.searchParams.get("status") ?? undefined;
   const dias = url.searchParams.get("dias") ?? undefined;
-  const relatorio = await buscarRelatorioGerencial(tipo as RelatorioGerencialTipo, { status, dias });
+  const clienteId = url.searchParams.get("clienteId") ?? undefined;
+  const relatorio = await buscarRelatorioGerencial(tipo as RelatorioGerencialTipo, { status, dias, clienteId });
   const { doc, fonts } = await createReportDocument();
   const columns = relatorio.colunas.map((column) => ({ label: column.label, w: 515 / relatorio.colunas.length }));
   let page = addReportPage(doc);

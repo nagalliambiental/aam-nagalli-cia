@@ -9,7 +9,7 @@ export type RelatorioGerencialTipo =
   | "processos-ambientais"
   | "prazos";
 
-export type RelatorioFiltro = { status?: string; dias?: string };
+export type RelatorioFiltro = { status?: string; dias?: string; clienteId?: string };
 
 export type RelatorioGerencial = {
   titulo: string;
@@ -19,16 +19,41 @@ export type RelatorioGerencial = {
 
 const STATUS_TODOS = ["ativo", "em_andamento", "paralisado", "encerrado", "morto"];
 
+function clienteSelecionado(filtro: RelatorioFiltro): number | null {
+  const bruto = String(filtro.clienteId ?? "").trim();
+  if (!bruto) return null;
+  const id = Number(bruto);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+// Cliente pode estar ligado ao processo direto (ProcessoEmpresa), pelo
+// empreendimento principal ou por vínculo secundário do empreendimento.
+function filtroProcessoPorCliente(clienteId: number | null) {
+  if (!clienteId) return {};
+  return {
+    OR: [
+      { empreendimento: { empresaPrincipalId: clienteId } },
+      { empreendimento: { empresas: { some: { empresaId: clienteId } } } },
+      { empresas: { some: { empresaId: clienteId } } },
+    ],
+  };
+}
+
 export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, filtro: RelatorioFiltro = {}): Promise<RelatorioGerencial> {
+  const clienteId = clienteSelecionado(filtro);
+  const cliente = clienteId
+    ? await prisma.empresa.findUnique({ where: { id: clienteId }, select: { nomeFantasia: true, razaoSocial: true } })
+    : null;
+  const sufixoCliente = cliente ? ` — ${cliente.nomeFantasia || cliente.razaoSocial}` : "";
   switch (tipo) {
     case "clientes": {
       const data = await prisma.empresa.findMany({
-        where: { ativo: true, deletedAt: null },
+        where: { ativo: true, deletedAt: null, ...(clienteId ? { id: clienteId } : {}) },
         orderBy: { razaoSocial: "asc" },
         include: { contatos: { where: { ativo: true, deletedAt: null } } },
       });
       return {
-        titulo: "Clientes",
+        titulo: `Clientes${sufixoCliente}`,
         colunas: ["Nome", "Tipo", "CPF/CNPJ", "Município/UF", "Contatos"].map((label, index) => ({ label, key: `coluna${index}` })),
         linhas: data.map((c) => [
           c.nomeFantasia || c.razaoSocial,
@@ -41,12 +66,18 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, fil
     }
     case "empreendimentos": {
       const data = await prisma.empreendimento.findMany({
-        where: { ativo: true, deletedAt: null },
+        where: {
+          ativo: true,
+          deletedAt: null,
+          ...(clienteId
+            ? { OR: [{ empresaPrincipalId: clienteId }, { empresas: { some: { empresaId: clienteId } } }] }
+            : {}),
+        },
         orderBy: { nome: "asc" },
         include: { empresaPrincipal: true },
       });
       return {
-        titulo: "Empreendimentos",
+        titulo: `Empreendimentos${sufixoCliente}`,
         colunas: ["Nome", "Tipo", "Cliente", "Município/UF"].map((label, index) => ({ label, key: `coluna${index}` })),
         linhas: data.map((e) => [
           e.nome,
@@ -58,7 +89,7 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, fil
     }
     case "processos-minerarios": {
       const data = await prisma.processo.findMany({
-        where: { ativo: true, deletedAt: null, natureza: "minerario" },
+        where: { ativo: true, deletedAt: null, natureza: "minerario", ...filtroProcessoPorCliente(clienteId) },
         orderBy: { numero: "asc" },
         include: { orgao: true, empreendimento: true },
       });
@@ -73,14 +104,14 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, fil
           p.status,
         ]);
       return {
-        titulo: "Processos Minerários",
+        titulo: `Processos Minerários${sufixoCliente}`,
         colunas: ["Nº", "Órgão", "Fase", "Empreendimento", "Área", "Status"].map((label, index) => ({ label, key: `coluna${index}` })),
         linhas,
       };
     }
     case "processos-ambientais": {
       const data = await prisma.processo.findMany({
-        where: { ativo: true, deletedAt: null, natureza: "ambiental" },
+        where: { ativo: true, deletedAt: null, natureza: "ambiental", ...filtroProcessoPorCliente(clienteId) },
         orderBy: { apelido: "asc" },
         include: { orgao: true, empreendimento: true },
       });
@@ -95,14 +126,20 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, fil
           status,
         ]);
       return {
-        titulo: "Processos Ambientais",
+        titulo: `Processos Ambientais${sufixoCliente}`,
         colunas: ["Apelido / Nº da Licença", "Órgão", "Empreendimento", "Validade", "Status"].map((label, index) => ({ label, key: `coluna${index}` })),
         linhas,
       };
     }
     case "prazos": {
       const data = await prisma.prazo.findMany({
-        where: { ativo: true, deletedAt: null, status: { notIn: ["concluido", "cancelado"] }, dataCalculadaAtual: { not: null }, processo: { ativo: true, deletedAt: null } },
+        where: {
+          ativo: true,
+          deletedAt: null,
+          status: { notIn: ["concluido", "cancelado"] },
+          dataCalculadaAtual: { not: null },
+          processo: { ativo: true, deletedAt: null, ...filtroProcessoPorCliente(clienteId) },
+        },
         orderBy: { dataCalculadaAtual: "asc" },
         include: { processo: { include: { orgao: true } } },
       });
@@ -126,7 +163,7 @@ export async function buscarRelatorioGerencial(tipo: RelatorioGerencialTipo, fil
           formatDate(p.dataCalculadaAtual),
         ]);
       return {
-        titulo: "Prazos",
+        titulo: `Prazos${sufixoCliente}`,
         colunas: ["Descrição", "Processo", "Status", "Data Calculada"].map((label, index) => ({ label, key: `coluna${index}` })),
         linhas,
       };

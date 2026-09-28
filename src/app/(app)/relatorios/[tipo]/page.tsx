@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader, Card, Button, Badge } from "@/components/ui";
 import { buscarRelatorioGerencial, RelatorioGerencialTipo } from "@/lib/relatorios-gerenciais";
 import { requirePermissao } from "@/lib/perfil";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,13 @@ const FILTRO_PRAZO_DIAS = [
   { value: "90", label: "Próximos 90 dias" },
 ];
 
-type SearchParams = Promise<{ status?: string | string[]; dias?: string | string[] }>;
+type SearchParams = Promise<{ status?: string | string[]; dias?: string | string[]; clienteId?: string | string[] }>;
 
-function queryAtual(tipo: string, status: string, dias: string) {
+function queryAtual(tipo: string, status: string, dias: string, clienteId: string) {
   const params = new URLSearchParams();
   if (status && (tipo === "processos-minerarios" || tipo === "processos-ambientais")) params.set("status", status);
   if (dias && tipo === "prazos") params.set("dias", dias);
+  if (clienteId) params.set("clienteId", clienteId);
   const q = params.toString();
   return q ? `?${q}` : "";
 }
@@ -63,8 +65,14 @@ export default async function RelatorioPage({
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : "";
   const dias = typeof sp.dias === "string" ? sp.dias : "todos";
-  const relatorio = await buscarRelatorioGerencial(tipoValido, { status, dias });
-  const paramsAtual = queryAtual(tipo, status, dias);
+  const clienteId = typeof sp.clienteId === "string" ? sp.clienteId : "";
+  const clientes = await prisma.empresa.findMany({
+    where: { ativo: true, deletedAt: null },
+    orderBy: { razaoSocial: "asc" },
+    select: { id: true, nomeFantasia: true, razaoSocial: true },
+  });
+  const relatorio = await buscarRelatorioGerencial(tipoValido, { status, dias, clienteId });
+  const paramsAtual = queryAtual(tipo, status, dias, clienteId);
   return (
     <div>
       <PageHeader
@@ -86,6 +94,15 @@ export default async function RelatorioPage({
       />
       <Card>
         <form method="get" className="flex flex-wrap items-end gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <div>
+            <label htmlFor="rel-cliente" className="mb-1 block text-xs font-medium text-slate-700">Cliente</label>
+            <select id="rel-cliente" name="clienteId" defaultValue={clienteId} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+              <option value="">Todos os clientes</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>
+              ))}
+            </select>
+          </div>
           {(tipo === "processos-minerarios" || tipo === "processos-ambientais") && (
             <div>
               <label htmlFor="rel-status" className="mb-1 block text-xs font-medium text-slate-700">Status</label>

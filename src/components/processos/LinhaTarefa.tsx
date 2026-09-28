@@ -128,7 +128,7 @@ export function LinhaTarefa({
             {tarefa.titulo} <span className="text-muted font-normal">- {tarefa.responsavelNome}</span>
           </p>
           <p className="mt-0.5 text-xs text-muted">
-            {tarefa.dataLimite ? `Data Limite: ${formatDate(new Date(tarefa.dataLimite))}` : ""}
+            {tarefa.dataLimite ? `Limite de Execução Serviço: ${formatDate(new Date(tarefa.dataLimite))}` : ""}
             {tarefa.dataLimite && tarefa.prazoData ? "   " : ""}
             {tarefa.prazoData ? `Prazo Final: ${formatDate(new Date(tarefa.prazoData))}` : ""}
             {!tarefa.dataLimite && !tarefa.prazoData ? "—" : ""}
@@ -183,7 +183,7 @@ export function LinhaTarefa({
                   <Input id={`lap-${tarefa.id}`} type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
                 </div>
                 <div>
-                  <Label htmlFor={`ll-${tarefa.id}`}>Data Limite</Label>
+                  <Label htmlFor={`ll-${tarefa.id}`}>Limite de Execução Serviço</Label>
                   <Input id={`ll-${tarefa.id}`} type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
                 </div>
                 <div>

@@ -484,7 +484,7 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
               <Input id="alertaDias" type="number" min="0" value={form.alertaDias} onChange={set("alertaDias")} />
             </div>
             <div>
-              <Label htmlFor="dataLimiteRenovacao">Data Limite para Renovação</Label>
+              <Label htmlFor="dataLimiteRenovacao">Limite de Execução Serviço</Label>
               <Input id="dataLimiteRenovacao" type="date" value={form.dataLimiteRenovacao} onChange={set("dataLimiteRenovacao")} />
             </div>
             <div>

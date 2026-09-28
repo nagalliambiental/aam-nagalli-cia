@@ -119,11 +119,11 @@ export function CriarTarefaNotificacao({
               <Input id="nt-alerta" type="number" min="1" value={form.alertaDias} onChange={(e) => setForm((f) => ({ ...f, alertaDias: e.target.value }))} />
             </div>
             <div>
-              <Label htmlFor="nt-limite">Data Limite</Label>
+              <Label htmlFor="nt-limite">Limite de Execução Serviço</Label>
               <Input id="nt-limite" type="date" value={form.dataLimite} onChange={(e) => setForm((f) => ({ ...f, dataLimite: e.target.value }))} />
             </div>
             <div>
-              <Label htmlFor="nt-alerta-limite">Alerta data limite (dias antes)</Label>
+              <Label htmlFor="nt-alerta-limite">Alerta limite de execução (dias antes)</Label>
               <Input id="nt-alerta-limite" type="number" min="1" value={form.alertaDataLimite} onChange={(e) => setForm((f) => ({ ...f, alertaDataLimite: e.target.value }))} />
             </div>
             <div>
