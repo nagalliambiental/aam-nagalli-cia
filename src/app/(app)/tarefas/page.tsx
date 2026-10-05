@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Card, Button } from "@/components/ui";
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import { NovaTarefaBotao } from "@/components/processos/NovaTarefaBotao";
 import { TarefaEmMassa } from "@/components/processos/TarefaEmMassa";
 import { ImportarTarefas } from "@/components/processos/ImportarTarefas";
 import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
 import { FiltroResponsavelTarefas } from "@/components/processos/FiltroResponsavelTarefas";
+import { RecorrentesPainel, type RegraRecorrenteDTO } from "@/components/processos/RecorrentesPainel";
+import { preverProxima } from "@/lib/tarefas-recorrentes";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
-type SearchParams = Promise<{ q?: string | string[]; status?: string | string[]; responsavel?: string | string[] }>;
+type SearchParams = Promise<{
+  q?: string | string[];
+  status?: string | string[];
+  responsavel?: string | string[];
+  aba?: string | string[];
+}>;
 
 export default async function TarefasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -18,6 +25,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const statusParam = typeof sp.status === "string" ? sp.status : "nao_iniciado";
   const responsavelParam = typeof sp.responsavel === "string" ? Number(sp.responsavel) : 0;
   const responsavelFiltro = Number.isFinite(responsavelParam) && responsavelParam > 0 ? responsavelParam : null;
+  const abaRecorrentes = typeof sp.aba === "string" && sp.aba === "recorrentes";
   const ABAS = [
     { value: "nao_iniciado", label: "Não Iniciadas" },
     { value: "em_andamento", label: "Em andamento" },
@@ -45,11 +53,17 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const buscaTitulo = q ? { titulo: { contains: q, mode: "insensitive" as const } } : {};
   const filtroResponsavel = responsavelFiltro ? { responsavelPessoaId: responsavelFiltro } : {};
 
-  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens] = await Promise.all([
+  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens, regrasBrutas] = await Promise.all([
     prisma.tarefa.findMany({
       where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo, ...filtroResponsavel },
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
-      include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true, _count: { select: { anexos: true } } },
+      include: {
+        responsavel: true,
+        processo: { include: { orgao: true } },
+        empreendimento: true,
+        _count: { select: { anexos: true } },
+        recorrencia: { select: { intervaloDias: true, ativo: true } },
+      },
       take: 200,
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
@@ -83,9 +97,62 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...buscaTitulo, ...filtroResponsavel },
       _count: true,
     }),
+    abaRecorrentes
+      ? prisma.tarefaRecorrente.findMany({
+          where: {
+            ...(isAdmin ? {} : { visibilidade: "publico" }),
+            ...(scoped && responsavelPessoaId ? { responsavelPessoaId } : {}),
+          },
+          orderBy: { id: "desc" },
+          include: {
+            responsavel: { select: { nome: true } },
+            empreendimento: { select: { nome: true, apelido: true } },
+            processo: { select: { numero: true, orgao: { select: { sigla: true } } } },
+            tarefas: {
+              where: { ativo: true, deletedAt: null },
+              orderBy: { id: "desc" },
+              take: 1,
+              select: { id: true, status: true, prazoData: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   const contagemPorStatus = new Map(contagens.map((c) => [c.status, c._count]));
+
+  const isoDia = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+  type RegraListada = {
+    id: number;
+    titulo: string;
+    intervaloDias: number;
+    ativo: boolean;
+    prioridade: string;
+    fimRecorrencia: Date | null;
+    responsavel: { nome: string };
+    empreendimento: { nome: string; apelido: string | null } | null;
+    processo: { numero: string; orgao: { sigla: string } } | null;
+    tarefas: { id: number; status: string; prazoData: Date | null }[];
+  };
+  const regrasDTO: RegraRecorrenteDTO[] = (regrasBrutas as unknown as RegraListada[]).map((r) => {
+    const atual = r.tarefas[0] ?? null;
+    const emp = r.empreendimento ? r.empreendimento.apelido || r.empreendimento.nome : null;
+    const proc = r.processo ? `Processo #${r.processo.numero} (${r.processo.orgao.sigla})` : null;
+    return {
+      id: r.id,
+      titulo: r.titulo,
+      intervaloDias: r.intervaloDias,
+      ativo: r.ativo,
+      prioridade: r.prioridade,
+      fimRecorrencia: isoDia(r.fimRecorrencia),
+      responsavelNome: r.responsavel.nome,
+      vinculo: [emp, proc].filter(Boolean).join(" · ") || null,
+      proximaPrevista: r.ativo ? isoDia(preverProxima(r.intervaloDias, atual?.prazoData ?? null)) : null,
+      ocorrencia: atual
+        ? { id: atual.id, status: atual.status, prazoData: isoDia(atual.prazoData), dataConclusao: null }
+        : null,
+    };
+  });
 
   const empreendimentosOpt = empreendimentos.map((e) => {
     const vinculados = new Map<number, { id: number; numero: string; apelido: string | null; numeroLicenca: string | null }>();
@@ -182,6 +249,12 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
               </Link>
             );
           })}
+          <Link
+            href={`/tarefas?aba=recorrentes${q ? `&q=${encodeURIComponent(q)}` : ""}${responsavelFiltro ? `&responsavel=${responsavelFiltro}` : ""}`}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${abaRecorrentes ? "bg-navy-100 text-navy-800" : "text-muted hover:bg-slate-100"}`}
+          >
+            <RefreshCw className="h-3 w-3" /> Recorrentes
+          </Link>
           <FiltroResponsavelTarefas pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))} valor={responsavelFiltro} />
           <form method="get" className="ml-auto flex items-center gap-2">
             <input type="hidden" name="status" value={statusAtual} />
@@ -198,6 +271,9 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
             <Button type="submit" variant="secondary" className="px-3 py-1.5">Buscar</Button>
           </form>
         </div>
+        {abaRecorrentes ? (
+          <RecorrentesPainel regras={regrasDTO} podeEditar={podeAnexar} podeExcluir={podeExcluir} />
+        ) : (
         <ul className="divide-y divide-slate-100">
           {tarefas.map((t) => (
             <li key={t.id}>
@@ -220,6 +296,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   empreendimentoId: t.empreendimentoId,
                   processoId: t.processoId,
                   anexosCount: t._count.anexos,
+                  recorrenteDias: t.recorrencia?.intervaloDias ?? null,
                 }}
                 pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
                 empreendimentos={empreendimentosOpt}
@@ -237,6 +314,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
             </li>
           )}
         </ul>
+        )}
       </Card>
     </div>
   );

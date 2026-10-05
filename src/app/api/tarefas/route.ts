@@ -32,9 +32,41 @@ export async function POST(req: Request) {
     const alertaDataLimite = body.alertaDataLimite != null ? Number(body.alertaDataLimite) : null;
     const alertaDias = body.alertaDias != null ? Number(body.alertaDias) : 30;
 
-    // Cria a exigência vinculada ao processo (mesmo prazo e alerta) apenas se houver processo.
+    // Regra de recorrência (a cada N dias). A próxima ocorrência nasce ao concluir a atual.
+    const intervaloDias = body.recorrente ? Number(body.recorrente.intervaloDias) : 0;
+    if (body.recorrente && (!Number.isFinite(intervaloDias) || intervaloDias < 1 || intervaloDias > 3650)) {
+      return NextResponse.json({ error: "Intervalo de recorrência inválido (1 a 3650 dias)" }, { status: 400 });
+    }
+    const recorrente = body.recorrente
+      ? {
+          intervaloDias: Math.floor(intervaloDias),
+          fimRecorrencia: dataLocal(body.recorrente.fimRecorrencia),
+        }
+      : null;
+
+    let tarefaRecorrenteId: number | null = null;
+    if (recorrente) {
+      const regra = await prisma.tarefaRecorrente.create({
+        data: {
+          titulo,
+          descricao,
+          prioridade: body.prioridade ?? "media",
+          intervaloDias: recorrente.intervaloDias,
+          fimRecorrencia: recorrente.fimRecorrencia,
+          visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
+          responsavelPessoaId,
+          empreendimentoId,
+          processoId: processo?.id ?? null,
+          criadorUsuarioId: Number(session.user.id),
+        },
+      });
+      tarefaRecorrenteId = regra.id;
+    }
+
+    // Cria a exigência vinculada ao processo (mesmo prazo e alerta) apenas se houver processo
+    // e a tarefa não for recorrente (evita uma exigência por ocorrência).
     let exigenciaId: number | null = null;
-    if (processo) {
+    if (processo && !recorrente) {
       const exigencia = await prisma.exigencia.create({
         data: {
           processoId: processo.id,
@@ -68,12 +100,17 @@ export async function POST(req: Request) {
         alertaDataLimite,
         visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
+        tarefaRecorrenteId,
       },
     });
 
+    if (tarefaRecorrenteId) {
+      await prisma.tarefaRecorrente.update({ where: { id: tarefaRecorrenteId }, data: { ultimaTarefaId: tarefa.id } });
+    }
+
     await audit({ tipoEntidade: "tarefa", entidadeId: tarefa.id, acao: "criar", usuarioId: Number(session.user.id), valorNovo: titulo });
 
-    return NextResponse.json({ id: tarefa.id }, { status: 201 });
+    return NextResponse.json({ id: tarefa.id, recorrente: !!tarefaRecorrenteId }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Erro ao criar tarefa." }, { status: 500 });
   }

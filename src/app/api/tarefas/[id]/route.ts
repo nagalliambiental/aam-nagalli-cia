@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { gerarProximaOcorrencia } from "@/lib/tarefas-recorrentes";
 import { dataLocal, parseDataHoraSP } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -48,6 +49,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     // Ao concluir, cessa os alertas da tarefa (marca notificações vinculadas como lidas).
     if (data.status === "concluida") {
       await prisma.notificacao.updateMany({ where: { tarefaId, lida: false }, data: { lida: true } });
+      await gerarProximaOcorrencia(tarefaId, Number(session.user.id)).catch(() => null);
     }
 
     await audit({ tipoEntidade: "tarefa", entidadeId: tarefa.id, acao: "editar", usuarioId: Number(session.user.id) });

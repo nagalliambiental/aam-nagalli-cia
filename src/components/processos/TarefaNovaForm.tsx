@@ -40,6 +40,9 @@ export function TarefaNovaForm({
     empreendimentoId: "",
     processoId: "",
     visibilidade: "publico",
+    recorrente: false,
+    intervaloDias: "30",
+    fimRecorrencia: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,12 @@ export function TarefaNovaForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const intervalo = Number(form.intervaloDias);
+    if (form.recorrente && (!Number.isFinite(intervalo) || intervalo < 1 || intervalo > 3650)) {
+      setLoading(false);
+      setError("Intervalo de recorrência deve ser de 1 a 3650 dias.");
+      return;
+    }
     const res = await fetch("/api/tarefas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -61,6 +70,9 @@ export function TarefaNovaForm({
         processoId: form.processoId ? Number(form.processoId) : null,
         prazoData: form.prazoData ? new Date(form.prazoData) : null,
         alertaDias: form.alertaDias !== "" ? Number(form.alertaDias) : 30,
+        recorrente: form.recorrente
+          ? { intervaloDias: Math.floor(intervalo), fimRecorrencia: form.fimRecorrencia || null }
+          : null,
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -167,6 +179,45 @@ export function TarefaNovaForm({
               <option value="publico">Público</option>
               <option value="privado">Privado</option>
             </Select>
+          </div>
+        )}
+      </div>
+      <div className="border-t border-slate-100 pt-3">
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-navy-900">
+          <input
+            type="checkbox"
+            checked={form.recorrente}
+            onChange={(e) => setForm((f) => ({ ...f, recorrente: e.target.checked }))}
+            className="h-4 w-4 rounded border-slate-300 text-navy-600 focus:ring-navy-500"
+          />
+          Tarefa recorrente
+        </label>
+        {form.recorrente && (
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label htmlFor="intervaloDias" required>Repetir a cada (dias)</Label>
+              <Input
+                id="intervaloDias"
+                type="number"
+                min={1}
+                max={3650}
+                value={form.intervaloDias}
+                onChange={(e) => setForm((f) => ({ ...f, intervaloDias: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="fimRecorrencia">Terminar em (opcional)</Label>
+              <Input
+                id="fimRecorrencia"
+                type="date"
+                value={form.fimRecorrencia}
+                onChange={(e) => setForm((f) => ({ ...f, fimRecorrencia: e.target.value }))}
+              />
+            </div>
+            <p className="text-xs text-muted md:col-span-2">
+              A próxima ocorrência é criada automaticamente quando esta tarefa for concluída, com o mesmo responsável e vínculos.
+            </p>
           </div>
         )}
       </div>

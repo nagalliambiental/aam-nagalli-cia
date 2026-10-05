@@ -113,6 +113,7 @@ model Pessoa {
   titulosResp        TituloMinerario[]
   licencasResp       Licenca[]
   tarefasResp        Tarefa[]
+  tarefasRecorrentesResp TarefaRecorrente[]
   prazosResp         Prazo[]
   condicionantesResp Condicionante[]
   exigenciasResp     Exigencia[]
@@ -322,6 +323,7 @@ model Empreendimento {
   areas             EmpreendimentoArea[]
   processos         Processo[]
   tarefas           Tarefa[]
+  tarefasRecorrentes TarefaRecorrente[]
   licencas          Licenca[]
   faturas           Fatura[]
 
@@ -463,6 +465,7 @@ model Processo {
   eventos           Evento[]
   prazos            Prazo[]
   tarefas           Tarefa[]
+  tarefasRecorrentes TarefaRecorrente[]
   exigencias        Exigencia[]
   titulos           TituloProcesso[]
   licencas          LicencaProcesso[]
@@ -926,6 +929,7 @@ model Tarefa {
 
   responsavelPessoaId Int
   criadorUsuarioId    Int?
+  tarefaRecorrenteId  Int?
 
   processoId        Int?
   empreendimentoId  Int?
@@ -942,6 +946,7 @@ model Tarefa {
 
   responsavel     Pessoa           @relation(fields: [responsavelPessoaId], references: [id])
   criador         Usuario?         @relation(fields: [criadorUsuarioId], references: [id], onDelete: SetNull)
+  recorrencia     TarefaRecorrente? @relation(fields: [tarefaRecorrenteId], references: [id], onDelete: SetNull)
   processo        Processo?        @relation(fields: [processoId], references: [id], onDelete: Cascade)
   empreendimento  Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
   prazoAssociado  Prazo?           @relation(fields: [prazoId], references: [id], onDelete: SetNull)
@@ -956,6 +961,7 @@ model Tarefa {
   @@index([responsavelPessoaId, status])
   @@index([processoId])
   @@index([prazoData, status])
+  @@index([tarefaRecorrenteId])
 }
 
 model TarefaAnexo {
@@ -971,6 +977,31 @@ model TarefaAnexo {
   tarefa Tarefa @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
 
   @@index([tarefaId])
+}
+
+model TarefaRecorrente {
+  id                  Int      @id @default(autoincrement())
+  titulo              String
+  descricao           String?
+  prioridade          String   @default("media")
+  intervaloDias       Int
+  fimRecorrencia      DateTime?
+  ativo               Boolean  @default(true)
+  visibilidade        String   @default("publico") // publico | privado
+  responsavelPessoaId Int
+  empreendimentoId    Int?
+  processoId          Int?
+  criadorUsuarioId    Int?
+  ultimaTarefaId      Int?
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  responsavel    Pessoa           @relation(fields: [responsavelPessoaId], references: [id])
+  empreendimento Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  processo       Processo?        @relation(fields: [processoId], references: [id], onDelete: SetNull)
+  tarefas        Tarefa[]
+
+  @@index([ativo])
 }
 
 model Notificacao {

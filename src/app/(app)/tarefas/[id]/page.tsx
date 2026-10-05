@@ -26,7 +26,12 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
   const [tarefa, pessoas, empreendimentos, processosAmbientais] = await Promise.all([
     prisma.tarefa.findFirst({
       where: { id: tarefaId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
-      include: { responsavel: true, processo: { include: { orgao: true } }, empreendimento: true },
+      include: {
+        responsavel: true,
+        processo: { include: { orgao: true } },
+        empreendimento: true,
+        recorrencia: { select: { intervaloDias: true, ativo: true, titulo: true } },
+      },
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
     prisma.empreendimento.findMany({
@@ -59,6 +64,12 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
         actions={
           <div className="flex items-center gap-2">
             <Badge tone={st.tone}>{st.label}</Badge>
+            {tarefa.recorrencia && (
+              <Badge tone={tarefa.recorrencia.ativo ? "blue" : "gray"}>
+                {tarefa.recorrencia.ativo ? "Recorrente" : "Recorrência pausada"} · a cada{" "}
+                {tarefa.recorrencia.intervaloDias} dias
+              </Badge>
+            )}
             {podeExcluir && <TarefaExcluirBotao tarefaId={tarefa.id} />}
             <Link href="/tarefas">
               <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-navy-600 ring-1 ring-slate-200 hover:bg-slate-100">Voltar</span>

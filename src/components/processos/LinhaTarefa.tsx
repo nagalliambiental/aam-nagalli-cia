@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
-import { Pencil, X, Trash2, Paperclip } from "lucide-react";
+import { Pencil, X, Trash2, Paperclip, RefreshCw } from "lucide-react";
 import { TarefaAnexos } from "@/components/processos/TarefaAnexos";
 
 type Tarefa = {
@@ -26,6 +26,7 @@ type Tarefa = {
   processoId?: number | null;
   dataConclusao?: string | null;
   anexosCount?: number;
+  recorrenteDias?: number | null;
 };
 
 type EmpComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
@@ -145,6 +146,14 @@ export function LinhaTarefa({
               {tarefa.titulo}
             </Link>{" "}
             <span className="text-muted font-normal">- {tarefa.responsavelNome}</span>
+            {tarefa.recorrenteDias ? (
+              <span
+                title={`Tarefa recorrente: a cada ${tarefa.recorrenteDias} dias`}
+                className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-navy-700"
+              >
+                <RefreshCw className="h-3 w-3" /> {tarefa.recorrenteDias}d
+              </span>
+            ) : null}
           </p>
           <p className="mt-0.5 text-xs text-muted">
             {tarefa.dataLimite ? `Limite de Execução Serviço: ${formatDate(new Date(tarefa.dataLimite))}` : ""}
