@@ -95,7 +95,27 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  console.error("[mov-worker] erro:", e?.message ?? e);
+  const msg = e?.message ?? String(e);
+  console.error("[mov-worker] erro:", msg);
+  // Avisa no sistema que a sincronização automática falhou (dedupe por mensagem não lida).
+  try {
+    const jaAvisado = await prisma.notificacao.findFirst({
+      where: { tipo: "movimentacoes_erro", lida: false, mensagem: { contains: msg.slice(0, 80) } },
+      select: { id: true },
+    });
+    if (!jaAvisado) {
+      await prisma.notificacao.create({
+        data: {
+          tipo: "movimentacoes_erro",
+          mensagem: `Falha na sincronização automática de movimentações SEI: ${msg}`,
+          url: "/",
+          destinatarioUsuarioId: null,
+        },
+      });
+    }
+  } catch {
+    // melhor esforço: não mascara o erro original
+  }
   await prisma.$disconnect();
   process.exit(1);
 });

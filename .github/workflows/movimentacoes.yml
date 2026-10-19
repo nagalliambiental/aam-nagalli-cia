@@ -17,6 +17,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - run: npx tsx worker/movimentacoes.ts
+      - name: Sincronizar (até 3 tentativas)
+        run: |
+          for tentativa in 1 2 3; do
+            if npx tsx worker/movimentacoes.ts; then
+              exit 0
+            fi
+            echo "tentativa ${tentativa} falhou (pode ser rede/Neon); aguardando 60s antes de repetir"
+            sleep 60
+          done
+          exit 1
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
