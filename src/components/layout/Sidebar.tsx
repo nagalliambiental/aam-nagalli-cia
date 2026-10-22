@@ -133,12 +133,14 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
   const content = (
     <>
       <div className="flex flex-col items-center border-b border-white/10 px-4 pb-5 pt-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.jpg"
-          alt="AAM Ambiental & Mineral"
-          className="h-24 w-full max-w-[13rem] object-contain"
-        />
+        <Link href="/" title="Ir para o painel" onClick={() => setOpen(false)} className="block w-full max-w-[13rem]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.jpg"
+            alt="AAM Ambiental & Mineral"
+            className="h-24 w-full object-contain"
+          />
+        </Link>
       </div>
 
       {nav}
@@ -186,8 +188,10 @@ export function Sidebar({ user }: { user: { nome: string; perfilNome: string } }
         style={{ backgroundColor: "#021e4c" }}
       >
         <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.jpg" alt="AAM" className="h-8 w-8 rounded object-contain bg-white" />
+          <Link href="/" title="Ir para o painel" onClick={() => setOpen(false)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.jpg" alt="AAM" className="h-8 w-8 rounded object-contain bg-white" />
+          </Link>
         </div>
         <nav className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto py-4">
           {flatLinks.map((item) => {
