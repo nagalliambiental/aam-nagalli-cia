@@ -198,7 +198,11 @@ export function EmpreendimentoForm({
           <p className="mt-1 text-xs text-muted">
             {form.filial
               ? "Informe o CNPJ próprio desta filial."
-              : `Sem marcação, o empreendimento usa o CNPJ da matriz (cliente).${empresas.find((x) => String(x.id) === form.empresaPrincipalId && x.cnpj ? ` CNPJ: ${(x.cnpj as string).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}` : "")}`}
+              : (() => {
+                  const matriz = empresas.find((x) => String(x.id) === form.empresaPrincipalId);
+                  const cnpjMatriz = matriz && matriz.cnpj ? ` CNPJ: ${matriz.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}` : "";
+                  return `Sem marcação, o empreendimento usa o CNPJ da matriz.${cnpjMatriz}`;
+                })()}
           </p>
           {form.filial && (
             <div className="mt-2 max-w-xs">
