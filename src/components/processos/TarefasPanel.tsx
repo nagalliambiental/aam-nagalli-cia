@@ -206,6 +206,8 @@ export function TarefasPanel({
                 visibilidade: t.visibilidade,
                 dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString().slice(0, 16) : null,
                 responsavelNome: t.responsavel.nome,
+                responsaveisNomes: (t as unknown as { responsaveisEquipe?: { pessoa: { nome: string } }[] }).responsaveisEquipe?.map((x) => x.pessoa.nome),
+                responsaveisIds: (t as unknown as { responsaveisEquipe?: { pessoaId: number }[] }).responsaveisEquipe?.map((x) => x.pessoaId),
                 anexosCount: t._count?.anexos ?? 0,
                 processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
               }}
@@ -242,6 +244,8 @@ export function TarefasPanel({
                   visibilidade: t.visibilidade,
                   dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString() : null,
                   responsavelNome: t.responsavel.nome,
+                  responsaveisNomes: (t as unknown as { responsaveisEquipe?: { pessoa: { nome: string } }[] }).responsaveisEquipe?.map((x) => x.pessoa.nome),
+                  responsaveisIds: (t as unknown as { responsaveisEquipe?: { pessoaId: number }[] }).responsaveisEquipe?.map((x) => x.pessoaId),
                   anexosCount: t._count?.anexos ?? 0,
                   processoLabel: processoNumero ? `Processo: #${processoNumero}` : "Processo: — sem vínculo —",
                 }}

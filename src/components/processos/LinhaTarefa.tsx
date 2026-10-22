@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { Selecionar } from "@/components/ui/Selecionar";
+import { SelecionarEquipe } from "@/components/processos/SelecionarEquipe";
 import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
 import { Pencil, X, Trash2, Paperclip, RefreshCw } from "lucide-react";
 import { TarefaAnexos } from "@/components/processos/TarefaAnexos";
@@ -23,6 +24,7 @@ type Tarefa = {
   visibilidade: string;
   responsavelNome: string;
   responsaveisNomes?: string[];
+  responsaveisIds?: number[];
   processoLabel: string;
   empreendimentoId?: number | null;
   processoId?: number | null;
@@ -69,6 +71,12 @@ export function LinhaTarefa({
   const [loading, setLoading] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openAnexos, setOpenAnexos] = useState(false);
+  const [equipe, setEquipe] = useState<{ id: string; nome: string }[]>(
+    (tarefa.responsaveisIds ?? []).map((id) => ({
+      id: String(id),
+      nome: pessoas.find((p) => p.id === id)?.nome ?? `#${id}`,
+    }))
+  );
   const [form, setForm] = useState({
     titulo: tarefa.titulo,
     descricao: tarefa.descricao ?? "",
@@ -121,6 +129,7 @@ export function LinhaTarefa({
         empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
         processoId: form.processoId ? Number(form.processoId) : null,
         dataConclusao: form.dataConclusao || null,
+        ...(tarefa.responsaveisIds !== undefined ? { responsaveisIds: equipe.map((x) => Number(x.id)) } : {}),
       }),
     });
     setLoading(false);
@@ -319,6 +328,7 @@ export function LinhaTarefa({
                   );
                 })()}
               </div>
+              <SelecionarEquipe pessoas={pessoas} principalId={form.responsavelPessoaId} equipe={equipe} onChange={setEquipe} />
             </div>
           ) : (
             <div className="space-y-3">
