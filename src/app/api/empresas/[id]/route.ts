@@ -5,7 +5,7 @@ import { audit } from "@/lib/audit";
 
 const CAMPOS = [
   "tipoPessoa", "razaoSocial", "nomeFantasia", "apelido", "cnpj", "cpf", "inscricaoEstadual", "email",
-  "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
+  "telefone", "endereco", "numeroEndereco", "complemento", "bairro", "municipio", "uf", "cep", "observacoes",
 ] as const;
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -89,17 +89,20 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const empresaId = Number(id);
 
-  // Soft delete
-  await prisma.empresa.update({
-    where: { id: empresaId },
-    data: { ativo: false, deletedAt: new Date() },
-  });
+  // Exclusão definitiva: o banco em cascata remove empreendimentos, processos,
+  // licenças, faturas, contratos, contatos e vínculos ligados a este cliente.
+  const alvo = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { id: true, razaoSocial: true } });
+  if (!alvo) {
+    return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
+  }
+  await prisma.empresa.delete({ where: { id: empresaId } });
 
   await audit({
     tipoEntidade: "empresa",
     entidadeId: empresaId,
     acao: "excluir",
     usuarioId: Number(session.user.id),
+    valorNovo: alvo.razaoSocial,
   });
 
   return NextResponse.json({ ok: true });

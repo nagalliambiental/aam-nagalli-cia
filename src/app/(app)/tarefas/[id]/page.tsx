@@ -28,6 +28,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
       where: { id: tarefaId, ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }) },
       include: {
         responsavel: true,
+        responsaveisEquipe: { include: { pessoa: { select: { nome: true } } } },
         processo: { include: { orgao: true } },
         empreendimento: true,
         recorrencia: { select: { intervaloDias: true, ativo: true, titulo: true } },
@@ -120,6 +121,7 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
                 processoId: tarefa.processoId,
                 prazoData: tarefa.prazoData ? tarefa.prazoData.toISOString().slice(0, 10) : null,
                 alertaDias: tarefa.alertaDias,
+                responsaveisEquipe: tarefa.responsaveisEquipe.map((x) => ({ id: x.pessoaId, nome: x.pessoa.nome })),
               }}
             />
           </div>
@@ -149,6 +151,12 @@ export default async function TarefaDetalhePage({ params }: { params: Promise<{ 
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Responsável pela Execução</dt>
               <dd className="text-navy-800">{tarefa.responsavel?.nome ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Responsáveis adicionais</dt>
+              <dd className="text-navy-800">
+                {tarefa.responsaveisEquipe.length > 0 ? tarefa.responsaveisEquipe.map((x) => x.pessoa.nome).join(", ") : "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Prazo Final</dt>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 
 export function TituloForm({
   orgaos,
@@ -94,30 +95,22 @@ export function TituloForm({
       <div className={grid}>
         <div className="md:col-span-2">
           <Label htmlFor="processoId" required>Processo de origem</Label>
-          <Select
+          <Selecionar
             id="processoId"
             value={form.processoId}
-            onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}
-            required
-          >
-            {processos.map((p) => (
-              <option key={p.id} value={p.id}>{p.numero}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, processoId: v }))}
+            opcoes={processos.map((p) => ({ value: String(p.id), label: p.numero }))}
+          />
           <p className="mt-1 text-xs text-muted">O título é gerado a partir de um processo.</p>
         </div>
         <div>
           <Label htmlFor="tipoTituloId" required>Tipo</Label>
-          <Select
+          <Selecionar
             id="tipoTituloId"
             value={form.tipoTituloId}
-            onChange={(e) => setForm((f) => ({ ...f, tipoTituloId: e.target.value }))}
-            required
-          >
-            {tiposTitulo.map((t) => (
-              <option key={t.id} value={t.id}>{t.nome}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, tipoTituloId: v }))}
+            opcoes={tiposTitulo.map((t) => ({ value: String(t.id), label: t.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="numero" required>Número</Label>
@@ -130,16 +123,12 @@ export function TituloForm({
         </div>
         <div>
           <Label htmlFor="orgaoId" required>Órgão</Label>
-          <Select
+          <Selecionar
             id="orgaoId"
             value={form.orgaoId}
-            onChange={(e) => setForm((f) => ({ ...f, orgaoId: e.target.value }))}
-            required
-          >
-            {orgaos.map((o) => (
-              <option key={o.id} value={o.id}>{o.sigla}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, orgaoId: v }))}
+            opcoes={orgaos.map((o) => ({ value: String(o.id), label: o.sigla }))}
+          />
         </div>
         <div>
           <Label htmlFor="situacao">Situação</Label>
@@ -201,16 +190,14 @@ export function TituloForm({
         </div>
         <div>
           <Label htmlFor="responsavelPessoaId">Responsável</Label>
-          <Select
+          <Selecionar
             id="responsavelPessoaId"
             value={form.responsavelPessoaId}
-            onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}
-          >
-            <option value="">— sem responsável —</option>
-            {pessoas.map((p) => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+            emptyValue=""
+            emptyLabel="— sem responsável —"
+            opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+          />
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="observacoes">Observações</Label>

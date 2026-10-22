@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui";
 import { ProcessoRowActions } from "@/components/processos/ProcessoRowActions";
+import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 import { statusAmbiental } from "@/lib/status";
 
 type Processo = {
@@ -126,18 +127,23 @@ export function ProcessosFiltro({
         </div>
       </div>
 
-      <ul className="divide-y divide-slate-200">
-        {filtrados.map((p) => (
-          <li key={p.id}>
-             <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.natureza === "minerario" && p.notificacoes.length > 0} />
-          </li>
-        ))}
-        {filtrados.length === 0 && (
-          <li className="px-5 py-12 text-center text-sm text-muted">
-            Nenhum processo encontrado.
-          </li>
-        )}
-      </ul>
+      <SelecaoLote rota="/api/processos/excluir-lote" permitido={!!podeExcluir}>
+        <BarraLote />
+        <ul className="divide-y divide-slate-200">
+          {filtrados.map((p) => (
+            <LinhaSelecionavel key={p.id} id={p.id}>
+              <div className="relative">
+                <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.natureza === "minerario" && p.notificacoes.length > 0} />
+              </div>
+            </LinhaSelecionavel>
+          ))}
+          {filtrados.length === 0 && (
+            <li className="px-5 py-12 text-center text-sm text-muted">
+              Nenhum processo encontrado.
+            </li>
+          )}
+        </ul>
+      </SelecaoLote>
     </Card>
   );
 }

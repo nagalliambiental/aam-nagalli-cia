@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Modal, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { Plus } from "lucide-react";
 import { ArquivosSelecao } from "@/components/processos/ArquivosSelecao";
 import { enviarAnexosTarefa } from "@/lib/anexos-cliente";
@@ -120,9 +121,12 @@ export function CriarTarefaNotificacao({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="nt-resp" required>Responsável pela Execução</Label>
-              <Select id="nt-resp" value={form.responsavelPessoaId} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))} required>
-                {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-              </Select>
+              <Selecionar
+                id="nt-resp"
+                value={form.responsavelPessoaId}
+                onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+              />
             </div>
             <div>
               <Label htmlFor="nt-prazo">Prazo</Label>

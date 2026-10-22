@@ -50,13 +50,15 @@ export async function POST(req: Request) {
     const cpf = isPF ? (valor(row, headers, "CPF", 0) || valor(row, headers, "CNPJ", 4)).replace(/\D/g, "") || null : null;
     const labelNome = isPF ? "Nome Completo" : "Razão Social";
     if (!razaoSocial) { if (cnpj || cpf || nomeFantasia) erros.push(`Linha ${i}: sem ${labelNome}.`); continue; }
+    if (!isPF && !cnpj) { erros.push(`Linha ${i}: CNPJ é obrigatório para pessoa jurídica.`); continue; }
+    if (cnpj && cnpj.length !== 14) { erros.push(`Linha ${i}: CNPJ inválido (14 dígitos).`); continue; }
     if (cpf && cpf.length !== 11) { erros.push(`Linha ${i}: CPF inválido.`); continue; }
     try {
       let empresaId: number;
       const existente = cnpj
-        ? await prisma.empresa.findUnique({ where: { cnpj }, select: { id: true } })
+        ? await prisma.empresa.findFirst({ where: { cnpj, deletedAt: null }, select: { id: true } })
         : cpf
-          ? await prisma.empresa.findUnique({ where: { cpf }, select: { id: true } })
+          ? await prisma.empresa.findFirst({ where: { cpf, deletedAt: null }, select: { id: true } })
           : null;
       if (existente) {
         empresaId = existente.id;
@@ -66,12 +68,14 @@ export async function POST(req: Request) {
           tipoPessoa, razaoSocial, nomeFantasia, apelido, cnpj, cpf,
           inscricaoEstadual: !isPF ? valor(row, headers, "IE", 5) || null : null,
           cep: valor(row, headers, "CEP", 6) || null,
-          endereco: valor(row, headers, "Endereço", 7) || null,
+          endereco: valor(row, headers, "Endereço (Logradouro)", 7) || valor(row, headers, "Endereço", 7) || null,
           numeroEndereco: valor(row, headers, "Nº", 8) || null,
-          municipio: valor(row, headers, "Município", 9) || null,
-          uf: valor(row, headers, "UF", 10) || null,
-          email: valor(row, headers, "E-mail", 11) || null,
-          telefone: valor(row, headers, "Telefone", 12) || null,
+          complemento: valor(row, headers, "Complemento", 9) || null,
+          bairro: valor(row, headers, "Bairro", 10) || null,
+          municipio: valor(row, headers, "Município", 11) || null,
+          uf: valor(row, headers, "UF", 12) || null,
+          email: valor(row, headers, "E-mail", 13) || null,
+          telefone: valor(row, headers, "Telefone", 14) || null,
         } });
         empresaId = emp.id;
         criadas++;

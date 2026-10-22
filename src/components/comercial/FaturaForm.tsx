@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { parseNumberBR } from "@/lib/format";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -148,17 +149,25 @@ export function FaturaForm({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="cliente" required>Cliente</Label>
-          <Select id="cliente" value={empresaId} onChange={(e) => { setEmpresaId(e.target.value); setEmpreendimentoId(""); }} required>
-            <option value="">— selecione —</option>
-            {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="cliente"
+            value={empresaId}
+            onChange={(v) => { setEmpresaId(v); setEmpreendimentoId(""); }}
+            emptyValue=""
+            emptyLabel="— selecione —"
+            opcoes={empresas.map((e) => ({ value: String(e.id), label: e.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="empreendimento">Empreendimento</Label>
-          <Select id="empreendimento" value={empreendimentoId} onChange={(e) => setEmpreendimentoId(e.target.value)}>
-            <option value="">— selecione —</option>
-            {empsFiltrados.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="empreendimento"
+            value={empreendimentoId}
+            onChange={(v) => setEmpreendimentoId(v)}
+            emptyValue=""
+            emptyLabel="— selecione —"
+            opcoes={empsFiltrados.map((e) => ({ value: String(e.id), label: e.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="referencia">Referência</Label>

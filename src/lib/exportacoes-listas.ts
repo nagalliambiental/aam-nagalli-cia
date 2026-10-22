@@ -39,7 +39,9 @@ export async function montarRelatorioTarefas(filtro: { status?: string; q?: stri
   const isAdmin = session?.user?.perfilNome === "Administrador";
   const scoped = session?.user?.perfilNome === "Técnico";
   const pessoaId = scoped ? (session?.user?.pessoaId ?? null) : null;
-  const escopo = scoped && pessoaId ? { OR: [{ processo: { responsavelPessoaId: pessoaId } }, { responsavelPessoaId: pessoaId }] } : {};
+  const escopo = scoped && pessoaId
+    ? { OR: [{ processo: { responsavelPessoaId: pessoaId } }, { responsavelPessoaId: pessoaId }, { responsaveisEquipe: { some: { pessoaId } } }] }
+    : {};
   const status = filtro.status && STATUS_TAREFA_VALIDOS.has(filtro.status) ? filtro.status : undefined;
   const q = filtro.q?.trim();
 

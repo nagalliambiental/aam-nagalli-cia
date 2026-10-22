@@ -10,6 +10,7 @@ import { FiltroResponsavelTarefas } from "@/components/processos/FiltroResponsav
 import { RecorrentesPainel, type RegraRecorrenteDTO } from "@/components/processos/RecorrentesPainel";
 import { preverProxima } from "@/lib/tarefas-recorrentes";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
+import { BuscaAuto } from "@/components/ui/BuscaAuto";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{
@@ -47,11 +48,13 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const statusFilter = { status: statusAtual };
 
   const escopoTarefa = scoped && responsavelPessoaId
-    ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }] }
+    ? { OR: [{ processo: { responsavelPessoaId } }, { responsavelPessoaId }, { responsaveisEquipe: { some: { pessoaId: responsavelPessoaId } } }] }
     : {};
 
   const buscaTitulo = q ? { titulo: { contains: q, mode: "insensitive" as const } } : {};
-  const filtroResponsavel = responsavelFiltro ? { responsavelPessoaId: responsavelFiltro } : {};
+  const filtroResponsavel = responsavelFiltro
+    ? { OR: [{ responsavelPessoaId: responsavelFiltro }, { responsaveisEquipe: { some: { pessoaId: responsavelFiltro } } }] }
+    : {};
 
   const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens, regrasBrutas] = await Promise.all([
     prisma.tarefa.findMany({
@@ -59,6 +62,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: {
         responsavel: true,
+        responsaveisEquipe: { include: { pessoa: { select: { nome: true } } } },
         processo: { include: { orgao: true } },
         empreendimento: true,
         _count: { select: { anexos: true } },
@@ -256,20 +260,9 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
             <RefreshCw className="h-3 w-3" /> Recorrentes
           </Link>
           <FiltroResponsavelTarefas pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))} valor={responsavelFiltro} />
-          <form method="get" className="ml-auto flex items-center gap-2">
-            <input type="hidden" name="status" value={statusAtual} />
-            {responsavelFiltro ? <input type="hidden" name="responsavel" value={responsavelFiltro} /> : null}
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Buscar por título..."
-                className="w-full rounded-md border border-slate-300 bg-white py-1.5 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
-              />
-            </div>
-            <Button type="submit" variant="secondary" className="px-3 py-1.5">Buscar</Button>
-          </form>
+          <div className="ml-auto min-w-[240px] flex-1 md:max-w-sm">
+            <BuscaAuto placeholder="Buscar por título..." valorInicial={q} />
+          </div>
         </div>
         {abaRecorrentes ? (
           <RecorrentesPainel regras={regrasDTO} podeEditar={podeAnexar} podeExcluir={podeExcluir} />
@@ -292,6 +285,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
                   visibilidade: t.visibilidade,
                   dataConclusao: t.dataConclusao ? t.dataConclusao.toISOString() : null,
                   responsavelNome: t.responsavel.nome,
+                  responsaveisNomes: t.responsaveisEquipe.map((x) => x.pessoa.nome),
                   processoLabel: t.processo ? `Processo: #${t.processo.numero} (${t.processo.orgao.sigla})` : "Processo: — sem vínculo —",
                   empreendimentoId: t.empreendimentoId,
                   processoId: t.processoId,

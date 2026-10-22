@@ -44,7 +44,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 
   try {
-    const tarefa = await prisma.tarefa.update({ where: { id: tarefaId }, data: data as never });
+    // Equipe de responsáveis adicionais (substitui a lista atual quando enviada).
+    let equipeOper: { deleteMany: {}; create: { pessoaId: number }[] } | null = null;
+    if (Array.isArray(body.responsaveisIds)) {
+      const alvo = await prisma.tarefa.findUnique({ where: { id: tarefaId }, select: { responsavelPessoaId: true } });
+      const principal = alvo?.responsavelPessoaId;
+      const ids = [...new Set((body.responsaveisIds as unknown[]).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0 && n !== principal))];
+      equipeOper = { deleteMany: {}, create: ids.map((pessoaId) => ({ pessoaId })) };
+    }
+    const tarefa = await prisma.tarefa.update({
+      where: { id: tarefaId },
+      data: { ...data, ...(equipeOper ? { responsaveisEquipe: equipeOper } : {}) } as never,
+    });
 
     // Ao concluir, cessa os alertas da tarefa (marca notificações vinculadas como lidas).
     if (data.status === "concluida") {

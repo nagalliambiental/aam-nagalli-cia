@@ -81,6 +81,11 @@ export async function POST(req: Request) {
       exigenciaId = exigencia.id;
     }
 
+    // Responsáveis adicionais (equipe), evitando duplicidade e o próprio principal.
+    const equipeIds: number[] = Array.isArray(body.responsaveisIds)
+      ? [...new Set((body.responsaveisIds as unknown[]).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0 && n !== responsavelPessoaId))]
+      : [];
+
     const tarefa = await prisma.tarefa.create({
       data: {
         titulo,
@@ -101,6 +106,7 @@ export async function POST(req: Request) {
         visibilidade: body.visibilidade === "privado" ? "privado" : "publico",
         criadorUsuarioId: Number(session.user.id),
         tarefaRecorrenteId,
+        responsaveisEquipe: { create: equipeIds.map((pessoaId) => ({ pessoaId })) },
       },
     });
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { VinculoPicker } from "@/components/processos/VinculoPicker";
 
 const FASES_VALIDAS = [
@@ -311,16 +312,14 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
 
         <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
-          <Select
+          <Selecionar
             id="empreendimentoId"
             value={form.empreendimentoId}
-            onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value }))}
-          >
-            <option value="">— sem vínculo —</option>
-            {empreendimentos.map((x) => (
-              <option key={x.id} value={x.id}>{x.nome}{x.apelido ? ` (${x.apelido})` : ""}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, empreendimentoId: v }))}
+            emptyValue=""
+            emptyLabel="— sem vínculo —"
+            opcoes={empreendimentos.map((x) => ({ value: String(x.id), label: `${x.nome}${x.apelido ? ` (${x.apelido})` : ""}` }))}
+          />
         </div>
         <div>
           <Label htmlFor="apelido">Apelido do processo</Label>
@@ -376,10 +375,14 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             </div>
             <div>
               <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
-              <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
-                <option value="">— sem responsável —</option>
-                {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
-              </Select>
+              <Selecionar
+                id="responsavelPessoaId"
+                value={String(form.responsavelPessoaId)}
+                onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                emptyValue=""
+                emptyLabel="— sem responsável —"
+                opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+              />
             </div>
             <div>
               <Label htmlFor="areaValor">Área</Label>
@@ -448,10 +451,14 @@ const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(
             </div>
             <div>
               <Label htmlFor="responsavelPessoaId">Responsável técnico</Label>
-              <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
-                <option value="">— sem responsável —</option>
-                {pessoas.map((p) => (<option key={p.id} value={p.id}>{p.nome}</option>))}
-              </Select>
+              <Selecionar
+                id="responsavelPessoaId"
+                value={String(form.responsavelPessoaId)}
+                onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                emptyValue=""
+                emptyLabel="— sem responsável —"
+                opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+              />
             </div>
             <div>
               <Label htmlFor="numeroLicenca">Nº Licença</Label>

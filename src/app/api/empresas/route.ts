@@ -5,7 +5,7 @@ import { audit } from "@/lib/audit";
 
 const CAMPOS = [
   "tipoPessoa", "razaoSocial", "nomeFantasia", "apelido", "cnpj", "cpf", "inscricaoEstadual", "email",
-  "telefone", "endereco", "numeroEndereco", "municipio", "uf", "cep", "observacoes",
+  "telefone", "endereco", "numeroEndereco", "complemento", "bairro", "municipio", "uf", "cep", "observacoes",
 ] as const;
 
 interface ContatoInput {
@@ -69,6 +69,12 @@ export async function POST(req: Request) {
     if (data.cnpj) {
       const cnpj = String(data.cnpj).replace(/\D/g, "");
       data.cnpj = cnpj || null;
+    }
+    if (!data.cnpj) {
+      return NextResponse.json({ error: "CNPJ é obrigatório" }, { status: 400 });
+    }
+    if ((data.cnpj as string).length !== 14) {
+      return NextResponse.json({ error: "CNPJ deve ter 14 dígitos." }, { status: 400 });
     }
   }
 

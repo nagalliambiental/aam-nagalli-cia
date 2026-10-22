@@ -39,7 +39,13 @@ export async function gerarProximaOcorrencia(
   tarefaId: number,
   usuarioId?: number,
 ): Promise<ResultadoGeracao> {
-  const tarefa = await prisma.tarefa.findUnique({ where: { id: tarefaId }, include: { recorrencia: true } });
+  const tarefa = await prisma.tarefa.findUnique({
+    where: { id: tarefaId },
+    include: {
+      recorrencia: true,
+      responsaveisEquipe: { select: { pessoaId: true } },
+    },
+  });
   if (!tarefa?.recorrencia) return { gerada: false, motivo: "sem_recorrencia" };
 
   const regra = tarefa.recorrencia;
@@ -85,6 +91,9 @@ export async function gerarProximaOcorrencia(
       processoId: tarefa.processoId,
       criadorUsuarioId: tarefa.criadorUsuarioId,
       tarefaRecorrenteId: regra.id,
+      responsaveisEquipe: {
+        create: tarefa.responsaveisEquipe.map((x) => ({ pessoaId: x.pessoaId })),
+      },
     },
   });
 

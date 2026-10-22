@@ -20,6 +20,7 @@ export default async function EditarEmpreendimentoPage({
     prisma.empresa.findMany({
       where: { ativo: true, deletedAt: null },
       orderBy: { razaoSocial: "asc" },
+      select: { id: true, razaoSocial: true, cnpj: true },
     }),
   ]);
   if (!empreendimento) notFound();
@@ -32,7 +33,7 @@ export default async function EditarEmpreendimentoPage({
         <div className="p-5">
           <EmpreendimentoForm
             empreendimentoId={empreendimento.id}
-            empresas={empresas.map((x) => ({ id: x.id, razaoSocial: x.razaoSocial }))}
+            empresas={empresas.map((x) => ({ id: x.id, razaoSocial: x.razaoSocial, cnpj: x.cnpj }))}
             initial={{
               nome: empreendimento.nome,
               apelido: (empreendimento as Record<string, unknown>).apelido as string ?? undefined,
@@ -44,6 +45,8 @@ export default async function EditarEmpreendimentoPage({
               descricao: empreendimento.descricao ?? undefined,
               observacoes: empreendimento.observacoes ?? undefined,
               empresaPrincipalId: empreendimento.empresaPrincipalId,
+              filial: (empreendimento as Record<string, unknown>).filial as boolean ?? undefined,
+              cnpj: (empreendimento as Record<string, unknown>).cnpj as string ?? undefined,
             }}
           />
         </div>

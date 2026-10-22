@@ -39,14 +39,19 @@ export async function POST(req: Request) {
     const apelido = normalizar(r.getCell(2).value) || null;
     const tipo = normalizar(r.getCell(3).value) || "pedreira";
     const empresaNome = normalizar(r.getCell(4).value);
-    const municipio = normalizar(r.getCell(5).value) || null;
-    const uf = normalizar(r.getCell(6).value) || null;
-    const cep = normalizar(r.getCell(7).value) || null;
-    const endereco = normalizar(r.getCell(8).value) || null;
-    const status = normalizar(r.getCell(9).value) || "ativo";
+    const cnpjBruto = normalizar(r.getCell(5).value).replace(/\D/g, "");
+    const filialRaw = normalizar(r.getCell(6).value);
+    const filial = /^(sim|s|true|1)$/i.test(filialRaw);
+    const cnpj = filial && cnpjBruto ? cnpjBruto : null;
+    const municipio = normalizar(r.getCell(7).value) || null;
+    const uf = normalizar(r.getCell(8).value) || null;
+    const cep = normalizar(r.getCell(9).value) || null;
+    const endereco = normalizar(r.getCell(10).value) || null;
+    const status = normalizar(r.getCell(11).value) || "ativo";
 
     if (!nome) continue;
     if (!empresaNome) { erros.push(`Linha ${i}: sem Cliente Principal.`); continue; }
+    if (filial && !cnpj) { erros.push(`Linha ${i}: filial sem CNPJ.`); continue; }
 
     const ne = norm(empresaNome);
     const empresa = empresas.find((e) => norm(e.razaoSocial) === ne || (e.nomeFantasia && norm(e.nomeFantasia) === ne) || (e.apelido && norm(e.apelido) === ne));
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
 
     try {
       const emp = await prisma.empreendimento.create({
-        data: { nome, apelido, tipo, empresaPrincipalId: empresa.id, municipio, uf, cep, endereco, status },
+        data: { nome, apelido, tipo, empresaPrincipalId: empresa.id, municipio, uf, cep, endereco, status, filial, cnpj },
       });
       await prisma.empreendimentoEmpresa.create({ data: { empreendimentoId: emp.id, empresaId: empresa.id, papel: "operador", principal: true } });
       await audit({ tipoEntidade: "empreendimento", entidadeId: emp.id, acao: "criar", usuarioId: Number(session.user.id), valorNovo: emp.nome });

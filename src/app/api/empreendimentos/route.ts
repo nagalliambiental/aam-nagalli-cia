@@ -24,6 +24,16 @@ export async function POST(req: Request) {
     );
   }
 
+  const filial = body.filial === true || body.filial === "sim";
+  const cnpjBruto = String(body.cnpj ?? "").replace(/\D/g, "");
+  const cnpj = filial && cnpjBruto ? cnpjBruto : null;
+  if (filial && !cnpj) {
+    return NextResponse.json(
+      { error: "CNPJ é obrigatório para empreendimento marcado como filial." },
+      { status: 400 }
+    );
+  }
+
   // Impede empreendimento duplicado: mesma empresa principal + mesmo nome + mesmo apelido.
   // O apelido é tratado como diferencial (ex.: "Pedreira do Trevo" FILIAL e MATRIZ são distintos).
   const jaExiste = await prisma.empreendimento.findFirst({
@@ -57,6 +67,8 @@ export async function POST(req: Request) {
         status: body.status ?? "ativo",
         descricao: body.descricao ?? null,
         observacoes: body.observacoes ?? null,
+        filial,
+        cnpj,
       },
     });
 

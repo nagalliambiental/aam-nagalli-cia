@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
+import { SelecionarEquipe } from "@/components/processos/SelecionarEquipe";
 import { ArquivosSelecao } from "@/components/processos/ArquivosSelecao";
 import { enviarAnexosTarefa } from "@/lib/anexos-cliente";
 
@@ -36,7 +38,7 @@ export function TarefaNovaForm({
     dataLimite: "",
     alertaDataLimite: "",
     status: "nao_iniciado",
-    responsavelPessoaId: pessoas[0]?.id ?? "",
+    responsavelPessoaId: pessoas[0]?.id != null ? String(pessoas[0].id) : "",
     empreendimentoId: "",
     processoId: "",
     visibilidade: "publico",
@@ -47,6 +49,7 @@ export function TarefaNovaForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [arquivos, setArquivos] = useState<File[]>([]);
+  const [equipe, setEquipe] = useState<{ id: string; nome: string }[]>([]);
 
   const empreendimento = empreendimentos.find((e) => e.id === Number(form.empreendimentoId));
 
@@ -66,6 +69,7 @@ export function TarefaNovaForm({
       body: JSON.stringify({
         ...form,
         responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
+        responsaveisIds: equipe.map((x) => Number(x.id)),
         empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
         processoId: form.processoId ? Number(form.processoId) : null,
         prazoData: form.prazoData ? new Date(form.prazoData) : null,
@@ -109,33 +113,44 @@ export function TarefaNovaForm({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
           <Label htmlFor="responsavelPessoaId" required>Responsável pela Execução</Label>
-          <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value as unknown as number }))} required>
-            {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="responsavelPessoaId"
+            value={String(form.responsavelPessoaId)}
+            onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+            opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+          />
+          <SelecionarEquipe
+            pessoas={pessoas}
+            principalId={form.responsavelPessoaId}
+            equipe={equipe}
+            onChange={setEquipe}
+          />
         </div>
         <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
-          <Select id="empreendimentoId" value={form.empreendimentoId} onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value, processoId: "" }))}>
-            <option value="">— sem empreendimento —</option>
-            {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.apelido || e.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="empreendimentoId"
+            value={form.empreendimentoId}
+            onChange={(v) => setForm((f) => ({ ...f, empreendimentoId: v, processoId: "" }))}
+            emptyValue=""
+            emptyLabel="— sem empreendimento —"
+            opcoes={empreendimentos.map((e) => ({ value: String(e.id), label: e.apelido || e.nome }))}
+          />
         </div>
         {empreendimento && (
           <div>
             <Label htmlFor="processoId">Processo (opcional)</Label>
-            <Select id="processoId" value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
-              <option value="">— sem processo —</option>
-              {empreendimento.processos.length > 0 && (
-                <optgroup label="Minerários">
-                  {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
-                </optgroup>
-              )}
-              {(empreendimento.processosAmbientais ?? []).length > 0 && (
-                <optgroup label="Ambientais">
-                  {(empreendimento.processosAmbientais ?? []).map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
-                </optgroup>
-              )}
-            </Select>
+            <Selecionar
+              id="processoId"
+              value={form.processoId}
+              onChange={(v) => setForm((f) => ({ ...f, processoId: v }))}
+              emptyValue=""
+              emptyLabel="— sem processo —"
+              opcoes={[
+                ...empreendimento.processos.map((p) => ({ value: String(p.id), label: p.numero, grupo: "Minerários" })),
+                ...(empreendimento.processosAmbientais ?? []).map((p) => ({ value: String(p.id), label: rotuloAmbiental(p), grupo: "Ambientais" })),
+              ]}
+            />
           </div>
         )}
         <div>

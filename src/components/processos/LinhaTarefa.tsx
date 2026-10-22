@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { formatDate, formatDateTime, formatDateTimeLocal } from "@/lib/format";
 import { Pencil, X, Trash2, Paperclip, RefreshCw } from "lucide-react";
 import { TarefaAnexos } from "@/components/processos/TarefaAnexos";
@@ -21,6 +22,7 @@ type Tarefa = {
   responsavelPessoaId: number | null;
   visibilidade: string;
   responsavelNome: string;
+  responsaveisNomes?: string[];
   processoLabel: string;
   empreendimentoId?: number | null;
   processoId?: number | null;
@@ -146,6 +148,9 @@ export function LinhaTarefa({
               {tarefa.titulo}
             </Link>{" "}
             <span className="text-muted font-normal">- {tarefa.responsavelNome}</span>
+            {(tarefa.responsaveisNomes?.length ?? 0) > 0 && (
+              <span className="text-muted font-normal"> + {tarefa.responsaveisNomes!.join(", ")}</span>
+            )}
             {tarefa.recorrenteDias ? (
               <span
                 title={`Tarefa recorrente: a cada ${tarefa.recorrenteDias} dias`}
@@ -246,9 +251,12 @@ export function LinhaTarefa({
                 </div>
                 <div>
                   <Label htmlFor={`lr-${tarefa.id}`}>Responsável pela Execução</Label>
-                  <Select id={`lr-${tarefa.id}`} value={form.responsavelPessoaId} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
-                    {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-                  </Select>
+                  <Selecionar
+                    id={`lr-${tarefa.id}`}
+                    value={form.responsavelPessoaId}
+                    onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                    opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+                  />
                 </div>
                 <div>
                   <Label htmlFor={`ls-${tarefa.id}`}>Status</Label>

@@ -13,6 +13,7 @@ export default async function NovoEmpreendimentoPage({ searchParams }: { searchP
   const empresas = await prisma.empresa.findMany({
     where: { ativo: true, deletedAt: null },
     orderBy: { razaoSocial: "asc" },
+    select: { id: true, razaoSocial: true, cnpj: true },
   });
 
   return (
@@ -22,7 +23,7 @@ export default async function NovoEmpreendimentoPage({ searchParams }: { searchP
         <CardHeader title="Dados do empreendimento" />
         <div className="p-5">
           <EmpreendimentoForm
-            empresas={empresas.map((x) => ({ id: x.id, razaoSocial: x.razaoSocial }))}
+            empresas={empresas.map((x) => ({ id: x.id, razaoSocial: x.razaoSocial, cnpj: x.cnpj }))}
             initial={empresaId ? { empresaPrincipalId: empresaId } : undefined}
           />
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/processos/StatusBadge";
 import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
@@ -272,12 +273,14 @@ export function ExigenciasPanel({
             </div>
             <div>
               <Label htmlFor="responsavel">Responsável</Label>
-              <Select id="responsavel" value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
-                <option value="">— sem responsável —</option>
-                {pessoas.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nome}</option>
-                ))}
-              </Select>
+              <Selecionar
+                id="responsavel"
+                value={responsavelId}
+                onChange={setResponsavelId}
+                emptyValue=""
+                emptyLabel="— sem responsável —"
+                opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+              />
             </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}

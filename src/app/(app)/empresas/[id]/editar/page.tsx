@@ -41,6 +41,8 @@ export default async function EditarEmpresaPage({
               telefone: empresa.telefone ?? undefined,
               endereco: empresa.endereco ?? undefined,
               numeroEndereco: empresa.numeroEndereco ?? undefined,
+              complemento: (empresa as { complemento?: string | null }).complemento ?? undefined,
+              bairro: (empresa as { bairro?: string | null }).bairro ?? undefined,
               municipio: empresa.municipio ?? undefined,
               uf: empresa.uf ?? undefined,
               cep: empresa.cep ?? undefined,

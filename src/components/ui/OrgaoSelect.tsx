@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Select, Input, Label, Button } from "@/components/ui";
+import { Input, Label, Button } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 
 type OrgaoOption = { id: number; sigla: string; nome?: string | null };
 
@@ -60,25 +61,21 @@ export function OrgaoSelect({
         <div className="flex gap-2">
           <div className="flex-1">
             <Label htmlFor="orgaoId" required={required}>{label}</Label>
-            <Select
+            <Selecionar
               id="orgaoId"
               value={value}
-              onChange={(e) => {
-                if (e.target.value === "__outro__") {
+              onChange={(v) => {
+                if (v === "__outro__") {
                   setModoOutro(true);
                   return;
                 }
-                onChange(e.target.value);
+                onChange(v);
               }}
-              required={required}
-            >
-              {orgaos.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.sigla}{o.nome ? ` — ${o.nome}` : ""}
-                </option>
-              ))}
-              <option value="__outro__">Outro… (cadastrar)</option>
-            </Select>
+              opcoes={[
+                ...orgaos.map((o) => ({ value: String(o.id), label: o.sigla && o.nome ? `${o.sigla} — ${o.nome}` : (o.sigla || o.nome || "") })),
+                { value: "__outro__", label: "Outro… (cadastrar)" },
+              ]}
+            />
           </div>
         </div>
       ) : (

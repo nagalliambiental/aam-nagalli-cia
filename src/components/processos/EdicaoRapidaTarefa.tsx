@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { Pencil, X } from "lucide-react";
 
 type TarefaRapida = {
@@ -149,9 +150,12 @@ export function EdicaoRapidaTarefa({
                 </div>
                 <div>
                   <Label htmlFor={`qr-${tarefa.id}`}>Responsável pela Execução</Label>
-                  <Select id={`qr-${tarefa.id}`} value={form.responsavelPessoaId} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}>
-                    {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-                  </Select>
+                  <Selecionar
+                    id={`qr-${tarefa.id}`}
+                    value={form.responsavelPessoaId}
+                    onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                    opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+                  />
                 </div>
                 <div>
                   <Label htmlFor={`qs-${tarefa.id}`}>Status</Label>

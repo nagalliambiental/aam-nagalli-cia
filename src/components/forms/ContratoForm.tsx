@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 
 export function ContratoForm({
   empresas,
@@ -68,17 +69,12 @@ export function ContratoForm({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="empresaId" required>Cliente</Label>
-          <select
+          <Selecionar
             id="empresaId"
             value={form.empresaId}
-            onChange={(e) => setForm((f) => ({ ...f, empresaId: e.target.value }))}
-            required
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-navy-900 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
-          >
-            {empresas.map((x) => (
-              <option key={x.id} value={x.id}>{x.nome}</option>
-            ))}
-          </select>
+            onChange={(v) => setForm((f) => ({ ...f, empresaId: v }))}
+            opcoes={empresas.map((x) => ({ value: String(x.id), label: x.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="numero">Número</Label>

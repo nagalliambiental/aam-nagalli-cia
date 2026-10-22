@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea, ConfirmPopup } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { TIPOS_EMPREENDIMENTO } from "@/lib/empreendimentos";
 
 export function EmpreendimentoForm({
@@ -10,7 +11,7 @@ export function EmpreendimentoForm({
   initial,
   empreendimentoId,
 }: {
-  empresas: { id: number; razaoSocial: string }[];
+  empresas: { id: number; razaoSocial: string; cnpj?: string | null }[];
   initial?: {
     nome?: string;
     apelido?: string;
@@ -23,6 +24,8 @@ export function EmpreendimentoForm({
     descricao?: string;
     observacoes?: string;
     empresaPrincipalId?: number;
+    filial?: boolean;
+    cnpj?: string;
   };
   empreendimentoId?: number;
 }) {
@@ -41,6 +44,8 @@ export function EmpreendimentoForm({
     descricao: initial?.descricao ?? "",
     observacoes: initial?.observacoes ?? "",
     empresaPrincipalId: String(initial?.empresaPrincipalId ?? empresas[0]?.id ?? ""),
+    filial: initial?.filial ?? false,
+    cnpj: initial?.cnpj ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
@@ -76,12 +81,21 @@ export function EmpreendimentoForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (form.filial) {
+      const cnpjDigits = (form.cnpj ?? "").replace(/\D/g, "");
+      if (cnpjDigits.length !== 14) {
+        setError("CNPJ é obrigatório para empreendimento filial (14 dígitos).");
+        return;
+      }
+    }
     setLoading(true);
 
     const payload = {
       ...form,
       tipo: form.tipo === "outro" ? (form.tipoOutro.trim() || "outro") : form.tipo,
       empresaPrincipalId: form.empresaPrincipalId ? Number(form.empresaPrincipalId) : null,
+      filial: form.filial,
+      cnpj: form.filial ? (form.cnpj ?? "").replace(/\D/g, "") : null,
     };
 
     const res = await fetch(
@@ -152,16 +166,12 @@ export function EmpreendimentoForm({
         )}
         <div>
           <Label htmlFor="empresaPrincipalId" required>Cliente principal</Label>
-          <Select
+          <Selecionar
             id="empresaPrincipalId"
             value={form.empresaPrincipalId}
-            onChange={(e) => setForm((f) => ({ ...f, empresaPrincipalId: e.target.value }))}
-            required
-          >
-            {empresas.map((x) => (
-              <option key={x.id} value={x.id}>{x.razaoSocial}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, empresaPrincipalId: v }))}
+            opcoes={empresas.map((x) => ({ value: String(x.id), label: x.razaoSocial }))}
+          />
         </div>
         <div>
           <Label htmlFor="status">Status</Label>
@@ -175,6 +185,42 @@ export function EmpreendimentoForm({
             <option value="encerrado">Encerrado</option>
           </Select>
         </div>
+        <div className="md:col-span-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-navy-900">
+            <input
+              type="checkbox"
+              checked={form.filial}
+              onChange={(e) => setForm((f) => ({ ...f, filial: e.target.checked }))}
+              className="h-4 w-4 rounded border-slate-300 text-navy-600 focus:ring-navy-500"
+            />
+            É filial?
+          </label>
+          <p className="mt-1 text-xs text-muted">
+            {form.filial
+              ? "Informe o CNPJ próprio desta filial."
+              : `Sem marcação, o empreendimento usa o CNPJ da matriz (cliente).${empresas.find((x) => String(x.id) === form.empresaPrincipalId && x.cnpj ? ` CNPJ: ${(x.cnpj as string).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}` : "")}`}
+          </p>
+          {form.filial && (
+            <div className="mt-2 max-w-xs">
+              <Label htmlFor="cnpjFilial" required>CNPJ da filial</Label>
+              <Input
+                id="cnpjFilial"
+                value={form.cnpj}
+                onChange={(e) => {
+                  const d = e.target.value.replace(/\D/g, "").slice(0, 14);
+                  let out = d.slice(0, 2);
+                  if (d.length > 2) out += "." + d.slice(2, 5);
+                  if (d.length > 5) out += "." + d.slice(5, 8);
+                  if (d.length > 8) out += "/" + d.slice(8, 12);
+                  if (d.length > 12) out += "-" + d.slice(12, 14);
+                  setForm((f) => ({ ...f, cnpj: out }));
+                }}
+                placeholder="00.000.000/0000-00"
+                required
+              />
+            </div>
+          )}
+        </div>
         <div>
           <Label htmlFor="cep">CEP</Label>
           <div className="flex gap-2">
@@ -185,11 +231,11 @@ export function EmpreendimentoForm({
                 const d = e.target.value.replace(/\D/g, "").slice(0, 8);
                 setForm((f) => ({ ...f, cep: d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d }));
               }}
-              onBlur={buscarCep}
               placeholder="00000-000"
+              className="flex-1"
             />
             <Button type="button" variant="secondary" onClick={buscarCep} disabled={cepLoading} className="shrink-0">
-              {cepLoading ? "Buscando..." : "Buscar CEP"}
+              {cepLoading ? "Buscando..." : "Buscar"}
             </Button>
           </div>
         </div>

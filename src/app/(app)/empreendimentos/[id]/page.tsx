@@ -61,6 +61,8 @@ export default async function EmpreendimentoDetalhePage({
             ["Apelido", empreendimento.apelido ?? "—"],
             ["Tipo", labelTipoEmpreendimento(empreendimento.tipo)],
             ["Cliente principal", empreendimento.empresaPrincipal.razaoSocial],
+            ["É filial?", (empreendimento as { filial?: boolean }).filial ? "Sim" : "Não (usa CNPJ da matriz)"],
+            ["CNPJ", (empreendimento as { cnpj?: string | null }).cnpj ? (empreendimento as { cnpj: string }).cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "CNPJ da matriz"],
             ["Município/UF", empreendimento.municipio && empreendimento.uf ? `${empreendimento.municipio}/${empreendimento.uf}` : "—"],
             ["Endereço", empreendimento.endereco ?? "—"],
             ["Status", <Badge key="s" tone={empreendimento.status === "ativo" ? "green" : "amber"}>{empreendimento.status}</Badge>],

@@ -74,7 +74,9 @@ export default async function EmpresaDetalhePage({
                     ["Inscrição estadual", empresa.inscricaoEstadual ?? "—"] as [string, string],
                   ]),
               ["Município/UF", empresa.municipio && empresa.uf ? `${empresa.municipio}/${empresa.uf}` : "—"],
-              ["Endereço", `${empresa.endereco ?? "—"}${empresa.numeroEndereco ? `, ${empresa.numeroEndereco}` : ""}`],
+              ["Logradouro", empresa.endereco ?? "—"],
+              ["Nº/Complemento", `${empresa.numeroEndereco ?? "—"}${empresa.complemento ? ` · ${empresa.complemento}` : ""}`],
+              ["Bairro", empresa.bairro ?? "—"],
               ["Status", <Badge key="s" tone={empresa.ativo ? "green" : "gray"}>{empresa.ativo ? "ativo" : "inativo"}</Badge>],
             ].map(([k, v]) => (
               <div key={k as string} className="flex justify-between gap-4">

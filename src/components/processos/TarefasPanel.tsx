@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { formatDate } from "@/lib/format";
 import { ImportarTarefasPdf } from "@/components/processos/ImportarTarefasPdf";
 import { LinhaTarefa } from "@/components/processos/LinhaTarefa";
@@ -155,9 +156,12 @@ export function TarefasPanel({
             </div>
             <div>
               <Label htmlFor="responsavelPessoaId">Responsável pela Execução</Label>
-              <Select id="responsavelPessoaId" value={String(form.responsavelPessoaId)} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))} required>
-                {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-              </Select>
+              <Selecionar
+                id="responsavelPessoaId"
+                value={String(form.responsavelPessoaId)}
+                onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+                opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+              />
             </div>
             <div>
               <Label htmlFor="status">Status</Label>

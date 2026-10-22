@@ -30,6 +30,21 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("descricao" in body) data.descricao = body.descricao ?? null;
   if ("observacoes" in body) data.observacoes = body.observacoes ?? null;
   if ("empresaPrincipalId" in body) data.empresaPrincipalId = Number(body.empresaPrincipalId);
+  if ("filial" in body) data.filial = body.filial === true || body.filial === "sim";
+  if ("cnpj" in body) {
+    const cnpj = String(body.cnpj ?? "").replace(/\D/g, "");
+    data.cnpj = cnpj || null;
+  }
+  // Filial exige CNPJ próprio; sem filial, usa o CNPJ do cliente principal.
+  if (data.filial === true && data.cnpj === undefined && !("cnpj" in body)) {
+    const atual = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId }, select: { cnpj: true } });
+    if (!atual?.cnpj) {
+      return NextResponse.json({ error: "CNPJ é obrigatório para empreendimento marcado como filial." }, { status: 400 });
+    }
+  }
+  if (data.filial === false || ("filial" in body && data.filial !== true)) {
+    data.cnpj = null;
+  }
 
   // Guarda de duplicado ao editar nome/apelido/empresa (apelido é diferencial), excluindo a si.
   if ("nome" in body || "apelido" in body || "empresaPrincipalId" in body) {
@@ -104,15 +119,22 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   }
 
   const { id } = await params;
-  await prisma.empreendimento.update({
-    where: { id: Number(id) },
-    data: { ativo: false, deletedAt: new Date() },
-  });
+  const empreendimentoId = Number(id);
+
+  // Exclusão definitiva: o banco em cascata remove processos, licenças,
+  // tarefas, faturas e vínculos ligados a este empreendimento.
+  const alvo = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId }, select: { id: true, nome: true } });
+  if (!alvo) {
+    return NextResponse.json({ error: "Empreendimento não encontrado." }, { status: 404 });
+  }
+  await prisma.empreendimento.delete({ where: { id: empreendimentoId } });
+
   await audit({
     tipoEntidade: "empreendimento",
-    entidadeId: Number(id),
+    entidadeId: empreendimentoId,
     acao: "excluir",
     usuarioId: Number(session.user.id),
+    valorNovo: alvo.nome,
   });
   return NextResponse.json({ ok: true });
 }

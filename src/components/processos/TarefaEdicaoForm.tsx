@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
+import { SelecionarEquipe } from "@/components/processos/SelecionarEquipe";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 
 type EmpreendimentoComProcessos = { id: number; nome: string; apelido?: string | null; processos: { id: number; numero: string }[]; processosAmbientais?: ProcessoAmbientalOpt[] };
@@ -43,6 +45,7 @@ export function TarefaEdicaoForm({
     processoId: number | null;
     prazoData: string | null;
     alertaDias: number | null;
+    responsaveisEquipe?: { id: number; nome: string }[];
   };
   showVisibilidade?: boolean;
 }) {
@@ -60,6 +63,9 @@ export function TarefaEdicaoForm({
     prazoData: initial.prazoData ?? "",
     alertaDias: initial.alertaDias != null ? String(initial.alertaDias) : "",
   });
+  const [equipe, setEquipe] = useState<{ id: string; nome: string }[]>(
+    (initial.responsaveisEquipe ?? []).map((x) => ({ id: String(x.id), nome: x.nome }))
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +91,7 @@ export function TarefaEdicaoForm({
         prioridade: form.prioridade,
         visibilidade: form.visibilidade,
         responsavelPessoaId: form.responsavelPessoaId ? Number(form.responsavelPessoaId) : null,
+        responsaveisIds: equipe.map((x) => Number(x.id)),
         empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
         processoId: form.processoId ? Number(form.processoId) : null,
         prazoData: form.prazoData ? new Date(form.prazoData) : null,
@@ -114,9 +121,18 @@ export function TarefaEdicaoForm({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="responsavelPessoaId" required>Responsável pela Execução</Label>
-          <Select id="responsavelPessoaId" value={form.responsavelPessoaId} onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))} required>
-            {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="responsavelPessoaId"
+            value={form.responsavelPessoaId}
+            onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+            opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+          />
+          <SelecionarEquipe
+            pessoas={pessoas}
+            principalId={form.responsavelPessoaId}
+            equipe={equipe}
+            onChange={setEquipe}
+          />
         </div>
         <div>
           <Label htmlFor="prioridade">Prioridade</Label>
@@ -135,32 +151,30 @@ export function TarefaEdicaoForm({
             )}
         <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
-          <Select id="empreendimentoId" value={form.empreendimentoId} onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value, processoId: "" }))}>
-            <option value="">— sem empreendimento —</option>
-            {empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.apelido || e.nome}</option>)}
-          </Select>
+          <Selecionar
+            id="empreendimentoId"
+            value={form.empreendimentoId}
+            onChange={(v) => setForm((f) => ({ ...f, empreendimentoId: v, processoId: "" }))}
+            emptyValue=""
+            emptyLabel="— sem empreendimento —"
+            opcoes={empreendimentos.map((e) => ({ value: String(e.id), label: e.apelido || e.nome }))}
+          />
         </div>
         {empreendimento && (
           <div>
             <Label htmlFor="processoId">Processo</Label>
-            <Select id="processoId" value={form.processoId} onChange={(e) => setForm((f) => ({ ...f, processoId: e.target.value }))}>
-              <option value="">— sem processo —</option>
-              {empreendimento.processos.length > 0 && (
-                <optgroup label="Minerários">
-                  {empreendimento.processos.map((p) => <option key={p.id} value={p.id}>{p.numero}</option>)}
-                </optgroup>
-              )}
-              {vinculados.length > 0 && (
-                <optgroup label="Ambientais">
-                  {vinculados.map((p) => <option key={p.id} value={p.id}>{rotuloAmbiental(p)}</option>)}
-                </optgroup>
-              )}
-              {atualForaDaLista && (
-                <optgroup label="Vinculado atualmente">
-                  <option value={atualForaDaLista.id}>{rotuloAmbiental(atualForaDaLista)}</option>
-                </optgroup>
-              )}
-            </Select>
+            <Selecionar
+              id="processoId"
+              value={form.processoId}
+              onChange={(v) => setForm((f) => ({ ...f, processoId: v }))}
+              emptyValue=""
+              emptyLabel="— sem processo —"
+              opcoes={[
+                ...empreendimento.processos.map((p) => ({ value: String(p.id), label: p.numero, grupo: "Minerários" })),
+                ...vinculados.map((p) => ({ value: String(p.id), label: rotuloAmbiental(p), grupo: "Ambientais" })),
+                ...(atualForaDaLista ? [{ value: String(atualForaDaLista.id), label: rotuloAmbiental(atualForaDaLista), grupo: "Vinculado atualmente" }] : []),
+              ]}
+            />
           </div>
         )}
         <div>

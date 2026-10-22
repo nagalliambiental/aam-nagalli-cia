@@ -5,12 +5,17 @@ import { PageHeader } from "@/components/ui";
 import { formatDocumento } from "@/lib/format";
 import { Search } from "lucide-react";
 import { ImportarClientes } from "@/components/empresas/ImportarClientes";
+import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
+import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { usuarioTemPermissao } from "@/lib/perfil";
 
 type SearchParams = Promise<{ q?: string | string[] }>;
 
 export default async function EmpresasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
+  const qDigitos = q.replace(/\D/g, "");
 
   const empresas = await prisma.empresa.findMany({
     where: {
@@ -25,6 +30,9 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
               { cnpj: { contains: q, mode: "insensitive" as const } },
               { cpf: { contains: q, mode: "insensitive" as const } },
               { municipio: { contains: q, mode: "insensitive" as const } },
+              { bairro: { contains: q, mode: "insensitive" as const } },
+              { complemento: { contains: q, mode: "insensitive" as const } },
+              ...(qDigitos ? [{ cnpj: { contains: qDigitos } }, { cpf: { contains: qDigitos } }] : []),
             ],
           }
         : {}),
@@ -59,22 +67,13 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
         }
       />
 
+      <SelecaoLote rota="/api/empresas/excluir-lote" permitido={podeExcluir}>
       <Card>
-        <form method="get" className="flex items-center gap-2 border-b border-slate-200 p-4">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Buscar por nome, apelido, CPF/CNPJ ou município..."
-              className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-navy-900 placeholder:text-muted focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500/20"
-            />
-          </div>
-          <Button type="submit" variant="secondary">Buscar</Button>
-        </form>
+        <BarraLote />
+        <BuscaAuto placeholder="Buscar por nome, apelido, CPF/CNPJ, bairro ou município..." valorInicial={q} />
         <ul className="divide-y divide-slate-200">
           {empresas.map((e) => (
-            <li key={e.id}>
+            <LinhaSelecionavel key={e.id} id={e.id}>
               <Link
                 href={`/empresas/${e.id}`}
                 className="flex items-center justify-between px-5 py-4 transition hover:bg-slate-50"
@@ -101,7 +100,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
                   </Badge>
                 </div>
               </Link>
-            </li>
+            </LinhaSelecionavel>
           ))}
           {empresas.length === 0 && (
             <li className="px-5 py-12 text-center text-sm text-muted">
@@ -110,6 +109,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
           )}
         </ul>
       </Card>
+      </SelecaoLote>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 import { Layers, X } from "lucide-react";
 
 export type ProcessoMassaOpt = {
@@ -166,9 +167,12 @@ export function TarefaEmMassa({
               </div>
               <div>
                 <Label htmlFor="tm-resp" required>Responsável pela Execução</Label>
-                <Select id="tm-resp" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} required>
-                  {pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-                </Select>
+                <Selecionar
+                  id="tm-resp"
+                  value={responsavel}
+                  onChange={setResponsavel}
+                  opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+                />
               </div>
               <div>
                 <Label htmlFor="tm-prazo">Prazo</Label>

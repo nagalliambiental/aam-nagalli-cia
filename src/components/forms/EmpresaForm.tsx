@@ -19,6 +19,8 @@ export type EmpresaInput = {
   telefone?: string;
   endereco?: string;
   numeroEndereco?: string;
+  complemento?: string;
+  bairro?: string;
   municipio?: string;
   uf?: string;
   cep?: string;
@@ -72,6 +74,8 @@ export function EmpresaForm({
     telefone: initial?.telefone ?? "",
     endereco: initial?.endereco ?? "",
     numeroEndereco: initial?.numeroEndereco ?? "",
+    complemento: initial?.complemento ?? "",
+    bairro: initial?.bairro ?? "",
     municipio: initial?.municipio ?? "",
     uf: initial?.uf ?? "",
     cep: initial?.cep ?? "",
@@ -82,14 +86,17 @@ export function EmpresaForm({
   const [dup, setDup] = useState<{ message: string; existingId?: number } | null>(null);
   const [cnpjError, setCnpjError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   function set<K extends keyof EmpresaInput>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  async function buscarCNPJ(digitsArg?: string) {
-    const digits = (digitsArg ?? form.cnpj ?? "").replace(/\D/g, "");
+  // Busca pelo botão: preenche SOMENTE razão social e nome fantasia.
+  async function buscarCNPJ() {
+    const digits = (form.cnpj ?? "").replace(/\D/g, "");
     if (digits.length !== 14) {
       setCnpjError("CNPJ deve ter 14 dígitos.");
       return;
@@ -102,28 +109,48 @@ export function EmpresaForm({
       const data = await res.json() as {
         razao_social?: string;
         nome_fantasia?: string;
-        logradouro?: string;
-        numero?: string;
-        complemento?: string;
-        bairro?: string;
-        municipio?: string;
-        uf?: string;
-        cep?: string;
       };
       setForm((f) => ({
         ...f,
-        razaoSocial: data.razao_social ?? f.razaoSocial,
-        nomeFantasia: data.nome_fantasia ?? f.nomeFantasia,
-        endereco: [data.logradouro, data.complemento, data.bairro].filter(Boolean).join(", ") ?? f.endereco,
-        numeroEndereco: data.numero ?? f.numeroEndereco,
-        municipio: data.municipio ?? f.municipio,
-        uf: data.uf ?? f.uf,
-        cep: data.cep ? mascaraCEP(String(data.cep)) : f.cep,
+        razaoSocial: data.razao_social || f.razaoSocial,
+        nomeFantasia: data.nome_fantasia || f.nomeFantasia,
       }));
     } catch (e) {
       setCnpjError(e instanceof Error ? e.message : "Erro ao buscar CNPJ.");
     } finally {
       setCnpjLoading(false);
+    }
+  }
+
+  // Busca de endereço pelo CEP (Correios, via BrasilAPI) — só pelo botão.
+  async function buscarCEP() {
+    const digits = (form.cep ?? "").replace(/\D/g, "");
+    if (digits.length !== 8) {
+      setCepError("CEP deve ter 8 dígitos.");
+      return;
+    }
+    setCepLoading(true);
+    setCepError(null);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`);
+      if (!res.ok) throw new Error("CEP não encontrado.");
+      const data = await res.json() as {
+        logradouro?: string;
+        neighborhood?: string;
+        city?: string;
+        state?: string;
+      };
+      setForm((f) => ({
+        ...f,
+        endereco: data.logradouro || f.endereco,
+        bairro: data.neighborhood || f.bairro,
+        municipio: data.city || f.municipio,
+        uf: data.state || f.uf,
+      }));
+    } catch (e) {
+      setCepError(e instanceof Error ? e.message : "Erro ao buscar CEP.");
+    } finally {
+      setCepLoading(false);
     }
   }
 
@@ -136,6 +163,12 @@ export function EmpresaForm({
       const cpfDigits = (form.cpf ?? "").replace(/\D/g, "");
       if (cpfDigits && cpfDigits.length !== 11) {
         setError("CPF deve ter 11 dígitos.");
+        return;
+      }
+    } else {
+      const cnpjDigits = (form.cnpj ?? "").replace(/\D/g, "");
+      if (cnpjDigits.length !== 14) {
+        setError("CNPJ é obrigatório e deve ter 14 dígitos.");
         return;
       }
     }
@@ -218,25 +251,22 @@ export function EmpresaForm({
             </div>
 
             <div>
-              <Label htmlFor="cnpj">CNPJ</Label>
+              <Label htmlFor="cnpj" required>CNPJ</Label>
               <div className="flex gap-2">
                 <Input
                   id="cnpj"
                   value={form.cnpj}
-                  onChange={(e) => {
-                    const m = mascaraCNPJ(e.target.value);
-                    set("cnpj", m);
-                    if (m.replace(/\D/g, "").length === 14) buscarCNPJ(m);
-                  }}
+                  onChange={(e) => set("cnpj", mascaraCNPJ(e.target.value))}
                   placeholder="00.000.000/0000-00"
                   className="flex-1"
+                  required
                 />
-                <Button type="button" variant="secondary" onClick={() => buscarCNPJ()} disabled={cnpjLoading}>
+                <Button type="button" variant="secondary" onClick={() => buscarCNPJ()} disabled={cnpjLoading} className="shrink-0">
                   {cnpjLoading ? "Buscando..." : "Buscar"}
                 </Button>
               </div>
               {cnpjError && <p className="mt-1 text-xs text-red-600">{cnpjError}</p>}
-              <p className="mt-1 text-xs text-muted">Preenche razão social, nome fantasia e endereço.</p>
+              <p className="mt-1 text-xs text-muted">O botão preenche razão social e nome fantasia.</p>
             </div>
             <div>
               <Label htmlFor="inscricaoEstadual">Inscrição Estadual</Label>
@@ -247,17 +277,34 @@ export function EmpresaForm({
 
         <div>
           <Label htmlFor="cep">CEP</Label>
-          <Input id="cep" value={form.cep} onChange={(e) => set("cep", mascaraCEP(e.target.value))} placeholder="00000-000" />
+          <div className="flex gap-2">
+            <Input id="cep" value={form.cep} onChange={(e) => set("cep", mascaraCEP(e.target.value))} placeholder="00000-000" className="flex-1" />
+            <Button type="button" variant="secondary" onClick={() => buscarCEP()} disabled={cepLoading} className="shrink-0">
+              {cepLoading ? "Buscando..." : "Buscar"}
+            </Button>
+          </div>
+          {cepError && <p className="mt-1 text-xs text-red-600">{cepError}</p>}
+          <p className="mt-1 text-xs text-muted">Preenche logradouro, bairro, município e UF pelo CEP.</p>
         </div>
 
-        <div className="md:col-span-2">
-          <Label htmlFor="endereco">Endereço</Label>
-          <div className="flex gap-2">
-            <Input id="endereco" value={form.endereco} onChange={(e) => set("endereco", e.target.value)} placeholder="Logradouro, complemento, bairro" className="flex-[3]" />
-            <Input id="numeroEndereco" value={form.numeroEndereco} onChange={(e) => set("numeroEndereco", e.target.value)} placeholder="Nº" className="flex-1" />
+        <div>
+          <Label htmlFor="endereco">Logradouro</Label>
+          <Input id="endereco" value={form.endereco} onChange={(e) => set("endereco", e.target.value)} placeholder="Rua, avenida..." />
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Label htmlFor="numeroEndereco">Nº</Label>
+            <Input id="numeroEndereco" value={form.numeroEndereco} onChange={(e) => set("numeroEndereco", e.target.value)} />
+          </div>
+          <div className="flex-1">
+            <Label htmlFor="complemento">Complemento</Label>
+            <Input id="complemento" value={form.complemento} onChange={(e) => set("complemento", e.target.value)} placeholder="Sala, quadra..." />
           </div>
         </div>
-
+        <div>
+          <Label htmlFor="bairro">Bairro</Label>
+          <Input id="bairro" value={form.bairro} onChange={(e) => set("bairro", e.target.value)} />
+        </div>
         <div>
           <Label htmlFor="municipio">Município</Label>
           <Input id="municipio" value={form.municipio} onChange={(e) => set("municipio", e.target.value)} />

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PageHeader, Card, Button, Badge } from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
+import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 
 const STATUS: Record<string, { label: string; tone: "gray" | "blue" | "green" | "amber" | "red" }> = {
   aberta: { label: "Aberta", tone: "blue" },
@@ -57,13 +58,15 @@ export default async function FaturasPage() {
           <p className="mt-1 text-xs text-muted">{vencidas.length} vencida(s)</p>
         </Card>
       </div>
+      <SelecaoLote rota="/api/faturas/excluir-lote" permitido>
       <Card>
+        <BarraLote />
         <ul className="divide-y divide-slate-100">
           {faturas.map((f) => {
             const total = f.itens.reduce((s, i) => s + Number(i.total), 0);
             const st = STATUS[f.status] ?? { label: f.status, tone: "gray" as const };
             return (
-              <li key={f.id}>
+              <LinhaSelecionavel key={f.id} id={f.id}>
                 <Link href={`/faturas/${f.id}`} className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-slate-50">
                   <div>
                     <p className="font-medium text-navy-900">
@@ -77,12 +80,13 @@ export default async function FaturasPage() {
                     <Badge tone={st.tone}>{st.label}</Badge>
                   </div>
                 </Link>
-              </li>
+              </LinhaSelecionavel>
             );
           })}
           {faturas.length === 0 && <li className="px-5 py-12 text-center text-sm text-muted">Nenhuma fatura gerada ainda.</li>}
         </ul>
       </Card>
+      </SelecaoLote>
     </div>
   );
 }

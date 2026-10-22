@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
+import { Selecionar } from "@/components/ui/Selecionar";
 
 export function LicencaForm({
   orgaos,
@@ -82,16 +83,12 @@ export function LicencaForm({
       <div className={grid}>
         <div>
           <Label htmlFor="tipoLicencaId" required>Tipo</Label>
-          <Select
+          <Selecionar
             id="tipoLicencaId"
             value={form.tipoLicencaId}
-            onChange={(e) => setForm((f) => ({ ...f, tipoLicencaId: e.target.value }))}
-            required
-          >
-            {tiposLicenca.map((t) => (
-              <option key={t.id} value={t.id}>{t.nome}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, tipoLicencaId: v }))}
+            opcoes={tiposLicenca.map((t) => ({ value: String(t.id), label: t.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="numero" required>Número</Label>
@@ -104,29 +101,23 @@ export function LicencaForm({
         </div>
         <div>
           <Label htmlFor="orgaoId" required>Órgão</Label>
-          <Select
+          <Selecionar
             id="orgaoId"
             value={form.orgaoId}
-            onChange={(e) => setForm((f) => ({ ...f, orgaoId: e.target.value }))}
-            required
-          >
-            {orgaos.map((o) => (
-              <option key={o.id} value={o.id}>{o.sigla}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, orgaoId: v }))}
+            opcoes={orgaos.map((o) => ({ value: String(o.id), label: o.sigla }))}
+          />
         </div>
         <div>
           <Label htmlFor="empreendimentoId">Empreendimento</Label>
-          <Select
+          <Selecionar
             id="empreendimentoId"
             value={form.empreendimentoId}
-            onChange={(e) => setForm((f) => ({ ...f, empreendimentoId: e.target.value }))}
-          >
-            <option value="">— sem vínculo —</option>
-            {empreendimentos.map((x) => (
-              <option key={x.id} value={x.id}>{x.nome}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, empreendimentoId: v }))}
+            emptyValue=""
+            emptyLabel="— sem vínculo —"
+            opcoes={empreendimentos.map((x) => ({ value: String(x.id), label: x.nome }))}
+          />
         </div>
         <div>
           <Label htmlFor="situacao">Situação</Label>
@@ -163,16 +154,14 @@ export function LicencaForm({
         </div>
         <div>
           <Label htmlFor="responsavelPessoaId">Responsável</Label>
-          <Select
+          <Selecionar
             id="responsavelPessoaId"
             value={form.responsavelPessoaId}
-            onChange={(e) => setForm((f) => ({ ...f, responsavelPessoaId: e.target.value }))}
-          >
-            <option value="">— sem responsável —</option>
-            {pessoas.map((p) => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
-            ))}
-          </Select>
+            onChange={(v) => setForm((f) => ({ ...f, responsavelPessoaId: v }))}
+            emptyValue=""
+            emptyLabel="— sem responsável —"
+            opcoes={pessoas.map((p) => ({ value: String(p.id), label: p.nome }))}
+          />
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="observacoes">Observações</Label>
