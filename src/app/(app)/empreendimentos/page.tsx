@@ -5,36 +5,54 @@ import { Search } from "lucide-react";
 import { ImportarEmpreendimentos } from "@/components/empreendimentos/ImportarEmpreendimentos";
 import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; pagina?: string | string[] }>;
+
+const POR_PAGINA = 20;
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
-  const empreendimentos = await prisma.empreendimento.findMany({
-    where: {
-      ativo: true,
-      deletedAt: null,
-      ...(q
-        ? {
-            OR: [
-              { nome: { contains: q, mode: "insensitive" as const } },
-              { apelido: { contains: q, mode: "insensitive" as const } },
-              { municipio: { contains: q, mode: "insensitive" as const } },
-              { tipo: { contains: q, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { nome: "asc" },
-    include: {
-      empresaPrincipal: true,
-      _count: { select: { areas: true, processos: { where: { ativo: true, deletedAt: null } }, licencas: true } },
-    },
-  });
+  const filtro = {
+    ativo: true,
+    deletedAt: null,
+    ...(q
+      ? {
+          OR: [
+            { nome: { contains: q, mode: "insensitive" as const } },
+            { apelido: { contains: q, mode: "insensitive" as const } },
+            { municipio: { contains: q, mode: "insensitive" as const } },
+            { tipo: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  } as const;
+
+  const [empreendimentos, total] = await Promise.all([
+    prisma.empreendimento.findMany({
+      where: filtro,
+      orderBy: { nome: "asc" },
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+      include: {
+        empresaPrincipal: true,
+        _count: { select: { areas: true, processos: { where: { ativo: true, deletedAt: null } }, licencas: true } },
+      },
+    }),
+    prisma.empreendimento.count({ where: filtro }),
+  ]);
+
+  const construirPagina = (p: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("pagina", String(p));
+    return `/empreendimentos?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -100,6 +118,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
             </li>
           )}
         </ul>
+        <Paginacao pagina={pagina} total={total} porPagina={POR_PAGINA} construirHref={construirPagina} />
       </Card>
       </SelecaoLote>
     </div>

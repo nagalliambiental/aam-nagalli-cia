@@ -5,29 +5,47 @@ import { formatDate } from "@/lib/format";
 import { Search } from "lucide-react";
 import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; pagina?: string | string[] }>;
+
+const POR_PAGINA = 20;
 
 export default async function LicencasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
-  const licencas = await prisma.licenca.findMany({
-    where: {
-      ativo: true,
-      deletedAt: null,
-      ...(q ? { numero: { contains: q, mode: "insensitive" as const } } : {}),
-    },
-    orderBy: [{ situacao: "asc" }, { dataValidade: "asc" }],
-    include: {
-      tipoLicenca: true,
-      orgao: true,
-      empreendimento: true,
-      _count: { select: { condicionantes: true } },
-    },
-  });
+  const filtro = {
+    ativo: true,
+    deletedAt: null,
+    ...(q ? { numero: { contains: q, mode: "insensitive" as const } } : {}),
+  } as const;
+
+  const [licencas, total] = await Promise.all([
+    prisma.licenca.findMany({
+      where: filtro,
+      orderBy: [{ situacao: "asc" }, { dataValidade: "asc" }],
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+      include: {
+        tipoLicenca: true,
+        orgao: true,
+        empreendimento: true,
+        _count: { select: { condicionantes: true } },
+      },
+    }),
+    prisma.licenca.count({ where: filtro }),
+  ]);
+
+  const construirPagina = (p: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("pagina", String(p));
+    return `/licencas?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -77,6 +95,7 @@ export default async function LicencasPage({ searchParams }: { searchParams: Sea
             </li>
           )}
         </ul>
+        <Paginacao pagina={pagina} total={total} porPagina={POR_PAGINA} construirHref={construirPagina} />
       </Card>
       </SelecaoLote>
     </div>

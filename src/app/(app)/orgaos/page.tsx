@@ -4,30 +4,48 @@ import { PageHeader, Card, Button, Badge } from "@/components/ui";
 import { Search } from "lucide-react";
 import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; pagina?: string | string[] }>;
+
+const POR_PAGINA = 20;
 
 export default async function OrgaosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
-  const orgaos = await prisma.orgao.findMany({
-    where: {
-      ativo: true,
-      ...(q
-        ? {
-            OR: [
-              { sigla: { contains: q, mode: "insensitive" as const } },
-              { nome: { contains: q, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { sigla: "asc" },
-    include: { _count: { select: { processos: true } } },
-  });
+  const filtro = {
+    ativo: true,
+    ...(q
+      ? {
+          OR: [
+            { sigla: { contains: q, mode: "insensitive" as const } },
+            { nome: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  } as const;
+
+  const [orgaos, total] = await Promise.all([
+    prisma.orgao.findMany({
+      where: filtro,
+      orderBy: { sigla: "asc" },
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+      include: { _count: { select: { processos: true } } },
+    }),
+    prisma.orgao.count({ where: filtro }),
+  ]);
+
+  const construirPagina = (p: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("pagina", String(p));
+    return `/orgaos?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -67,6 +85,7 @@ export default async function OrgaosPage({ searchParams }: { searchParams: Searc
             </li>
           )}
         </ul>
+        <Paginacao pagina={pagina} total={total} porPagina={POR_PAGINA} construirHref={construirPagina} />
       </Card>
       </SelecaoLote>
     </div>

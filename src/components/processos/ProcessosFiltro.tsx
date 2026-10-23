@@ -57,6 +57,8 @@ export function ProcessosFiltro({
   const [busca, setBusca] = useState("");
   const [statusSel, setStatusSel] = useState<string[]>([]);
   const [natSel, setNatSel] = useState<string[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 20;
 
   function toggleStatus(v: string) {
     setStatusSel((arr) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]));
@@ -78,6 +80,10 @@ export function ProcessosFiltro({
       return true;
     });
   }, [processos, busca, statusSel, natSel]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
+  const paginaAjustada = Math.min(pagina, totalPaginas);
+  const visiveis = filtrados.slice((paginaAjustada - 1) * POR_PAGINA, paginaAjustada * POR_PAGINA);
 
   return (
     <Card>
@@ -118,7 +124,7 @@ export function ProcessosFiltro({
           {(busca || statusSel.length > 0 || natSel.length > 0) && (
             <button
               type="button"
-              onClick={() => { setBusca(""); setStatusSel([]); setNatSel([]); }}
+              onClick={() => { setBusca(""); setStatusSel([]); setNatSel([]); setPagina(1); }}
               className="text-xs font-medium text-navy-600 hover:underline"
             >
               Limpar
@@ -130,7 +136,7 @@ export function ProcessosFiltro({
       <SelecaoLote rota="/api/processos/excluir-lote" permitido={!!podeExcluir}>
         <BarraLote />
         <ul className="divide-y divide-slate-200">
-          {filtrados.map((p) => (
+          {visiveis.map((p) => (
             <LinhaSelecionavel key={p.id} id={p.id}>
               <div className="relative">
                 <ProcessoRowActions processo={p} podeExcluir={podeExcluir} temNovaMovimentacao={p.natureza === "minerario" && p.notificacoes.length > 0} />
@@ -143,6 +149,34 @@ export function ProcessosFiltro({
             </li>
           )}
         </ul>
+        {totalPaginas > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-3 text-sm">
+            <p className="text-xs text-muted">Página {paginaAjustada} de {totalPaginas} · {filtrados.length} processo(s)</p>
+            <div className="flex items-center gap-1">
+              {paginaAjustada > 1 && (
+                <button type="button" onClick={() => setPagina(paginaAjustada - 1)} className="rounded-md px-2.5 py-1.5 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">‹ Anterior</button>
+              )}
+              {[...new Set([
+                1, totalPaginas,
+                ...Array.from({ length: 5 }, (_, i) => paginaAjustada - 2 + i),
+              ].filter((p) => p >= 1 && p <= totalPaginas))].sort((a, b) => a - b).map((p, idx, arr) => (
+                <span key={p} className="flex items-center gap-1">
+                  {idx > 0 && p - arr[idx - 1] > 1 && <span className="text-muted">…</span>}
+                  <button
+                    type="button"
+                    onClick={() => setPagina(p)}
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${p === paginaAjustada ? "bg-navy-900 text-white" : "text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50"}`}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))}
+              {paginaAjustada < totalPaginas && (
+                <button type="button" onClick={() => setPagina(paginaAjustada + 1)} className="rounded-md px-2.5 py-1.5 text-xs font-medium text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50">Próxima ›</button>
+              )}
+            </div>
+          </div>
+        )}
       </SelecaoLote>
     </Card>
   );

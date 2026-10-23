@@ -11,6 +11,7 @@ import { RecorrentesPainel, type RegraRecorrenteDTO } from "@/components/process
 import { preverProxima } from "@/lib/tarefas-recorrentes";
 import { usuarioTemPermissao, requireAuth } from "@/lib/perfil";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 import { filtroSegregacao, filtroProcesso } from "@/lib/segregacao";
 
 type SearchParams = Promise<{
@@ -18,7 +19,10 @@ type SearchParams = Promise<{
   status?: string | string[];
   responsavel?: string | string[];
   aba?: string | string[];
+  pagina?: string | string[];
 }>;
+
+const POR_PAGINA = 20;
 
 export default async function TarefasPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -27,6 +31,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
   const responsavelParam = typeof sp.responsavel === "string" ? Number(sp.responsavel) : 0;
   const responsavelFiltro = Number.isFinite(responsavelParam) && responsavelParam > 0 ? responsavelParam : null;
   const abaRecorrentes = typeof sp.aba === "string" && sp.aba === "recorrentes";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const ABAS = [
     { value: "nao_iniciado", label: "Não Iniciadas" },
     { value: "em_andamento", label: "Em andamento" },
@@ -56,9 +61,11 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
     ? { OR: [{ responsavelPessoaId: responsavelFiltro }, { responsaveisEquipe: { some: { pessoaId: responsavelFiltro } } }] }
     : {};
 
-  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens, regrasBrutas] = await Promise.all([
+  const whereTarefas = { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo, ...filtroResponsavel };
+
+  const [tarefas, pessoas, empreendimentos, processosAmbientais, processosMassa, contagens, regrasBrutas, totalTarefas] = await Promise.all([
     prisma.tarefa.findMany({
-      where: { ativo: true, deletedAt: null, ...(isAdmin ? {} : { visibilidade: "publico" }), ...escopoTarefa, ...statusFilter, ...buscaTitulo, ...filtroResponsavel },
+      where: whereTarefas,
       orderBy: [{ status: "asc" }, { prazoData: "asc" }],
       include: {
         responsavel: true,
@@ -68,7 +75,8 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
         _count: { select: { anexos: true } },
         recorrencia: { select: { intervaloDias: true, ativo: true } },
       },
-      take: 200,
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
     }),
     prisma.pessoa.findMany({ where: { ativo: true, deletedAt: null }, orderBy: { nome: "asc" } }),
     prisma.empreendimento.findMany({
@@ -121,6 +129,7 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
           },
         })
       : Promise.resolve([]),
+    prisma.tarefa.count({ where: whereTarefas }),
   ]);
 
   const contagemPorStatus = new Map(contagens.map((c) => [c.status, c._count]));
@@ -309,6 +318,21 @@ export default async function TarefasPage({ searchParams }: { searchParams: Sear
             </li>
           )}
         </ul>
+        )}
+        {!abaRecorrentes && (
+          <Paginacao
+            pagina={pagina}
+            total={totalTarefas}
+            porPagina={POR_PAGINA}
+            construirHref={(p) => {
+              const sp2 = new URLSearchParams();
+              sp2.set("status", statusAtual);
+              if (q) sp2.set("q", q);
+              if (responsavelFiltro) sp2.set("responsavel", String(responsavelFiltro));
+              sp2.set("pagina", String(p));
+              return `/tarefas?${sp2.toString()}`;
+            }}
+          />
         )}
       </Card>
     </div>

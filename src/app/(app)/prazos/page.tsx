@@ -7,33 +7,51 @@ import { PrazoStatusButton } from "@/components/processos/PrazoStatusButton";
 import { PrazoAlertaEdit } from "@/components/processos/PrazoAlertaEdit";
 import { filtroSegregacao, filtroProcesso, filtroPorProcesso } from "@/lib/segregacao";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 
-type SearchParams = Promise<{ q?: string | string[]; status?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; status?: string | string[]; pagina?: string | string[] }>;
+
+const POR_PAGINA = 20;
 
 export default async function PrazosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const verConcluidos = typeof sp.status === "string" && sp.status === "concluido";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const { scoped, responsavelPessoaId } = await filtroSegregacao();
 
   const statusFilter = verConcluidos
     ? { status: "concluido" as const }
     : { status: { notIn: ["concluido", "cancelado"] as string[] } };
 
-  const prazos = await prisma.prazo.findMany({
-    where: {
-      ativo: true,
-      deletedAt: null,
-      processo: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) },
-      ...statusFilter,
-      ...(q ? { descricao: { contains: q, mode: "insensitive" as const } } : {}),
-    },
-    orderBy: { dataCalculadaAtual: "asc" },
-    include: {
-      processo: { include: { orgao: true } },
-    },
-    take: 100,
-  });
+  const filtroPrazos = {
+    ativo: true,
+    deletedAt: null,
+    processo: { ativo: true, deletedAt: null, ...filtroProcesso(scoped, responsavelPessoaId) },
+    ...statusFilter,
+    ...(q ? { descricao: { contains: q, mode: "insensitive" as const } } : {}),
+  } as const;
+
+  const [prazos, totalPrazos] = await Promise.all([
+    prisma.prazo.findMany({
+      where: filtroPrazos,
+      orderBy: { dataCalculadaAtual: "asc" },
+      include: {
+        processo: { include: { orgao: true } },
+      },
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+    }),
+    prisma.prazo.count({ where: filtroPrazos }),
+  ]);
+
+  const construirPagina = (p: number) => {
+    const params = new URLSearchParams();
+    if (verConcluidos) params.set("status", "concluido");
+    if (q) params.set("q", q);
+    params.set("pagina", String(p));
+    return `/prazos?${params.toString()}`;
+  };
 
   const exportParams = new URLSearchParams();
   if (verConcluidos) exportParams.set("status", "concluido");
@@ -106,6 +124,7 @@ export default async function PrazosPage({ searchParams }: { searchParams: Searc
             </li>
           )}
         </ul>
+        <Paginacao pagina={pagina} total={totalPrazos} porPagina={POR_PAGINA} construirHref={construirPagina} />
       </Card>
     </div>
   );

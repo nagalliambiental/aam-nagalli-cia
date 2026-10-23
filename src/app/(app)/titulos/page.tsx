@@ -5,36 +5,54 @@ import { formatDate } from "@/lib/format";
 import { Search } from "lucide-react";
 import { SelecaoLote, LinhaSelecionavel, BarraLote } from "@/components/cadastro/SelecaoLote";
 import { BuscaAuto } from "@/components/ui/BuscaAuto";
+import { Paginacao } from "@/components/ui/Paginacao";
 import { usuarioTemPermissao } from "@/lib/perfil";
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; pagina?: string | string[] }>;
+
+const POR_PAGINA = 20;
 
 export default async function TitulosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const pagina = Math.max(1, Number(typeof sp.pagina === "string" ? sp.pagina : 1) || 1);
   const podeExcluir = await usuarioTemPermissao("cadastro:excluir");
 
-  const titulos = await prisma.tituloMinerario.findMany({
-    where: {
-      ativo: true,
-      deletedAt: null,
-      ...(q
-        ? {
-            OR: [
-              { numero: { contains: q, mode: "insensitive" as const } },
-              { substancia: { contains: q, mode: "insensitive" as const } },
-              { municipio: { contains: q, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: [{ situacao: "asc" }, { validade: "asc" }],
-    include: {
-      tipoTitulo: true,
-      orgao: true,
-      _count: { select: { processos: true, areas: true } },
-    },
-  });
+  const filtro = {
+    ativo: true,
+    deletedAt: null,
+    ...(q
+      ? {
+          OR: [
+            { numero: { contains: q, mode: "insensitive" as const } },
+            { substancia: { contains: q, mode: "insensitive" as const } },
+            { municipio: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  } as const;
+
+  const [titulos, total] = await Promise.all([
+    prisma.tituloMinerario.findMany({
+      where: filtro,
+      orderBy: [{ situacao: "asc" }, { validade: "asc" }],
+      skip: (pagina - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+      include: {
+        tipoTitulo: true,
+        orgao: true,
+        _count: { select: { processos: true, areas: true } },
+      },
+    }),
+    prisma.tituloMinerario.count({ where: filtro }),
+  ]);
+
+  const construirPagina = (p: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("pagina", String(p));
+    return `/titulos?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -85,6 +103,7 @@ export default async function TitulosPage({ searchParams }: { searchParams: Sear
             </li>
           )}
         </ul>
+        <Paginacao pagina={pagina} total={total} porPagina={POR_PAGINA} construirHref={construirPagina} />
       </Card>
       </SelecaoLote>
     </div>
