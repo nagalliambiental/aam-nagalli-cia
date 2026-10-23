@@ -78,7 +78,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         }
       />
 
-      <SelecaoLote rota="/api/empreendimentos/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/empreendimentos/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por nome, apelido, município ou tipo..." valorInicial={q} />

@@ -61,7 +61,7 @@ export default async function AreasPage({ searchParams }: { searchParams: Search
         }
       />
 
-      <SelecaoLote rota="/api/areas/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/areas/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por nome, município ou tipo..." valorInicial={q} />

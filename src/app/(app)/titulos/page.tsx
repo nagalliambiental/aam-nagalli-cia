@@ -66,7 +66,7 @@ export default async function TitulosPage({ searchParams }: { searchParams: Sear
         }
       />
 
-      <SelecaoLote rota="/api/titulos/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/titulos/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por número, substância ou município..." valorInicial={q} />

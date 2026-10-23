@@ -59,7 +59,7 @@ export default async function OrgaosPage({ searchParams }: { searchParams: Searc
         }
       />
 
-      <SelecaoLote rota="/api/orgaos/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/orgaos/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por sigla ou nome..." valorInicial={q} />

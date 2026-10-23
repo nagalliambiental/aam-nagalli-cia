@@ -59,7 +59,7 @@ export default async function LicencasPage({ searchParams }: { searchParams: Sea
         }
       />
 
-      <SelecaoLote rota="/api/licencas/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/licencas/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por número..." valorInicial={q} />

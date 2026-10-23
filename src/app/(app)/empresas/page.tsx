@@ -94,7 +94,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
         }
       />
 
-      <SelecaoLote rota="/api/empresas/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/empresas/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined, tipo: tipo || undefined }}>
       <Card>
         <BarraLote />
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 pt-2">
@@ -112,7 +112,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Sea
                   key={t || "todos"}
                   href={`/empresas?${params.toString()}`}
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    tipo === t ? "bg-navy-900 text-white" : "text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                    tipo === t ? "bg-navy-100 text-navy-900 ring-1 ring-navy-300" : "text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50"
                   }`}
                 >
                   {t === "" ? "Todos" : t.toUpperCase()}

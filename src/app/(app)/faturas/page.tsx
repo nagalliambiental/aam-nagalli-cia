@@ -72,7 +72,7 @@ export default async function FaturasPage({ searchParams }: { searchParams: { pa
           <p className="mt-1 text-xs text-muted">{vencidas.length} vencida(s)</p>
         </Card>
       </div>
-      <SelecaoLote rota="/api/faturas/excluir-lote" permitido>
+      <SelecaoLote rota="/api/faturas/excluir-lote" permitido total={total}>
       <Card>
         <BarraLote />
         <ul className="divide-y divide-slate-100">

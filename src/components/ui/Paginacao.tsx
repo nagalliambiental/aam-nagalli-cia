@@ -43,7 +43,7 @@ export function Paginacao({
               {gap && <span className="text-muted">…</span>}
               <Link
                 href={construirHref(p)}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${p === pagina ? "bg-navy-900 text-white" : "text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50"}`}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${p === pagina ? "bg-navy-100 text-navy-900 ring-1 ring-navy-300" : "text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50"}`}
               >
                 {p}
               </Link>

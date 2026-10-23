@@ -63,7 +63,7 @@ export default async function ContratosPage({ searchParams }: { searchParams: Se
         }
       />
 
-      <SelecaoLote rota="/api/contratos/excluir-lote" permitido={podeExcluir}>
+      <SelecaoLote rota="/api/contratos/excluir-lote" permitido={podeExcluir} total={total} filtroTudo={{ q: q || undefined }}>
       <Card>
         <BarraLote />
         <BuscaAuto placeholder="Buscar por número ou descrição..." valorInicial={q} />
