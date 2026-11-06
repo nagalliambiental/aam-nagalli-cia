@@ -17,7 +17,7 @@ async function main() {
     prisma.processo.findMany({ where: { ativo: true, deletedAt: null }, select: { id: true, numero: true, nup: true } }),
     prisma.douConfiguracao.findUnique({ where: { id: 1 } }),
   ]);
-  const automaticos = montarTermosDou(empresas, empreendimentos, processos, []).map((t) => ({ text: t.text, tipo: t.origem, id: t.id ?? 0 }));
+  const automaticos = montarTermosDou(empresas, empreendimentos, processos, [], (config?.termosDesativados ?? "").split(/\r?\n/).filter(Boolean)).map((t) => ({ text: t.text, tipo: t.origem, id: t.id ?? 0 }));
   const extras = (config?.termosExtras ?? "").split(/\r?\n/).map((text) => text.trim()).filter(Boolean).map((text) => ({ text, tipo: "manual", id: 0 }));
   const lista = [...extras, ...automaticos];
   console.log(`[dou-worker] termos=${lista.length}`);

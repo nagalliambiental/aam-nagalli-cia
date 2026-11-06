@@ -1,6 +1,7 @@
 export type DouTermo = { text: string; origem: string; id?: number };
 
-export function montarTermosDou(empresas: { id?: number; cnpj: string | null; cpf?: string | null; razaoSocial: string; nomeFantasia: string | null }[], empreendimentos: { id?: number; nome: string; apelido: string | null }[], processos: { id?: number; numero: string; nup: string | null }[], extras: string[] = []) {
+export function montarTermosDou(empresas: { id?: number; cnpj: string | null; cpf?: string | null; razaoSocial: string; nomeFantasia: string | null }[], empreendimentos: { id?: number; nome: string; apelido: string | null }[], processos: { id?: number; numero: string; nup: string | null }[], extras: string[] = [], desativados: string[] = []) {
+  const skip = new Set(desativados.map((t) => t.trim().toLowerCase()).filter(Boolean));
   const termos: DouTermo[] = [];
   for (const empresa of empresas) {
     if (empresa.cnpj) termos.push({ text: empresa.cnpj.replace(/\D/g, ""), origem: "CNPJ do cliente", id: empresa.id });
@@ -17,5 +18,10 @@ export function montarTermosDou(empresas: { id?: number; cnpj: string | null; cp
   }
   for (const extra of extras) termos.push({ text: extra, origem: "Termo manual" });
   const seen = new Set<string>();
-  return termos.filter((termo) => { const key = termo.text.trim().toLowerCase(); if (!key || seen.has(key)) return false; seen.add(key); return true; });
+  return termos.filter((termo) => {
+    const key = termo.text.trim().toLowerCase();
+    if (!key || seen.has(key) || skip.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

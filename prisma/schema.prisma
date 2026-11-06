@@ -1241,9 +1241,10 @@ model BackupArquivo {
 }
 
 model DouConfiguracao {
-  id           Int      @id
-  termosExtras String?
-  atualizadoEm DateTime @updatedAt
+  id               Int      @id
+  termosExtras     String?
+  termosDesativados String?
+  atualizadoEm     DateTime @updatedAt
 }
 
 // =====================================================================
