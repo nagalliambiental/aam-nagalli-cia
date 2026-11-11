@@ -2,7 +2,7 @@ name: DOU diário
 
 on:
   schedule:
-    - cron: "0 10 * * *" # 07h de Brasília
+    - cron: "0 9 * * *" # 07h de Brasília
   workflow_dispatch: {}
 
 jobs:
